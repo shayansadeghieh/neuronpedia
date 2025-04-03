@@ -74,12 +74,27 @@ jobs:
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "$NEW_VERSION" > VERSION
 
+      - name: Set up SSH Deploy Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
       - name: Commit version bump
         run: |
           git add VERSION
           git commit -m "chore(release): v${{ steps.bump_version.outputs.new_version }}"
           git tag -a "v${{ steps.bump_version.outputs.new_version }}" -m "Release v${{ steps.bump_version.outputs.new_version }}"
-          git push https://neuronpedia-bot:${{secrets.NP_BOT_PAT}}@github.com/hijohnnylin/neuronpedia.git --follow-tags
+
+          # Configure Git to use SSH with the deploy key
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/deploy_key"
+
+          # Change the remote URL to SSH format
+          git remote set-url origin git@github.com:hijohnnylin/neuronpedia.git
+
+          # Push using SSH
+          git push origin HEAD:main --follow-tags
 
       - name: Generate release notes with commits
         run: |
