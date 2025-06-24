@@ -44,5 +44,8 @@ def test_completion_basic(client: TestClient):
     expected_steered_output = "Hello, world! I'm a developer"
     expected_default_output = "Hello, world! I'm going to be"
     
-    assert response_model.outputs[0].output["STEERED"].startswith(expected_steered_output)    
-    assert response_model.outputs[1].output["DEFAULT"].startswith(expected_default_output)
+    # Create a mapping of output type to output text
+    outputs_by_type = {output.type: output.output for output in response_model.outputs}
+    
+    assert outputs_by_type[NPSteerType.STEERED].startswith(expected_steered_output)    
+    assert outputs_by_type[NPSteerType.DEFAULT].startswith(expected_default_output)
