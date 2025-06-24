@@ -1,10 +1,13 @@
 from fastapi.testclient import TestClient
-
-from neuronpedia_inference_client.models.steer_completion_request import SteerCompletionRequest
+from neuronpedia_inference_client.models.np_steer_feature import NPSteerFeature
 from neuronpedia_inference_client.models.np_steer_method import NPSteerMethod
 from neuronpedia_inference_client.models.np_steer_type import NPSteerType
-from neuronpedia_inference_client.models.np_steer_feature import NPSteerFeature
-from neuronpedia_inference_client.models.steer_completion_post200_response import SteerCompletionPost200Response
+from neuronpedia_inference_client.models.steer_completion_post200_response import (
+    SteerCompletionPost200Response,
+)
+from neuronpedia_inference_client.models.steer_completion_request import (
+    SteerCompletionRequest,
+)
 
 from tests.conftest import MODEL_ID, SAE_SELECTED_SOURCES, TEST_PROMPT, X_SECRET_KEY
 
@@ -33,7 +36,7 @@ def test_completion_basic(client: TestClient):
         freq_penalty=0.0,
         seed=42,
     )
-    
+
     response = client.post(
         ENDPOINT, json=request.model_dump(), headers={"X-SECRET-KEY": X_SECRET_KEY}
     )
@@ -43,9 +46,9 @@ def test_completion_basic(client: TestClient):
 
     expected_steered_output = "Hello, world! I'm a developer"
     expected_default_output = "Hello, world! I'm going to be"
-    
+
     # Create a mapping of output type to output text
     outputs_by_type = {output.type: output.output for output in response_model.outputs}
-    
-    assert outputs_by_type[NPSteerType.STEERED].startswith(expected_steered_output)    
+
+    assert outputs_by_type[NPSteerType.STEERED].startswith(expected_steered_output)
     assert outputs_by_type[NPSteerType.DEFAULT].startswith(expected_default_output)
