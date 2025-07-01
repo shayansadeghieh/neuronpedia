@@ -150,7 +150,7 @@ def test_completion_steered_token_limit_exceeded(client: TestClient):
 
 
 def test_completion_steered_with_features_orthogonal(client: TestClient):
-    """Test steering using orthogonal decomposition method"""
+    """Test steering using features with orthogonal decomposition method"""
     request = SteerCompletionRequest(
         prompt=TEST_PROMPT,
         model=MODEL_ID,
