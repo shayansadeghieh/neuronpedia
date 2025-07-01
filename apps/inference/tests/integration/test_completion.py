@@ -13,6 +13,13 @@ from neuronpedia_inference_client.models.steer_completion_request import (
 from tests.conftest import MODEL_ID, SAE_SELECTED_SOURCES, TEST_PROMPT, X_SECRET_KEY
 
 ENDPOINT = "/v1/steer/completion"
+N_COMPLETION_TOKENS = 10
+TEMPERATURE = 0
+STRENGTH = 10.0  # Steering mechanism (feature or vector) specific strength
+STRENGTH_MULTIPLIER = 1.0  # Multiplier across all steering mechanisms
+STEER_FEATURE_INDEX = 0
+SEED = 42
+FREQ_PENALTY = 0.0
 
 
 def test_completion_steered_with_features_additive(client: TestClient):
@@ -27,15 +34,15 @@ def test_completion_steered_with_features_additive(client: TestClient):
             NPSteerFeature(
                 model=MODEL_ID,
                 source=SAE_SELECTED_SOURCES[0],
-                index=0,
-                strength=10.0,
+                index=STEER_FEATURE_INDEX,
+                strength=STRENGTH,
             )
         ],
-        n_completion_tokens=10,
-        temperature=0,
-        strength_multiplier=1.0,
-        freq_penalty=0.0,
-        seed=42,
+        n_completion_tokens=N_COMPLETION_TOKENS,
+        temperature=TEMPERATURE,
+        strength_multiplier=STRENGTH_MULTIPLIER,
+        freq_penalty=FREQ_PENALTY,
+        seed=SEED,
     )
 
     response = client.post(
@@ -77,15 +84,15 @@ def test_completion_steered_with_vectors_additive(client: TestClient):
             NPSteerVector(
                 steering_vector=[1000.0]
                 * 768,  # We utilize a large vector to ensure the steering vector is impactful
-                strength=10.0,
+                strength=STRENGTH,
                 hook="blocks.7.hook_resid_post",
             )
         ],
-        n_completion_tokens=10,
-        temperature=0,
-        strength_multiplier=1.0,
-        freq_penalty=0.0,
-        seed=42,
+        n_completion_tokens=N_COMPLETION_TOKENS,
+        temperature=TEMPERATURE,
+        strength_multiplier=STRENGTH_MULTIPLIER,
+        freq_penalty=FREQ_PENALTY,
+        seed=SEED,
     )
 
     response = client.post(
@@ -129,14 +136,17 @@ def test_completion_steered_token_limit_exceeded(client: TestClient):
         types=[NPSteerType.STEERED],
         features=[
             NPSteerFeature(
-                model=MODEL_ID, source=SAE_SELECTED_SOURCES[0], index=0, strength=10.0
+                model=MODEL_ID,
+                source=SAE_SELECTED_SOURCES[0],
+                index=0,
+                strength=STRENGTH,
             )
         ],
-        n_completion_tokens=10,
-        temperature=0,
-        strength_multiplier=1.0,
-        freq_penalty=0.0,
-        seed=42,
+        n_completion_tokens=N_COMPLETION_TOKENS,
+        temperature=TEMPERATURE,
+        strength_multiplier=STRENGTH_MULTIPLIER,
+        freq_penalty=FREQ_PENALTY,
+        seed=SEED,
     )
 
     response = client.post(
@@ -161,15 +171,15 @@ def test_completion_steered_with_features_orthogonal(client: TestClient):
             NPSteerFeature(
                 model=MODEL_ID,
                 source=SAE_SELECTED_SOURCES[0],
-                index=0,
-                strength=10.0,
+                index=STEER_FEATURE_INDEX,
+                strength=STRENGTH,
             )
         ],
-        n_completion_tokens=10,
-        temperature=0,
-        strength_multiplier=1.0,
-        freq_penalty=0.0,
-        seed=42,
+        n_completion_tokens=N_COMPLETION_TOKENS,
+        temperature=TEMPERATURE,
+        strength_multiplier=STRENGTH_MULTIPLIER,
+        freq_penalty=FREQ_PENALTY,
+        seed=SEED,
     )
 
     response = client.post(
@@ -211,15 +221,15 @@ def test_completion_steered_with_vectors_orthogonal(client: TestClient):
             NPSteerVector(
                 steering_vector=[1000.0]
                 * 768,  # We utilize a large vector to ensure the steering vector is impactful
-                strength=10.0,
+                strength=STRENGTH,
                 hook="blocks.7.hook_resid_post",
             )
         ],
-        n_completion_tokens=10,
-        temperature=0,
-        strength_multiplier=1.0,
-        freq_penalty=0.0,
-        seed=42,
+        n_completion_tokens=N_COMPLETION_TOKENS,
+        temperature=TEMPERATURE,
+        strength_multiplier=STRENGTH_MULTIPLIER,
+        freq_penalty=FREQ_PENALTY,
+        seed=SEED,
     )
 
     response = client.post(
