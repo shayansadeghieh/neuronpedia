@@ -23,7 +23,9 @@ FREQ_PENALTY = 0.0
 
 
 def test_completion_steered_with_features_additive(client: TestClient):
-    # Build request
+    """
+    Test steering using features with additive method.
+    """
     request = SteerCompletionRequest(
         prompt=TEST_PROMPT,
         model=MODEL_ID,
@@ -73,7 +75,9 @@ def test_completion_steered_with_features_additive(client: TestClient):
 
 
 def test_completion_steered_with_vectors_additive(client: TestClient):
-    """Test steering using vectors"""
+    """
+    Test steering using vectors with additive method.
+    """
     request = SteerCompletionRequest(
         prompt=TEST_PROMPT,
         model=MODEL_ID,
@@ -160,7 +164,9 @@ def test_completion_steered_token_limit_exceeded(client: TestClient):
 
 
 def test_completion_steered_with_features_orthogonal(client: TestClient):
-    """Test steering using features with orthogonal decomposition method"""
+    """
+    Test steering using features with orthogonal decomposition method.
+    """
     request = SteerCompletionRequest(
         prompt=TEST_PROMPT,
         model=MODEL_ID,
@@ -210,7 +216,9 @@ def test_completion_steered_with_features_orthogonal(client: TestClient):
 
 
 def test_completion_steered_with_vectors_orthogonal(client: TestClient):
-    """Test orthogonal steering using vectors"""
+    """
+    Test steering using vectors with orthogonal decomposition.
+    """
     request = SteerCompletionRequest(
         prompt=TEST_PROMPT,
         model=MODEL_ID,
