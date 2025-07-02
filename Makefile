@@ -94,8 +94,8 @@ webapp-localhost-dev: ## Webapp: Localhost Environment - Run (Development Build)
 		exit 1; \
 	fi
 	ENV_FILE=.env.localhost docker compose \
-		-f docker-compose.yaml \
-		-f docker-compose.webapp.dev.yaml \
+		-f docker/docker-compose.yaml \
+		-f docker/docker-compose.webapp.dev.yaml \
 		--env-file .env.localhost \
 		--env-file .env \
 		up webapp db-init postgres
@@ -107,8 +107,8 @@ webapp-localhost-test: ## Webapp: Localhost Environment - Run (Playwright)
 		exit 1; \
 	fi
 	ENV_FILE=.env.localhost docker compose \
-		-f docker-compose.yaml \
-		-f docker-compose.webapp.test.yaml \
+		-f docker/docker-compose.yaml \
+		-f docker/docker-compose.webapp.test.yaml \
 		--env-file .env.localhost \
 		--env-file .env \
 		up webapp db-init postgres
@@ -126,8 +126,8 @@ inference-localhost-build: ## Inference: Localhost Environment - Build
 	ENV_FILE=.env.localhost \
 		BUILD_TYPE=$(BUILD_TYPE) \
 		docker compose \
-		-f docker-compose.yaml \
-		$(if $(USE_LOCAL_HF_CACHE),-f docker-compose.hf-cache.yaml,) \
+		-f docker/docker-compose.yaml \
+		$(if $(USE_LOCAL_HF_CACHE),-f docker/docker-compose.hf-cache.yaml,) \
 		build inference
 
 inference-localhost-build-gpu: ## Inference: Localhost Environment - Build (CUDA). Usage: make inference-localhost-build-gpu [USE_LOCAL_HF_CACHE=1]
@@ -145,10 +145,10 @@ inference-localhost-dev: ## Inference: Localhost Environment - Run (Development 
 		RELOAD=$$([ "$(AUTORELOAD)" = "1" ] && echo "1" || echo "0") \
 		ENV_FILE=.env.inference.$(MODEL_SOURCESET) \
 			docker compose \
-			-f docker-compose.yaml \
-			-f docker-compose.inference.dev.yaml \
-			$(if $(ENABLE_GPU),-f docker-compose.inference.gpu.yaml,) \
-			$(if $(USE_LOCAL_HF_CACHE),-f docker-compose.hf-cache.yaml,) \
+			-f docker/docker-compose.yaml \
+			-f docker/docker-compose.inference.dev.yaml \
+			$(if $(ENABLE_GPU),-f docker/docker-compose.inference.gpu.yaml,) \
+			$(if $(USE_LOCAL_HF_CACHE),-f docker/docker-compose.hf-cache.yaml,) \
 			--env-file .env.inference.$(MODEL_SOURCESET) \
 			--env-file .env.localhost \
 			--env-file .env \

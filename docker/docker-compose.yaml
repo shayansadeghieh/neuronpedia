@@ -1,5 +1,6 @@
 services:
   webapp:
+    image: neuronpedia-webapp:latest
     build:
       context: .
       dockerfile: apps/webapp/Dockerfile
@@ -12,6 +13,7 @@ services:
     depends_on:
       - db-init # always loads db locally, but only uses it for .localhost env
   db-init:
+    image: neuronpeda-webapp:latest
     build:
       context: .
       dockerfile: apps/webapp/Dockerfile
@@ -46,6 +48,7 @@ services:
       - ./apps/webapp/prisma/pgvector-init:/docker-entrypoint-initdb.d
   inference:
     platform: linux/amd64
+    image: neuronpedia-inference:latest
     build:
       context: .
       dockerfile: apps/inference/Dockerfile
@@ -64,6 +67,7 @@ services:
 
   autointerp:
     platform: linux/amd64
+    image: neuronpedia-autointerp:latest
     build:
       context: .
       dockerfile: apps/autointerp/Dockerfile
