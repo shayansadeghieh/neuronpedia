@@ -40,7 +40,7 @@ webapp-demo-build: ## Webapp: Public Demo Environment - Build
 		echo "Error: Docker is not installed. Please install Docker first."; \
 		exit 1; \
 	fi
-	ENV_FILE=.env.demo docker compose build webapp
+	ENV_FILE=.env.demo docker compose -f docker/docker-compose.yaml build webapp
 
 webapp-demo-run: ## Webapp: Public Demo Environment - Run
 	@echo "Bringing up the webapp and connecting to the demo database..."
@@ -48,13 +48,11 @@ webapp-demo-run: ## Webapp: Public Demo Environment - Run
 		echo "Error: Docker is not installed. Please install Docker first."; \
 		exit 1; \
 	fi
-	ENV_FILE=.env.demo docker compose --env-file .env.demo --env-file .env up webapp
-
+	ENV_FILE=.env.demo docker compose -f docker/docker-compose.yaml --env-file .env.demo --env-file .env up webapp
 
 webapp-demo-check: ## Webapp: Public Demo Environment - Check Config
 	@echo "Printing the webapp configuration - this is useful to see if your environment variables are set correctly."
-	ENV_FILE=.env.demo docker compose config webapp
-
+	ENV_FILE=.env.demo docker compose -f docker/docker-compose.yaml config webapp
 
 webapp-localhost-build: ## Webapp: Localhost Environment - Build (Production Build)
 	@echo "Building the webapp for connecting to the localhost database..."
@@ -62,7 +60,7 @@ webapp-localhost-build: ## Webapp: Localhost Environment - Build (Production Bui
 		echo "Error: Docker is not installed. Please install Docker first."; \
 		exit 1; \
 	fi
-	ENV_FILE=.env.localhost docker compose build webapp db-init postgres
+	ENV_FILE=.env.localhost docker compose -f docker/docker-compose.yaml build webapp db-init postgres
 
 webapp-localhost-run: ## Webapp: Localhost Environment - Run (Production Build)
 	@echo "Bringing up the webapp and connecting to the localhost database..."
@@ -70,7 +68,7 @@ webapp-localhost-run: ## Webapp: Localhost Environment - Run (Production Build)
 		echo "Error: Docker is not installed. Please install Docker first."; \
 		exit 1; \
 	fi
-	ENV_FILE=.env.localhost docker compose --env-file .env.localhost --env-file .env up webapp db-init postgres
+	ENV_FILE=.env.localhost docker compose -f docker/docker-compose.yaml --env-file .env.localhost --env-file .env up webapp db-init postgres
 
 install-nodejs: # Install Node.js for Webapp
 	curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
@@ -112,7 +110,6 @@ webapp-localhost-test: ## Webapp: Localhost Environment - Run (Playwright)
 		--env-file .env.localhost \
 		--env-file .env \
 		up webapp db-init postgres
-	
 
 inference-localhost-install: ## Inference: Localhost Environment - Install Dependencies (Development Build)
 	@echo "Installing the inference dependencies for development in the localhost environment..."
@@ -184,4 +181,4 @@ reset-docker-data: ## Reset Docker Data - this deletes your local database!
 		exit 1; \
 	fi
 	@echo "Resetting Docker data..."
-	docker compose down -v
+	docker compose -f docker/docker-compose.yaml down -v

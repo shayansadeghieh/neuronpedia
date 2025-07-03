@@ -2,7 +2,7 @@ services:
   webapp:
     image: neuronpedia-webapp:latest
     build:
-      context: .
+      context: ..
       dockerfile: apps/webapp/Dockerfile
       args:
         ENV_FILE: ${ENV_FILE:-.env.localhost}
@@ -15,7 +15,7 @@ services:
   db-init:
     image: neuronpeda-webapp:latest
     build:
-      context: .
+      context: ..
       dockerfile: apps/webapp/Dockerfile
     command: >
       sh -c "npm run db:migrate:deploy && npm run db:seed"
@@ -50,7 +50,7 @@ services:
     platform: linux/amd64
     image: neuronpedia-inference:latest
     build:
-      context: .
+      context: ..
       dockerfile: apps/inference/Dockerfile
       args:
         BUILD_TYPE: ${BUILD_TYPE:-nocuda} # Use nocuda by default, override with BUILD_TYPE=cuda
@@ -69,7 +69,7 @@ services:
     platform: linux/amd64
     image: neuronpedia-autointerp:latest
     build:
-      context: .
+      context: ..
       dockerfile: apps/autointerp/Dockerfile
       args:
         BUILD_TYPE: ${BUILD_TYPE:-nocuda}
