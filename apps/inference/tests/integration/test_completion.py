@@ -133,7 +133,7 @@ def test_completion_steered_with_vectors_additive(client: TestClient):
     assert outputs_by_type[NPSteerType.STEERED] != outputs_by_type[NPSteerType.DEFAULT]
 
     expected_steered_output = "Hello, world!!!!!!!!!!!"
-    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a" 
+    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a"
 
     assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
     assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
@@ -227,7 +227,7 @@ def test_completion_steered_with_features_orthogonal(client: TestClient):
     assert outputs_by_type[NPSteerType.STEERED] != outputs_by_type[NPSteerType.DEFAULT]
 
     expected_steered_output = "Hello, world! Hy Hy Hy Hy Hy Hy Hy Hy Hy Hy"
-    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a"   
+    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a"
 
     assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
     assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
@@ -286,7 +286,7 @@ def test_completion_steered_with_vectors_orthogonal(client: TestClient):
     assert outputs_by_type[NPSteerType.STEERED] != outputs_by_type[NPSteerType.DEFAULT]
 
     expected_steered_output = "Hello, world!!!!!!!!!!!"
-    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a"   
+    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a"
 
     assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
     assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
