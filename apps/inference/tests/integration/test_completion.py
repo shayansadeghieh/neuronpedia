@@ -16,8 +16,8 @@ ENDPOINT = "/v1/steer/completion"
 N_COMPLETION_TOKENS = 10
 TEMPERATURE = 0
 STRENGTH = 10.0  # Steering mechanism (feature or vector) specific strength
-STRENGTH_MULTIPLIER = 1.0  # Multiplier across all steering mechanisms
-STEER_FEATURE_INDEX = 0
+STRENGTH_MULTIPLIER = 10.0  # Multiplier across all steering mechanisms
+STEER_FEATURE_INDEX = 5
 SEED = 42
 FREQ_PENALTY = 0.0
 
@@ -73,6 +73,12 @@ def test_completion_steered_with_features_additive(client: TestClient):
     # Steered output should be different from default output
     assert outputs_by_type[NPSteerType.STEERED] != outputs_by_type[NPSteerType.DEFAULT]
 
+    expected_steered_output = "Hello, world! the world, the world, the world, the"
+    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a"
+
+    assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
+    assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
+
 
 def test_completion_steered_with_vectors_additive(client: TestClient):
     """
@@ -125,6 +131,12 @@ def test_completion_steered_with_vectors_additive(client: TestClient):
 
     # Steered output should be different from default output
     assert outputs_by_type[NPSteerType.STEERED] != outputs_by_type[NPSteerType.DEFAULT]
+
+    expected_steered_output = "Hello, world!!!!!!!!!!!"
+    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a" 
+
+    assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
+    assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
 
 
 def test_completion_steered_token_limit_exceeded(client: TestClient):
@@ -214,6 +226,12 @@ def test_completion_steered_with_features_orthogonal(client: TestClient):
     # Steered output should be different from default output
     assert outputs_by_type[NPSteerType.STEERED] != outputs_by_type[NPSteerType.DEFAULT]
 
+    expected_steered_output = "Hello, world! Hy Hy Hy Hy Hy Hy Hy Hy Hy Hy"
+    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a"   
+
+    assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
+    assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
+
 
 def test_completion_steered_with_vectors_orthogonal(client: TestClient):
     """
@@ -266,3 +284,9 @@ def test_completion_steered_with_vectors_orthogonal(client: TestClient):
 
     # Steered output should be different from default output
     assert outputs_by_type[NPSteerType.STEERED] != outputs_by_type[NPSteerType.DEFAULT]
+
+    expected_steered_output = "Hello, world!!!!!!!!!!!"
+    expected_default_output = "Hello, world!\n\nI'm a programmer and I'm a"   
+
+    assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
+    assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
