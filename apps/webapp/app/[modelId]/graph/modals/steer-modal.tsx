@@ -24,7 +24,7 @@ import {
   STEER_TEMPERATURE_MAX,
 } from '@/lib/utils/steer';
 import { NeuronWithPartialRelations } from '@/prisma/generated/zod';
-import { ResetIcon } from '@radix-ui/react-icons';
+import { QuestionMarkIcon, ResetIcon } from '@radix-ui/react-icons';
 import * as Slider from '@radix-ui/react-slider';
 import { ArrowUpRightFromSquare, Joystick, MousePointerClick, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -210,6 +210,7 @@ function NodeToSteer({
                     initialNeuron={hoveredFeature}
                     embed
                     forceMiniStats
+                    activationMarkerValue={node.activation}
                   />
                 </div>
               ) : (
@@ -220,9 +221,12 @@ function NodeToSteer({
             </HoverCardContent>
           </HoverCard>
         </div>
-        <div className="flex flex-1 basis-1/2 flex-col gap-y-1">
-          <div className="line-clamp-1 flex-1 text-xs" title={label}>
+        <div className="flex flex-1 basis-1/2 flex-col gap-y-0.5">
+          <div className="-mt-[1px] line-clamp-1 flex-1 text-xs" title={label}>
             {label}
+          </div>
+          <div className="flex w-full flex-row justify-start text-[8px] font-medium leading-none text-slate-400">
+            ACTIVATION: {node.activation?.toFixed(2)}
           </div>
         </div>
         <div className="mt-0.5 flex w-full basis-1/2 flex-row items-center gap-x-3 px-3 text-sky-700">
@@ -598,8 +602,22 @@ export default function SteerModal() {
                         />
                       </div>
                       <div className="col-span-1 flex w-full flex-row items-center justify-start gap-x-3">
-                        <div className="w-[70px] text-right text-[10px] font-medium uppercase leading-tight text-slate-400">
-                          Freeze Attn
+                        <div className="flex w-[70px] flex-row items-center gap-x-1 text-right text-[10px] font-medium uppercase leading-tight text-slate-400">
+                          <div className="flex flex-col">
+                            Freeze
+                            <br />
+                            Attention
+                          </div>
+                          <CustomTooltip
+                            trigger={
+                              <QuestionMarkIcon className="h-4 w-4 rounded-full bg-slate-200 p-1 text-slate-600" />
+                            }
+                          >
+                            <div className="text-xs text-slate-700">
+                              Freezing attention forces the attention pattern to be what it was in the original case,
+                              with no steering.
+                            </div>
+                          </CustomTooltip>
                         </div>
                         <input
                           onChange={(e) => {
