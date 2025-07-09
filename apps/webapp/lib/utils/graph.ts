@@ -259,21 +259,20 @@ export const generateGraphAndUploadToS3 = async (
   return json;
 };
 
+export const SteerLogitFeatureSchema = yup.object({
+  layer: yup.number().required('Layer is required'),
+  index: yup.number().required('Index is required'),
+  start_position: yup.number().required('Start position is required'),
+  delta: yup.number().nullable(),
+  ablate: yup.boolean().required('Ablate is required'),
+});
+
+export type SteerLogitFeature = yup.InferType<typeof SteerLogitFeatureSchema>;
+
 export const SteerLogitsRequestSchema = yup.object({
   modelId: yup.string().required('Model ID is required'),
   prompt: yup.string().required('Prompt is required'),
-  features: yup
-    .array()
-    .of(
-      yup.object({
-        layer: yup.number().required('Layer is required'),
-        position: yup.number().default(-1), // -1 = last position
-        index: yup.number().required('Index is required'),
-        ablate: yup.boolean().default(false),
-        delta: yup.number().nullable(),
-      }),
-    )
-    .required('Features are required'),
+  features: yup.array().of(SteerLogitFeatureSchema).required('Features are required'),
   nTokens: yup.number().default(STEER_N_COMPLETION_TOKENS).min(1).max(STEER_N_COMPLETION_TOKENS_MAX),
   topK: yup.number().default(STEER_TOPK_LOGITS).min(0).max(STEER_TOPK_LOGITS_MAX),
   freezeAttention: yup.boolean().default(STEER_FREEZE_ATTENTION),
@@ -322,7 +321,7 @@ export type SteerResponse = yup.InferType<typeof SteerResponseSchema>;
 export const steerLogits = async (
   modelId: string,
   prompt: string,
-  features: any,
+  features: SteerLogitFeature[],
   nTokens: number,
   topK: number,
   freezeAttention: boolean,

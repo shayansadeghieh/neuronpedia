@@ -6,6 +6,7 @@ import { STEER_FORCE_ALLOW_INSTRUCT_MODELS } from '../env';
 export const STEER_N_COMPLETION_TOKENS = 64;
 export const STEER_N_COMPLETION_TOKENS_GRAPH = 10;
 export const STEER_N_COMPLETION_TOKENS_THINKING = 512;
+export const STEER_N_COMPLETION_TOKENS_GRAPH_MAX = 20;
 export const STEER_N_COMPLETION_TOKENS_MAX = 128;
 export const STEER_N_COMPLETION_TOKENS_MAX_THINKING = 768;
 export const STEER_TEMPERATURE = 0.5;
@@ -25,7 +26,7 @@ export const STEER_SEED = 16;
 export const STEER_METHOD = NPSteerMethod.SimpleAdditive;
 export const STEER_TOPK_LOGITS = 5;
 export const STEER_TOPK_LOGITS_MAX = 10;
-export const STEER_FREEZE_ATTENTION = false;
+export const STEER_FREEZE_ATTENTION = true;
 
 export function replaceSteerModelIdIfNeeded(modelId: string) {
   if (STEER_FORCE_ALLOW_INSTRUCT_MODELS.includes(modelId)) {
