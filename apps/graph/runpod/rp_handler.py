@@ -81,10 +81,10 @@ class ForwardPassRequest(BaseModel):
 
 class SteerFeature(BaseModel):
     layer: int
-    position: int
+    start_position: int
     index: int
-    ablate: bool = False
     delta: float | None = None
+    ablate: bool = False
 
 
 class SteerRequest(BaseModel):
@@ -96,7 +96,6 @@ class SteerRequest(BaseModel):
     temperature: float = 0.0
     freq_penalty: float = 0
     seed: int | None = None
-    # CHECK: does this do anything?
     freeze_attention: bool = False
     request_type: str = "steer"
 
@@ -234,34 +233,35 @@ def steer_handler(event):
         return {"error": str(e)}
 
     try:
-        print(f"Received steer request with input: {req_data}")
+        # we always set the feature's position itself to the last token
+        FEATURE_ORIG_POSITION = -1
+        # but for each feature we take in a start_position which we'll use for the open_ended_slice
+
+        # Validate that if ablate is True, delta must be None
+        for feature in req_data.features:
+            if feature.ablate and feature.delta is not None:
+                return {"error": "When ablate is True, delta must be None"}
+            if not feature.ablate and feature.delta is None:
+                return {"error": "When ablate is False, delta must be provided"}
+
+        print(f"Received steer request: {req_data}")
 
         _, activations = model.get_activations(req_data.prompt, sparse=True)
 
         sequence_length = len(model.tokenizer(req_data.prompt).input_ids)
-        original_feature_pos = sequence_length - 1
-        open_ended_slice = slice(original_feature_pos, None, None)
+        # original_feature_pos = sequence_length - 1
+        # open_ended_slice = slice(original_feature_pos, None, None)
 
-        # for all ablating, we set the activation to 0
-        ablate_features = [f for f in req_data.features if f.ablate]
-        print(f"Ablating features: {ablate_features}")
         open_ended_intervention_tuples = [
-            (f.layer, open_ended_slice, f.index, 0.0) for f in ablate_features
-        ]
-
-        # for all steering, we set the activation to the delta
-        steer_features = [f for f in req_data.features if not f.ablate]
-        print(f"Steering features: {steer_features}")
-        open_ended_intervention_tuples += [
             (
                 f.layer,
-                open_ended_slice,
+                slice(f.start_position, None, None),
                 f.index,
-                activations[(f.layer, f.position, f.index)] + f.delta
-                if f.delta is not None
-                else 0,
+                0
+                if f.ablate
+                else activations[(f.layer, FEATURE_ORIG_POSITION, f.index)] + f.delta,
             )
-            for f in steer_features
+            for f in req_data.features
         ]
 
         hooks, _ = model._get_feature_intervention_hooks(
@@ -320,17 +320,6 @@ def steer_handler(event):
         # get the logits at each step
         topk_default_by_token = []
         topk_steered_by_token = []
-        intervention_tuples = [
-            (
-                f.layer,
-                original_feature_pos,
-                f.index,
-                activations[(f.layer, f.position, f.index)] + f.delta
-                if f.delta is not None
-                else 0,
-            )
-            for f in req_data.features
-        ]
 
         with torch.inference_mode():
             # iterate through the tokens and get the logits
@@ -366,7 +355,9 @@ def steer_handler(event):
                     continue
                 combined_prompt = "".join(steered_tokenized[: i + 1])
                 new_logits, _ = model.feature_intervention(
-                    combined_prompt, intervention_tuples
+                    combined_prompt,
+                    open_ended_intervention_tuples,
+                    freeze_attention=req_data.freeze_attention,
                 )
                 # get the topk tokens
                 topk_steered = get_topk(new_logits, model.tokenizer, req_data.top_k)

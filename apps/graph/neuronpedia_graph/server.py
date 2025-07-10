@@ -144,10 +144,10 @@ class ForwardPassRequest(BaseModel):
 
 class SteerFeature(BaseModel):
     layer: int
-    position: int
+    start_position: int
     index: int
-    ablate: bool = False
     delta: float | None = None
+    ablate: bool = False
 
 
 class SteerRequest(BaseModel):
@@ -159,7 +159,6 @@ class SteerRequest(BaseModel):
     temperature: float = 0.0
     freq_penalty: float = 0
     seed: int | None = None
-    # CHECK: does this do anything?
     freeze_attention: bool = False
 
 
@@ -180,6 +179,10 @@ def get_topk(logits: torch.Tensor, tokenizer, k: int = 5):
 
 @app.post("/steer", dependencies=[Depends(verify_secret_key)])
 async def steer_handler(req: Request):
+    # we always set the feature's position itself to the last token
+    FEATURE_ORIG_POSITION = -1
+    # but for each feature we take in a start_position which we'll use for the open_ended_slice
+
     """Handle steer requests"""
     print("========== Steer Start ==========")
     print(
@@ -204,7 +207,7 @@ async def steer_handler(req: Request):
                 detail=f"Model '{req_data.model_id}' is not available. Only '{loaded_model_arg}' is currently loaded.",
             )
 
-        # Validate that if ablate is True, delta must be 0
+        # Validate that if ablate is True, delta must be None
         for feature in req_data.features:
             if feature.ablate and feature.delta is not None:
                 return JSONResponse(
@@ -222,32 +225,20 @@ async def steer_handler(req: Request):
         _, activations = model.get_activations(req_data.prompt, sparse=True)
 
         sequence_length = len(model.tokenizer(req_data.prompt).input_ids)
-        original_feature_pos = sequence_length - 1
-        open_ended_slice = slice(original_feature_pos, None, None)
 
-        # for all ablating, we set the activation to 0
-        ablate_features = [f for f in req_data.features if f.ablate]
-        print(f"Ablating features: {ablate_features}")
         open_ended_intervention_tuples = [
-            (f.layer, open_ended_slice, f.index, 0.0) for f in ablate_features
-        ]
-
-        # for all steering, we set the activation to the delta
-        steer_features = [f for f in req_data.features if not f.ablate]
-        print(f"Steering features: {steer_features}")
-        open_ended_intervention_tuples += [
             (
                 f.layer,
-                open_ended_slice,
+                slice(f.start_position, None, None),
                 f.index,
-                activations[(f.layer, f.position, f.index)] + f.delta
-                if f.delta is not None
-                else 0,
+                0
+                if f.ablate
+                else activations[(f.layer, FEATURE_ORIG_POSITION, f.index)] + f.delta,
             )
-            for f in steer_features
+            for f in req_data.features
         ]
 
-        hooks, _ = model._get_feature_intervention_hooks(
+        hooks, steered_logits, _ = model._get_feature_intervention_hooks(
             req_data.prompt,
             open_ended_intervention_tuples,
             freeze_attention=req_data.freeze_attention,
@@ -262,6 +253,7 @@ async def steer_handler(req: Request):
                 do_sample=True,
                 use_past_kv_cache=False,
                 verbose=False,
+                stop_at_eos=False,
                 max_new_tokens=req_data.n_tokens,
                 temperature=req_data.temperature,
                 freq_penalty=req_data.freq_penalty,
@@ -278,11 +270,15 @@ async def steer_handler(req: Request):
                     do_sample=True,
                     use_past_kv_cache=False,
                     verbose=False,
-                    max_new_tokens=req_data.n_tokens,
+                    stop_at_eos=False,
+                    max_new_tokens=req_data.n_tokens
+                    + 1,  # generate one more token to get the logits for the last token
                     temperature=req_data.temperature,
                     freq_penalty=req_data.freq_penalty,
                 )
             ]
+
+        steered_logits = steered_logits[0]
 
         default_generation = default_generations[0]
         steered_generation = steered_generations[0]
@@ -303,19 +299,10 @@ async def steer_handler(req: Request):
         # get the logits at each step
         topk_default_by_token = []
         topk_steered_by_token = []
-        intervention_tuples = [
-            (
-                f.layer,
-                original_feature_pos,
-                f.index,
-                activations[(f.layer, f.position, f.index)] + f.delta
-                if f.delta is not None
-                else 0,
-            )
-            for f in req_data.features
-        ]
 
         with torch.inference_mode():
+            default_logits = model(default_generation)
+
             # iterate through the tokens and get the logits
             for i in range(len(default_tokenized)):
                 # If we're still processing the original prompt tokens (before generation),
@@ -325,10 +312,10 @@ async def steer_handler(req: Request):
                         {"token": default_tokenized[i], "top_logits": []}
                     )
                     continue
-                combined_prompt = "".join(default_tokenized[: i + 1])
-                logits = model(combined_prompt)
                 # get the topk tokens
-                topk_default = get_topk(logits, model.tokenizer, req_data.top_k)
+                topk_default = get_topk(
+                    default_logits[:, : i + 2, :], model.tokenizer, req_data.top_k
+                )
                 # each topk default should be an object of token, prob
                 topk_default_by_token.append(
                     {
@@ -339,7 +326,9 @@ async def steer_handler(req: Request):
                         ],
                     }
                 )
-            for i in range(len(steered_tokenized)):
+            for i in range(
+                len(steered_tokenized) - 1
+            ):  # -1 because we generated one more token to get the logits for the last token
                 # If we're still processing the original prompt tokens (before generation),
                 # append a blank item since we're only interested in generated tokens
                 if i < sequence_length - 2:
@@ -347,12 +336,9 @@ async def steer_handler(req: Request):
                         {"token": steered_tokenized[i], "top_logits": []}
                     )
                     continue
-                combined_prompt = "".join(steered_tokenized[: i + 1])
-                new_logits, _ = model.feature_intervention(
-                    combined_prompt, intervention_tuples
+                topk_steered = get_topk(
+                    steered_logits[:, : i + 2, :], model.tokenizer, req_data.top_k
                 )
-                # get the topk tokens
-                topk_steered = get_topk(new_logits, model.tokenizer, req_data.top_k)
                 topk_steered_by_token.append(
                     {
                         "token": steered_tokenized[i],

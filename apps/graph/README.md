@@ -121,13 +121,13 @@ curl -X POST http://localhost:5004/steer \
         {
           "layer": 20,
           "index": 1454,
-          "position": -1,
+          "start_position": -1,
           "ablate": true
         },
         {
           "layer": 20,
           "index": 341,
-          "position": -1,
+          "start_position": -1,
           "delta": 150
         }
     ],
