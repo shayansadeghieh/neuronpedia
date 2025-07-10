@@ -314,7 +314,7 @@ function NodeToSteer({
                       setSteeredPositionFeatureDeltaByPosition(i, value[0]);
                     }}
                     // disabled={!findSelectedFeature(layer, index)}
-                    className={`group relative flex h-28 w-2 items-center justify-center overflow-visible ${
+                    className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
                       !findSteeredPositionFeatureByPosition(i) ? 'opacity-50 hover:opacity-70' : 'cursor-pointer'
                     }`}
                   >
@@ -377,7 +377,7 @@ function NodeToSteer({
                     setSteeredPositionFeatureDeltaSteerGeneratedTokens(value[0]);
                   }}
                   // disabled={!findSelectedFeature(layer, index)}
-                  className={`group relative flex h-28 w-2 items-center justify-center overflow-visible ${
+                  className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
                     !findSteeredPositionFeatureSteerGeneratedTokens() ? 'opacity-50 hover:opacity-70' : 'cursor-pointer'
                   }`}
                 >
