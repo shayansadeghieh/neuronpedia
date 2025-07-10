@@ -249,8 +249,6 @@ def steer_handler(event):
         _, activations = model.get_activations(req_data.prompt, sparse=True)
 
         sequence_length = len(model.tokenizer(req_data.prompt).input_ids)
-        # original_feature_pos = sequence_length - 1
-        # open_ended_slice = slice(original_feature_pos, None, None)
 
         open_ended_intervention_tuples = [
             (
@@ -264,7 +262,7 @@ def steer_handler(event):
             for f in req_data.features
         ]
 
-        hooks, _ = model._get_feature_intervention_hooks(
+        hooks, steered_logits, _ = model._get_feature_intervention_hooks(
             req_data.prompt,
             open_ended_intervention_tuples,
             freeze_attention=req_data.freeze_attention,
@@ -279,6 +277,7 @@ def steer_handler(event):
                 do_sample=True,
                 use_past_kv_cache=False,
                 verbose=False,
+                stop_at_eos=False,
                 max_new_tokens=req_data.n_tokens,
                 temperature=req_data.temperature,
                 freq_penalty=req_data.freq_penalty,
@@ -295,11 +294,15 @@ def steer_handler(event):
                     do_sample=True,
                     use_past_kv_cache=False,
                     verbose=False,
-                    max_new_tokens=req_data.n_tokens,
+                    stop_at_eos=False,
+                    max_new_tokens=req_data.n_tokens
+                    + 1,  # generate one more token to get the logits for the last token
                     temperature=req_data.temperature,
                     freq_penalty=req_data.freq_penalty,
                 )
             ]
+
+        steered_logits = steered_logits[0]
 
         default_generation = default_generations[0]
         steered_generation = steered_generations[0]
@@ -322,6 +325,8 @@ def steer_handler(event):
         topk_steered_by_token = []
 
         with torch.inference_mode():
+            default_logits = model(default_generation)
+
             # iterate through the tokens and get the logits
             for i in range(len(default_tokenized)):
                 # If we're still processing the original prompt tokens (before generation),
@@ -331,10 +336,10 @@ def steer_handler(event):
                         {"token": default_tokenized[i], "top_logits": []}
                     )
                     continue
-                combined_prompt = "".join(default_tokenized[: i + 1])
-                logits = model(combined_prompt)
                 # get the topk tokens
-                topk_default = get_topk(logits, model.tokenizer, req_data.top_k)
+                topk_default = get_topk(
+                    default_logits[:, : i + 2, :], model.tokenizer, req_data.top_k
+                )
                 # each topk default should be an object of token, prob
                 topk_default_by_token.append(
                     {
@@ -345,7 +350,9 @@ def steer_handler(event):
                         ],
                     }
                 )
-            for i in range(len(steered_tokenized)):
+            for i in range(
+                len(steered_tokenized) - 1
+            ):  # -1 because we generated one more token to get the logits for the last token
                 # If we're still processing the original prompt tokens (before generation),
                 # append a blank item since we're only interested in generated tokens
                 if i < sequence_length - 2:
@@ -353,14 +360,9 @@ def steer_handler(event):
                         {"token": steered_tokenized[i], "top_logits": []}
                     )
                     continue
-                combined_prompt = "".join(steered_tokenized[: i + 1])
-                new_logits, _ = model.feature_intervention(
-                    combined_prompt,
-                    open_ended_intervention_tuples,
-                    freeze_attention=req_data.freeze_attention,
+                topk_steered = get_topk(
+                    steered_logits[:, : i + 2, :], model.tokenizer, req_data.top_k
                 )
-                # get the topk tokens
-                topk_steered = get_topk(new_logits, model.tokenizer, req_data.top_k)
                 topk_steered_by_token.append(
                     {
                         "token": steered_tokenized[i],
