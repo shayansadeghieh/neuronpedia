@@ -243,9 +243,10 @@ function NodeToSteer({
     if (firstDelta === undefined) {
       return false;
     }
-    for (let i = 0; i < selectedGraph.metadata.prompt_tokens.length; i++) {
+    for (let i = 0; i < selectedGraph.metadata.prompt_tokens.length; i += 1) {
       // don't check BOS
       if (BOS_TOKENS.includes(selectedGraph.metadata.prompt_tokens[i])) {
+        // eslint-disable-next-line no-continue
         continue;
       }
       const feature = findSteeredPositionFeatureByPosition(i);
@@ -268,9 +269,10 @@ function NodeToSteer({
       (f) => !(f.layer === layer && f.index === index && f.token_active_position === tokenActivePosition),
     );
     // then set this delta for every position
-    for (let i = 0; i < selectedGraph.metadata.prompt_tokens.length; i++) {
+    for (let i = 0; i < selectedGraph.metadata.prompt_tokens.length; i += 1) {
       // don't steer BOS
       if (BOS_TOKENS.includes(selectedGraph.metadata.prompt_tokens[i])) {
+        // eslint-disable-next-line no-continue
         continue;
       }
       newSteeredPositionFeatures.push({
@@ -532,7 +534,7 @@ function NodeToSteer({
                           <span className="text-[7px] font-bold">ABLATE</span>
                         ) : (
                           // @ts-ignore
-                          `${findSteeredPositionFeatureByPosition(i)?.delta ? (findSteeredPositionFeatureByPosition(i)?.delta > 0 ? '+' : '') : ''}${(findSteeredPositionFeatureByPosition(i)?.delta / getTopActivationValue()).toFixed(1) || '0'}×`
+                          `${findSteeredPositionFeatureByPosition(i)?.delta ? (findSteeredPositionFeatureByPosition(i)?.delta > 0 ? '+' : '') : ''}${((findSteeredPositionFeatureByPosition(i)?.delta || 0) / getTopActivationValue()).toFixed(1) || '0'}×`
                         )}
                       </Slider.Thumb>
                     </Slider.Root>
@@ -599,7 +601,7 @@ function NodeToSteer({
                       <span className="text-[7px] font-bold">ABLATE</span>
                     ) : (
                       // @ts-ignore
-                      `${findSteeredPositionFeatureSteerGeneratedTokens()?.delta ? (findSteeredPositionFeatureSteerGeneratedTokens()?.delta > 0 ? '+' : '') : ''}${(findSteeredPositionFeatureSteerGeneratedTokens()?.delta / getTopActivationValue()).toFixed(1) || '0'}×`
+                      `${findSteeredPositionFeatureSteerGeneratedTokens()?.delta ? (findSteeredPositionFeatureSteerGeneratedTokens()?.delta > 0 ? '+' : '') : ''}${((findSteeredPositionFeatureSteerGeneratedTokens()?.delta || 0) / getTopActivationValue()).toFixed(1) || '0'}×`
                     )}
                   </Slider.Thumb>
                 </Slider.Root>
