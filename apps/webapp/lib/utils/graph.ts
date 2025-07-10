@@ -262,7 +262,8 @@ export const generateGraphAndUploadToS3 = async (
 export const SteerLogitFeatureSchema = yup.object({
   layer: yup.number().required('Layer is required'),
   index: yup.number().required('Index is required'),
-  start_position: yup.number().required('Start position is required'),
+  position: yup.number().nullable(),
+  steer_generated_tokens: yup.boolean().required('Steer generated tokens is required'),
   delta: yup.number().nullable(),
   ablate: yup.boolean().required('Ablate is required'),
 });

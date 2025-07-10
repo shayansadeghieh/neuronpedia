@@ -18,15 +18,16 @@ import {
   STEER_N_COMPLETION_TOKENS_GRAPH,
   STEER_N_COMPLETION_TOKENS_GRAPH_MAX,
   STEER_SEED,
+  STEER_STRENGTH_GRAPH,
   STEER_STRENGTH_MAX,
   STEER_STRENGTH_MIN,
   STEER_TEMPERATURE_GRAPH,
   STEER_TEMPERATURE_MAX,
 } from '@/lib/utils/steer';
 import { NeuronWithPartialRelations } from '@/prisma/generated/zod';
-import { QuestionMarkIcon, ResetIcon } from '@radix-ui/react-icons';
+import { InfoCircledIcon, QuestionMarkIcon, ResetIcon } from '@radix-ui/react-icons';
 import * as Slider from '@radix-ui/react-slider';
-import { ArrowUpRightFromSquare, Joystick, MousePointerClick, Trash2 } from 'lucide-react';
+import { Joystick, MousePointerClick, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
   ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
@@ -90,25 +91,21 @@ function TokenTooltip({ logitsByToken }: { logitsByToken: SteerResponseLogitsByT
   );
 }
 
+// Each NodeToSteer is a single feature that shows the multiple positions it's steered at, and for each position, what strength.
 function NodeToSteer({
   node,
   label,
   selectedGraph,
-  steerLogitFeatures,
-  setSteerLogitFeatures,
+  steeredPositionFeatures,
+  setSteeredPositionFeatures,
 }: {
   node: CLTGraphNode;
   label: string;
   selectedGraph: CLTGraph;
-  steerLogitFeatures: SteerLogitFeature[];
-  setSteerLogitFeatures: (features: SteerLogitFeature[]) => void;
+  steeredPositionFeatures: SteerLogitFeature[];
+  setSteeredPositionFeatures: (features: SteerLogitFeature[]) => void;
 }) {
   const { setFeatureModalFeature, setFeatureModalOpen } = useGlobalContext();
-
-  function findSelectedFeature(layer: number, index: number) {
-    // find ANY feature with this layer and index
-    return steerLogitFeatures.find((f) => f.layer === layer && f.index === index);
-  }
 
   const modelId = ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
     selectedGraph?.metadata.scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
@@ -120,23 +117,71 @@ function NodeToSteer({
 
   const lastPosition = selectedGraph.metadata.prompt_tokens.length - 1;
 
-  function setFeatureDelta(featLayer: number, featIndex: number, delta: number) {
+  function findSteeredPositionFeature() {
+    return steeredPositionFeatures.find((f) => f.layer === layer && f.index === index);
+  }
+
+  function findSteeredPositionFeatureByPosition(position: number) {
+    return steeredPositionFeatures.find((f) => f.layer === layer && f.index === index && f.position === position);
+  }
+
+  function findSteeredPositionFeatureSteerGeneratedTokens() {
+    return steeredPositionFeatures.find((f) => f.layer === layer && f.index === index && f.steer_generated_tokens);
+  }
+
+  function removeSteeredPositionFeature() {
+    setSteeredPositionFeatures(steeredPositionFeatures.filter((f) => !(f.layer === layer && f.index === index)));
+  }
+
+  function setSteeredPositionFeatureDeltaSteerGeneratedTokens(delta: number) {
     const ablate = delta === 0;
     const newDelta = ablate ? null : delta;
-    const feature = findSelectedFeature(featLayer, featIndex);
-    // feature not found, add it
+    setSteeredPositionFeatures(
+      steeredPositionFeatures.map((f) =>
+        f.layer === layer && f.index === index && f.steer_generated_tokens ? { ...f, delta: newDelta, ablate } : f,
+      ),
+    );
+  }
+
+  function setSteeredPositionFeatureDeltaByPosition(
+    position: number,
+    delta: number,
+    add_steer_generated_tokens: boolean = false,
+  ) {
+    const ablate = delta === 0;
+    const newDelta = ablate ? null : delta;
+    const feature = findSteeredPositionFeatureByPosition(position);
+    // feature not currently steered, add the steer at the specified position and delta, and also make it steer generated tokens
     if (!feature) {
-      // add it to the array with last position
-      setSteerLogitFeatures([
-        ...steerLogitFeatures,
-        { layer: featLayer, index: featIndex, delta: newDelta, start_position: lastPosition, ablate },
+      setSteeredPositionFeatures([
+        ...steeredPositionFeatures,
+        {
+          layer,
+          index,
+          delta: newDelta,
+          position,
+          ablate,
+          steer_generated_tokens: false,
+        },
+        ...(add_steer_generated_tokens
+          ? [
+              {
+                layer,
+                index,
+                delta: newDelta,
+                position: null,
+                ablate,
+                steer_generated_tokens: true,
+              },
+            ]
+          : []),
       ]);
       return;
     }
-    // found the feature, update its multiplier
-    setSteerLogitFeatures(
-      steerLogitFeatures.map((f) =>
-        f.layer === featLayer && f.index === featIndex ? { ...f, delta: newDelta, ablate } : f,
+    // feature is currently steered at this position, update the delta
+    setSteeredPositionFeatures(
+      steeredPositionFeatures.map((f) =>
+        f.layer === layer && f.index === index && f.position === position ? { ...f, delta: newDelta, ablate } : f,
       ),
     );
   }
@@ -144,9 +189,34 @@ function NodeToSteer({
   const [hoveredFeature, setHoveredFeature] = useState<NeuronWithPartialRelations | undefined>();
 
   return (
-    <div key={node.nodeId} className="flex flex-col gap-y-1">
-      <div className="flex flex-row items-center gap-x-1 text-[10px]">
-        <div className="mr-1 flex flex-col gap-x-1 pl-0">
+    <div key={node.nodeId} className="flex flex-col gap-y-1 rounded-md px-2.5 py-0.5">
+      <div className="flex flex-row items-center gap-x-3 text-[10px]">
+        <Button
+          onClick={() => {
+            if (findSteeredPositionFeature()) {
+              removeSteeredPositionFeature();
+            } else {
+              setSteeredPositionFeatureDeltaByPosition(lastPosition, STEER_STRENGTH_GRAPH, true);
+            }
+          }}
+          className={`h-6 w-20 rounded-full border text-[9px] font-medium uppercase ${
+            findSteeredPositionFeature()
+              ? 'border-red-600 bg-red-50 text-red-600 hover:bg-red-100'
+              : 'border-sky-700 bg-white text-sky-800 hover:bg-sky-200'
+          }`}
+        >
+          {findSteeredPositionFeature() ? 'Remove' : 'Steer'}
+        </Button>
+        <div className="flex flex-1 basis-1/2 flex-col gap-y-1">
+          <div className="-mt-[1px] line-clamp-1 flex-1 text-xs" title={label}>
+            {label}
+          </div>
+          <div className="flex w-full flex-row justify-start text-[8.5px] font-medium leading-none text-slate-400 group-hover:text-slate-500">
+            ACTIVATION: {node.activation?.toFixed(2)}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-x-1 pl-0">
           <HoverCard openDelay={0} closeDelay={0}>
             <HoverCardTrigger asChild>
               <Button
@@ -193,13 +263,13 @@ function NodeToSteer({
                   }
                   setFeatureModalOpen(true);
                 }}
-                className="group relative mr-0 flex h-7 min-w-[93px] shrink-0 flex-row items-center justify-start whitespace-nowrap rounded-md bg-slate-200/70 px-0 py-[6px] text-[8.5px] font-medium leading-none text-slate-500 shadow-none hover:bg-sky-200 hover:text-sky-700"
+                className="group relative mr-0 flex h-7 min-w-[93px] shrink-0 flex-row items-center justify-start whitespace-nowrap rounded-md border border-transparent bg-slate-200 px-0 py-[6px] text-[8.5px] font-medium leading-none text-slate-500 shadow-none hover:border-sky-700 hover:bg-sky-200 hover:text-sky-700"
               >
-                <ArrowUpRightFromSquare className="absolute left-2 h-2.5 w-2.5 text-slate-500 group-hover:text-sky-700" />
-                <div className="flex flex-col items-start justify-start gap-y-[2px] pl-[25px] text-left font-mono font-medium">
+                <div className="flex flex-col items-start justify-start gap-y-[2px] pl-[11px] text-left font-mono font-medium">
                   <div className="">LAYER {layer}</div>
                   <div className="">INDEX {index}</div>
                 </div>
+                <InfoCircledIcon className="absolute right-2 h-3 w-3 text-slate-500 group-hover:text-sky-700" />
               </Button>
             </HoverCardTrigger>
             <HoverCardContent className="h-[386px] max-h-[386px] min-h-[386px] w-[512px] min-w-[512px] max-w-[512px] overflow-y-hidden border-0 bg-white p-0">
@@ -221,94 +291,143 @@ function NodeToSteer({
             </HoverCardContent>
           </HoverCard>
         </div>
-        <div className="flex flex-1 basis-1/2 flex-col gap-y-0.5">
-          <div className="-mt-[1px] line-clamp-1 flex-1 text-xs" title={label}>
-            {label}
-          </div>
-          <div className="flex w-full flex-row justify-start text-[8px] font-medium leading-none text-slate-400">
-            ACTIVATION: {node.activation?.toFixed(2)}
-          </div>
-        </div>
-        <div className="mt-0.5 flex w-full basis-1/2 flex-row items-center gap-x-3 px-3 text-sky-700">
-          <Slider.Root
-            defaultValue={[findSelectedFeature(layer, index)?.delta || 0]}
-            min={STEER_STRENGTH_MIN}
-            max={STEER_STRENGTH_MAX}
-            step={10}
-            value={[findSelectedFeature(layer, index)?.delta || 0]}
-            onValueChange={(value) => {
-              setFeatureDelta(layer, index, value[0]);
-            }}
-            // disabled={!findSelectedFeature(layer, index)}
-            className={`group relative flex h-5 w-full items-center overflow-visible ${
-              !findSelectedFeature(layer, index) ? 'opacity-50 hover:opacity-70' : 'cursor-pointer'
-            }`}
-          >
-            <Slider.Track className="relative h-[8px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
-              <Slider.Range className="absolute h-full rounded-full" />
-              <div className="mx-auto -mt-[9px] h-[24px] w-[1px] bg-sky-600 group-hover:bg-sky-700" />
-            </Slider.Track>
-            <Slider.Thumb
-              onClick={() => {
-                if (!findSelectedFeature(layer, index)) {
-                  setFeatureDelta(layer, index, 0);
-                }
-              }}
-              className="relative flex h-5 w-10 cursor-pointer items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
-            >
-              {!findSelectedFeature(layer, index) ? (
-                <MousePointerClick className="h-3.5 w-3.5" />
-              ) : findSelectedFeature(layer, index)?.ablate ? (
-                <span className="text-[7px] font-bold">ABLATE</span>
-              ) : (
-                // @ts-ignore
-                `${findSelectedFeature(layer, index)?.delta ? (findSelectedFeature(layer, index)?.delta > 0 ? '+' : '') : ''}${findSelectedFeature(layer, index)?.delta || '0'}`
-              )}
-            </Slider.Thumb>
-          </Slider.Root>
-          <Button
-            variant="ghost"
-            size="sm"
-            className={`-ml-1.5 flex h-6 w-6 min-w-6 rounded p-0 text-red-700 hover:bg-red-100 ${
-              findSelectedFeature(layer, index) ? 'text-red-700 hover:bg-red-100' : 'text-slate-400'
-            }`}
-            disabled={!findSelectedFeature(layer, index)}
-            onClick={() =>
-              setSteerLogitFeatures(steerLogitFeatures.filter((f) => !(f.layer === layer && f.index === index)))
-            }
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
       </div>
-      {findSelectedFeature(layer, index) && (
-        <div className="mb-2 ml-3 mt-0.5 flex flex-col">
-          <div className="mb-[3px] text-[8px] uppercase leading-none text-slate-400">
-            SELECT TOKEN TO START STEERING FROM
-          </div>
-          <div className="flex flex-wrap items-end gap-y-[3px]">
-            {selectedGraph?.metadata.prompt_tokens.map((token, i) => (
-              // eslint-disable-next-line
-              <span
-                key={i}
-                title="Click to start steering at this position."
-                className={`mr-[3px] cursor-pointer rounded border border-transparent px-[3px] py-[1px] font-mono text-[10px] text-slate-800 transition-all ${
-                  findSelectedFeature(layer, index) && i >= (findSelectedFeature(layer, index)?.start_position || 0)
-                    ? 'bg-sky-600 text-white hover:bg-sky-700'
-                    : 'bg-slate-200 hover:border-sky-600'
-                } ${BOS_TOKENS.includes(token) ? 'hidden' : ''}`}
-                onClick={() => {
-                  // update the feature's position
-                  setSteerLogitFeatures(
-                    steerLogitFeatures.map((f) =>
-                      f.layer === layer && f.index === index ? { ...f, start_position: i } : f,
-                    ),
-                  );
-                }}
+      {findSteeredPositionFeature() && (
+        <div className="mt-1.5 flex flex-row items-center gap-x-1">
+          <div className="mb-2 ml-4 mt-0.5 flex flex-col">
+            <div className="flex flex-wrap items-end gap-x-1.5">
+              {selectedGraph?.metadata.prompt_tokens.map((token, i) => (
+                <div
+                  key={`${node.nodeId}-${i}`}
+                  className={`min-w-9 flex-col items-center justify-center gap-y-1 ${
+                    BOS_TOKENS.includes(token) ? 'hidden' : 'flex'
+                  }`}
+                >
+                  <Slider.Root
+                    orientation="vertical"
+                    defaultValue={[0]}
+                    min={STEER_STRENGTH_MIN}
+                    max={STEER_STRENGTH_MAX}
+                    step={25}
+                    value={[findSteeredPositionFeatureByPosition(i)?.delta || 0]}
+                    onValueChange={(value) => {
+                      setSteeredPositionFeatureDeltaByPosition(i, value[0]);
+                    }}
+                    // disabled={!findSelectedFeature(layer, index)}
+                    className={`group relative flex h-28 w-2 items-center justify-center overflow-visible ${
+                      !findSteeredPositionFeatureByPosition(i) ? 'opacity-50 hover:opacity-70' : 'cursor-pointer'
+                    }`}
+                  >
+                    <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
+                      <Slider.Range className="absolute h-full rounded-full" />
+                      {/* <div className="absolute -left-1 top-1/2 h-[1px] w-[24px] -translate-y-1/2 bg-sky-600 group-hover:bg-sky-700" /> */}
+                    </Slider.Track>
+                    <Slider.Thumb
+                      onClick={() => {
+                        if (!findSteeredPositionFeatureByPosition(i)) {
+                          setSteeredPositionFeatureDeltaByPosition(i, 0);
+                        }
+                      }}
+                      className="relative flex h-5 w-9 cursor-pointer items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
+                    >
+                      {!findSteeredPositionFeatureByPosition(i) ? (
+                        <MousePointerClick className="h-3.5 w-3.5" />
+                      ) : findSteeredPositionFeatureByPosition(i)?.ablate ? (
+                        <span className="text-[7px] font-bold">ABLATE</span>
+                      ) : (
+                        // @ts-ignore
+                        `${findSteeredPositionFeatureByPosition(i)?.delta ? (findSteeredPositionFeatureByPosition(i)?.delta > 0 ? '+' : '') : ''}${findSteeredPositionFeatureByPosition(i)?.delta || '0'}`
+                      )}
+                    </Slider.Thumb>
+                  </Slider.Root>
+                  <div className="mt-0.5 h-5 rounded bg-slate-200 px-1 py-0.5 font-mono text-[8.5px] text-slate-700">
+                    {token.toString().replaceAll(' ', '\u00A0').replaceAll('\n', '↵')}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`flex h-6 w-6 min-w-6 rounded p-0 text-red-700 hover:bg-red-100 ${
+                      findSteeredPositionFeatureByPosition(i) ? 'text-red-700 hover:bg-red-100' : 'text-slate-400'
+                    }`}
+                    disabled={!findSteeredPositionFeatureByPosition(i)}
+                    onClick={() =>
+                      setSteeredPositionFeatures(
+                        steeredPositionFeatures.filter(
+                          (f) => !(f.layer === layer && f.index === index && f.position === i),
+                        ),
+                      )
+                    }
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+              <div
+                key={`${node.nodeId}-open-ended`}
+                className="flex min-w-9 flex-col items-center justify-center gap-y-1"
               >
-                {token.toString().replaceAll(' ', '\u00A0').replaceAll('\n', '↵')}
-              </span>
-            ))}
+                <Slider.Root
+                  orientation="vertical"
+                  defaultValue={[0]}
+                  min={STEER_STRENGTH_MIN}
+                  max={STEER_STRENGTH_MAX}
+                  step={25}
+                  value={[findSteeredPositionFeatureSteerGeneratedTokens()?.delta || 0]}
+                  onValueChange={(value) => {
+                    setSteeredPositionFeatureDeltaSteerGeneratedTokens(value[0]);
+                  }}
+                  // disabled={!findSelectedFeature(layer, index)}
+                  className={`group relative flex h-28 w-2 items-center justify-center overflow-visible ${
+                    !findSteeredPositionFeatureSteerGeneratedTokens() ? 'opacity-50 hover:opacity-70' : 'cursor-pointer'
+                  }`}
+                >
+                  <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
+                    <Slider.Range className="absolute h-full rounded-full" />
+                    {/* <div className="absolute -left-1 top-1/2 h-[1px] w-[24px] -translate-y-1/2 bg-sky-600 group-hover:bg-sky-700" /> */}
+                  </Slider.Track>
+                  <Slider.Thumb
+                    onClick={() => {
+                      if (!findSteeredPositionFeatureSteerGeneratedTokens()) {
+                        setSteeredPositionFeatureDeltaSteerGeneratedTokens(0);
+                      }
+                    }}
+                    className="relative flex h-5 w-9 cursor-pointer items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
+                  >
+                    {!findSteeredPositionFeatureSteerGeneratedTokens() ? (
+                      <MousePointerClick className="h-3.5 w-3.5" />
+                    ) : findSteeredPositionFeatureSteerGeneratedTokens()?.ablate ? (
+                      <span className="text-[7px] font-bold">ABLATE</span>
+                    ) : (
+                      // @ts-ignore
+                      `${findSteeredPositionFeatureSteerGeneratedTokens()?.delta ? (findSteeredPositionFeatureSteerGeneratedTokens()?.delta > 0 ? '+' : '') : ''}${findSteeredPositionFeatureSteerGeneratedTokens()?.delta || '0'}`
+                    )}
+                  </Slider.Thumb>
+                </Slider.Root>
+                <div className="mt-0.5 flex h-5 flex-col items-center justify-center gap-y-[1px] rounded px-1 py-0 text-center text-[8px] font-bold leading-none text-slate-400">
+                  <div>GENERATED</div>
+                  <div>TOKENS</div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`flex h-6 w-6 min-w-6 rounded p-0 text-red-700 hover:bg-red-100 ${
+                    findSteeredPositionFeatureSteerGeneratedTokens()
+                      ? 'text-red-700 hover:bg-red-100'
+                      : 'text-slate-400'
+                  }`}
+                  disabled={!findSteeredPositionFeatureSteerGeneratedTokens()}
+                  onClick={() =>
+                    setSteeredPositionFeatures(
+                      steeredPositionFeatures.filter(
+                        (f) => !(f.layer === layer && f.index === index && f.steer_generated_tokens),
+                      ),
+                    )
+                  }
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -321,7 +440,7 @@ export default function SteerModal() {
   const { visState, selectedMetadataGraph, selectedGraph, getOverrideClerpForNode } = useGraphContext();
   const [steerResult, setSteerResult] = useState<SteerResponse | undefined>();
   const [isSteering, setIsSteering] = useState(false);
-  const [steerLogitFeatures, setSteerLogitFeatures] = useState<SteerLogitFeature[]>([]);
+  const [steeredPositionFeatures, setSteeredPositionFeatures] = useState<SteerLogitFeature[]>([]);
   const [steerTokens, setSteerTokens] = useState(STEER_N_COMPLETION_TOKENS_GRAPH);
   const [temperature, setTemperature] = useState(STEER_TEMPERATURE_GRAPH);
   const [freqPenalty, setFreqPenalty] = useState(STEER_FREQUENCY_PENALTY_GRAPH);
@@ -332,7 +451,7 @@ export default function SteerModal() {
   const resetSteerSettings = () => {
     setSteerResult(undefined);
     setIsSteering(false);
-    setSteerLogitFeatures([]);
+    setSteeredPositionFeatures([]);
     setSteerTokens(STEER_N_COMPLETION_TOKENS_GRAPH);
     setTemperature(STEER_TEMPERATURE_GRAPH);
     setFreqPenalty(STEER_FREQUENCY_PENALTY_GRAPH);
@@ -348,12 +467,12 @@ export default function SteerModal() {
 
   return (
     <Dialog open={isSteerModalOpen} onOpenChange={setIsSteerModalOpen}>
-      <DialogContent className="flex h-[90vh] max-h-[90vh] min-h-[90vh] w-full max-w-[92vw] flex-col gap-y-3 overflow-hidden bg-slate-50 pt-4">
+      <DialogContent className="flex h-[90vh] max-h-[90vh] min-h-[90vh] w-full max-w-[95vw] flex-col gap-y-3 overflow-hidden bg-slate-50 pt-4">
         <DialogHeader className="flex w-full flex-col items-center justify-center">
           <DialogTitle className="flex w-full select-none flex-row items-center justify-center text-base text-slate-700">
             Steer/Intervention Mode (Beta)
           </DialogTitle>
-          {/* <div className="text-xs text-slate-500">{JSON.stringify(steerLogitFeatures, null, 2)}</div> */}
+          {/* <div className="text-xs text-slate-500">{JSON.stringify(steeredPositionFeatures, null, 2)}</div> */}
         </DialogHeader>
         <div className="h-full max-h-full overflow-y-hidden">
           {selectedGraph ? (
@@ -383,13 +502,13 @@ export default function SteerModal() {
                       <Button
                         onClick={() => {
                           // eslint-disable-next-line
-                          if (confirm('Are you sure you want to clear all features?')) {
-                            setSteerLogitFeatures([]);
+                          if (confirm('Are you sure you want to clear all steering?')) {
+                            setSteeredPositionFeatures([]);
                           }
                         }}
                         size="sm"
                         variant="outline"
-                        disabled={steerLogitFeatures.length === 0}
+                        disabled={steeredPositionFeatures.length === 0}
                         className="group aspect-square border-red-500 px-0 text-red-600 hover:border-red-600 hover:bg-red-100 disabled:border-slate-200 disabled:text-slate-400"
                       >
                         <Trash2 className="h-3.5 w-3.5 group-hover:text-red-700" />
@@ -404,12 +523,12 @@ export default function SteerModal() {
                         }
                         return (
                           <div key={supernode.join('-')} className="mb-2 rounded-md bg-slate-50 px-4 py-3 pb-3.5">
-                            <div className="mb-2 flex w-full flex-row items-center justify-between gap-x-1.5">
+                            <div className="mb-2.5 flex w-full flex-row items-center justify-between gap-x-1.5">
                               <div className="flex flex-row items-end gap-x-1.5 text-[13px]">
                                 <div>{supernode[0]}</div>
                                 <span className="text-[8px] text-slate-400">SUPERNODE</span>
                               </div>
-                              <div className="-mb-1.5 flex basis-1/2 flex-row justify-between pl-[68px] pr-[44px]">
+                              {/* <div className="-mb-1.5 flex basis-1/2 flex-row justify-between pl-[68px] pr-[44px]">
                                 <div className="text-[8px] font-medium uppercase leading-none text-slate-400">
                                   ← negative
                                 </div>
@@ -419,9 +538,9 @@ export default function SteerModal() {
                                 <div className="text-[8px] font-medium uppercase leading-none text-slate-400">
                                   positive →
                                 </div>
-                              </div>
+                              </div> */}
                             </div>
-                            <div className="flex flex-col gap-y-1.5 pl-2">
+                            <div className="flex flex-col gap-y-0.5 pl-1">
                               {supernode.slice(1).map((id) => {
                                 const node = selectedGraph?.nodes.find((n) => n.nodeId === id);
                                 if (!node || !nodeTypeHasFeatureDetail(node)) {
@@ -433,8 +552,8 @@ export default function SteerModal() {
                                     node={node}
                                     label={getOverrideClerpForNode(node) || ''}
                                     selectedGraph={selectedGraph}
-                                    steerLogitFeatures={steerLogitFeatures}
-                                    setSteerLogitFeatures={setSteerLogitFeatures}
+                                    steeredPositionFeatures={steeredPositionFeatures}
+                                    setSteeredPositionFeatures={setSteeredPositionFeatures}
                                   />
                                 );
                               })}
@@ -450,7 +569,7 @@ export default function SteerModal() {
                             <div className="flex flex-row gap-x-1.5 text-[10px] text-slate-400">
                               NOT IN SUPERNODE GROUP
                             </div>
-                            <div className="-mb-1.5 flex basis-1/2 flex-row justify-between pl-[68px] pr-[44px]">
+                            {/* <div className="-mb-1.5 flex basis-1/2 flex-row justify-between pl-[68px] pr-[44px]">
                               <div className="text-[8px] font-medium uppercase leading-none text-slate-400">
                                 ← negative
                               </div>
@@ -458,7 +577,7 @@ export default function SteerModal() {
                               <div className="text-[8px] font-medium uppercase leading-none text-slate-400">
                                 positive →
                               </div>
-                            </div>
+                            </div> */}
                           </div>
                           <div className="flex flex-col gap-y-1.5 pl-2">
                             {visState.pinnedIds.map((id) => {
@@ -486,8 +605,8 @@ export default function SteerModal() {
                                   node={node}
                                   label={getOverrideClerpForNode(node) || ''}
                                   selectedGraph={selectedGraph}
-                                  steerLogitFeatures={steerLogitFeatures}
-                                  setSteerLogitFeatures={setSteerLogitFeatures}
+                                  steeredPositionFeatures={steeredPositionFeatures}
+                                  setSteeredPositionFeatures={setSteeredPositionFeatures}
                                 />
                               );
                             })}
@@ -643,7 +762,7 @@ export default function SteerModal() {
                         variant="emerald"
                         className="flex flex-1 flex-row gap-x-1.5 self-center text-xs font-bold uppercase"
                         onClick={() => {
-                          if (steerLogitFeatures.length === 0) {
+                          if (steeredPositionFeatures.length === 0) {
                             alert(
                               'Error: You haven\'t chosen any features to ablate or steer.\n\nUnder "Features to Steer", drag a feature\'s slider to the left to negatively steer it, to the right to positively steer it, or to the center to ablate it.',
                             );
@@ -655,7 +774,7 @@ export default function SteerModal() {
                           const requestBody: SteerLogitsRequest = {
                             modelId: selectedGraph?.metadata.scan,
                             prompt: selectedGraph?.metadata.prompt.replaceAll('<bos>', '') || '',
-                            features: steerLogitFeatures,
+                            features: steeredPositionFeatures,
                             nTokens: steerTokens,
                             topK: 5,
                             freezeAttention,

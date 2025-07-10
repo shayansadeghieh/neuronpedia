@@ -16,6 +16,7 @@ export const STEER_STRENGTH_MULTIPLIER = 1;
 export const STEER_STRENGTH_MULTIPLIER_MAX = 10;
 export const STEER_STRENGTH_MIN = -300;
 export const STEER_STRENGTH_MAX = 300;
+export const STEER_STRENGTH_GRAPH = 100;
 export const STEER_SPECIAL_TOKENS = true;
 export const STEER_FREQUENCY_PENALTY_GRAPH = 0;
 export const STEER_FREQUENCY_PENALTY = 1.0;
