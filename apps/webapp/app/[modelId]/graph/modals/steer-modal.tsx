@@ -118,7 +118,7 @@ function NodeToSteer({
 
   const tokenActivePosition = node.ctx_idx;
 
-  const lastPosition = selectedGraph.metadata.prompt_tokens.length - 1;
+  //   const lastPosition = selectedGraph.metadata.prompt_tokens.length - 1;
 
   function findSteeredPositionFeature() {
     return steeredPositionFeatures.find(
@@ -186,7 +186,7 @@ function NodeToSteer({
   function setSteeredPositionFeatureDeltaByPosition(
     position: number,
     delta: number,
-    addSteerGeneratedTokens: boolean = false,
+    // addSteerGeneratedTokens: boolean = false,
   ) {
     const ablate = delta === 0;
     const newDelta = ablate ? null : delta;
@@ -204,19 +204,19 @@ function NodeToSteer({
           steer_generated_tokens: false,
           token_active_position: tokenActivePosition,
         },
-        ...(addSteerGeneratedTokens
-          ? [
-              {
-                layer,
-                index,
-                delta: newDelta,
-                steer_position: null,
-                ablate,
-                steer_generated_tokens: true,
-                token_active_position: tokenActivePosition,
-              },
-            ]
-          : []),
+        // ...(addSteerGeneratedTokens
+        //   ? [
+        //       {
+        //         layer,
+        //         index,
+        //         delta: newDelta,
+        //         steer_position: null,
+        //         ablate,
+        //         steer_generated_tokens: true,
+        //         token_active_position: tokenActivePosition,
+        //       },
+        //     ]
+        //   : []),
       ]);
       return;
     }
@@ -332,9 +332,8 @@ function NodeToSteer({
               removeSteeredPositionFeature();
             } else {
               setSteeredPositionFeatureDeltaByPosition(
-                lastPosition,
+                node.ctx_idx,
                 getDeltaToAddForMultiplier(STEER_STRENGTH_ADDED_MULTIPLIER_GRAPH),
-                true,
               );
             }
           }}
@@ -448,7 +447,7 @@ function NodeToSteer({
                   defaultValue={[0]}
                   min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
                   max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
-                  step={0.2}
+                  step={0.5}
                   value={(() => {
                     const delta = allTokensHaveSameDelta();
                     if (delta === null || delta === false) {
@@ -472,7 +471,7 @@ function NodeToSteer({
                         setAllTokensDelta(0);
                       }
                     }}
-                    className="relative flex h-5 w-9 cursor-pointer items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
+                    className="relative flex h-5 w-9 cursor-pointer select-none items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
                   >
                     {allTokensHaveSameDelta() === false ? (
                       <MousePointerClick className="h-3.5 w-3.5" />
@@ -508,7 +507,7 @@ function NodeToSteer({
                       defaultValue={[0]}
                       min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
                       max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
-                      step={0.2}
+                      step={0.5}
                       value={[(findSteeredPositionFeatureByPosition(i)?.delta || 0) / getTopActivationValue() || 0]}
                       onValueChange={(value) => {
                         setSteeredPositionFeatureDeltaByPosition(i, getDeltaToAddForMultiplier(value[0]));
@@ -526,7 +525,7 @@ function NodeToSteer({
                             setSteeredPositionFeatureDeltaByPosition(i, 0);
                           }
                         }}
-                        className="relative flex h-5 w-9 cursor-pointer items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
+                        className="relative flex h-5 w-9 cursor-pointer select-none items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
                       >
                         {!findSteeredPositionFeatureByPosition(i) ? (
                           <MousePointerClick className="h-3.5 w-3.5" />
@@ -573,7 +572,7 @@ function NodeToSteer({
                   defaultValue={[0]}
                   min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
                   max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
-                  step={0.25}
+                  step={0.5}
                   value={[
                     (findSteeredPositionFeatureSteerGeneratedTokens()?.delta || 0) / getTopActivationValue() || 0,
                   ]}
@@ -593,7 +592,7 @@ function NodeToSteer({
                         setSteeredPositionFeatureDeltaSteerGeneratedTokens(0);
                       }
                     }}
-                    className="relative flex h-5 w-9 cursor-pointer items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
+                    className="relative flex h-5 w-9 cursor-pointer select-none items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
                   >
                     {!findSteeredPositionFeatureSteerGeneratedTokens() ? (
                       <MousePointerClick className="h-3.5 w-3.5" />
@@ -681,11 +680,13 @@ export default function SteerModal() {
             <div className="grid h-full max-h-full w-full grid-cols-2 gap-x-4 gap-y-1">
               <div className="flex h-full max-h-full min-h-0 flex-1 flex-col gap-y-1 px-0.5 pb-0.5 text-xs">
                 <Card className="flex h-full max-h-full w-full flex-col bg-white">
-                  <CardHeader className="sticky top-0 z-10 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-6">
+                  <CardHeader className="sticky top-0 z-10 flex w-full flex-row items-center justify-between gap-x-5 rounded-t-xl bg-white pb-3 pt-6">
                     <div className="flex flex-col gap-y-1.5">
                       <CardTitle>Features to Steer</CardTitle>
                       <div className="text-xs text-slate-500">
-                        Drag sliders to negatively or positively steer the feature. Middle will ablate it.
+                        Click Steer on a feature, then drag slider to steer the feature at that position. Middle will
+                        ablate that feature. By default, this negatively steers the feature at the position where it was
+                        active.
                       </div>
                     </div>
                     <div className="flex flex-row gap-x-2">
