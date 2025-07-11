@@ -1,15 +1,29 @@
 import FeatureDashboard from '@/app/[modelId]/[layer]/[index]/feature-dashboard';
+import {
+  ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
+  CLTGraph,
+  CLTGraphNode,
+  getAnthropicFeatureIdFromLayerAndIndex,
+  getIndexFromAnthropicFeatureId,
+  getLayerFromAnthropicFeatureId,
+  MODEL_DIGITS_IN_FEATURE_ID,
+  MODEL_TO_SOURCESET_ID,
+  nodeTypeHasFeatureDetail,
+} from '@/app/[modelId]/graph/utils';
 import CustomTooltip from '@/components/custom-tooltip';
+import ExplanationsSearcher from '@/components/explanations-searcher';
 import { useGlobalContext } from '@/components/provider/global-provider';
 import { useGraphModalContext } from '@/components/provider/graph-modal-provider';
-import { useGraphContext } from '@/components/provider/graph-provider';
+import { PREFERRED_EXPLANATION_TYPE_NAME, useGraphContext } from '@/components/provider/graph-provider';
 import { Button } from '@/components/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/shadcn/dialog';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/shadcn/hover-card';
 import { LoadingSquare } from '@/components/svg/loading-square';
 import { BOS_TOKENS } from '@/lib/utils/activations';
+import { SearchExplanationsType } from '@/lib/utils/general';
 import { SteerLogitFeature, SteerLogitsRequest, SteerResponse, SteerResponseLogitsByToken } from '@/lib/utils/graph';
+import { getLayerNumFromSource } from '@/lib/utils/source';
 import {
   STEER_FREEZE_ATTENTION,
   STEER_FREQUENCY_PENALTY_GRAPH,
@@ -24,20 +38,11 @@ import {
   STEER_TEMPERATURE_GRAPH,
   STEER_TEMPERATURE_MAX,
 } from '@/lib/utils/steer';
-import { NeuronWithPartialRelations } from '@/prisma/generated/zod';
+import { ExplanationWithPartialRelations, NeuronWithPartialRelations } from '@/prisma/generated/zod';
 import { InfoCircledIcon, QuestionMarkIcon, ResetIcon } from '@radix-ui/react-icons';
 import * as Slider from '@radix-ui/react-slider';
 import { Joystick, MousePointerClick, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import {
-  ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
-  CLTGraph,
-  CLTGraphNode,
-  getIndexFromAnthropicFeatureId,
-  getLayerFromAnthropicFeatureId,
-  MODEL_TO_SOURCESET_ID,
-  nodeTypeHasFeatureDetail,
-} from '../utils';
 
 function TokenTooltip({ logitsByToken }: { logitsByToken: SteerResponseLogitsByToken }) {
   return (
@@ -642,11 +647,15 @@ export default function SteerModal() {
   const [seed, setSeed] = useState(STEER_SEED);
   const [randomSeed, setRandomSeed] = useState(true);
   const [freezeAttention, setFreezeAttention] = useState(STEER_FREEZE_ATTENTION);
+  const [showAddFeature, setShowAddFeature] = useState(false);
+  const [queuedAddFeature, setQueuedAddFeature] = useState<ExplanationWithPartialRelations | undefined>();
+  const [customSteerNodes, setCustomSteerNodes] = useState<CLTGraphNode[]>([]);
 
   const resetSteerSettings = () => {
     setSteerResult(undefined);
     setIsSteering(false);
     setSteeredPositionFeatures([]);
+    setCustomSteerNodes([]);
     setSteerTokens(STEER_N_COMPLETION_TOKENS_GRAPH);
     setTemperature(STEER_TEMPERATURE_GRAPH);
     setFreqPenalty(STEER_FREQUENCY_PENALTY_GRAPH);
@@ -669,32 +678,148 @@ export default function SteerModal() {
           </DialogTitle>
           {/* <div className="text-xs text-slate-500">{JSON.stringify(steeredPositionFeatures, null, 2)}</div> */}
         </DialogHeader>
-        <div className="h-full max-h-full overflow-y-hidden">
+        {showAddFeature && (
+          <div className="absolute left-0 top-0 z-10 flex h-full w-full flex-row items-center justify-center gap-y-1.5 px-8 py-3">
+            <div className="absolute left-0 top-0 h-full w-full bg-slate-400/20 backdrop-blur-lg" />
+            <div className="relative flex h-full max-h-[650px] w-full max-w-[1075px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white p-3 shadow-md">
+              <Button
+                variant="outline"
+                className="absolute left-3 top-3 bg-slate-100 text-[11px] font-normal uppercase text-slate-500 hover:bg-slate-200"
+                onClick={() => setShowAddFeature(false)}
+                size="sm"
+              >
+                Cancel
+              </Button>
+              <div className="mb-0 mt-0.5 text-center text-base font-bold text-slate-600">
+                {queuedAddFeature ? 'Select Feature Active Position' : 'Search for Features to Steer'}
+              </div>
+
+              {queuedAddFeature ? (
+                <div className="flex h-full max-h-full flex-1 flex-col items-center justify-center px-5 py-3 text-center text-base font-bold text-slate-500">
+                  <div className="mb-2 text-xs font-medium">
+                    To finish adding this feature for steering, click the token where this feature is active in the
+                    prompt.
+                  </div>
+                  <div className="mb-8 flex flex-wrap items-end justify-center">
+                    {selectedMetadataGraph?.promptTokens.map((token, index) => (
+                      <Button
+                        key={index}
+                        variant="default"
+                        size="sm"
+                        onClick={() => {
+                          setQueuedAddFeature(undefined);
+                          setShowAddFeature(false);
+                          if (queuedAddFeature.neuron?.explanations) {
+                            queuedAddFeature.neuron.explanations = [
+                              {
+                                typeName: PREFERRED_EXPLANATION_TYPE_NAME,
+                                description: queuedAddFeature.description,
+                              },
+                            ];
+                          }
+                          // make a fake CLTGraphNode so we can steer it
+                          const node: CLTGraphNode = {
+                            nodeId: `${queuedAddFeature.neuron?.modelId}-${queuedAddFeature.neuron?.layer}-${queuedAddFeature.neuron?.index}`,
+                            feature: getAnthropicFeatureIdFromLayerAndIndex(
+                              queuedAddFeature.neuron?.modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
+                              getLayerNumFromSource(queuedAddFeature.neuron?.layer || ''),
+                              parseInt(queuedAddFeature.neuron?.index || '0', 10),
+                            ),
+                            layer: getLayerNumFromSource(queuedAddFeature.neuron?.layer || '').toString(),
+                            ctx_idx: index,
+                            feature_type: 'cross layer transcoder',
+                            featureDetailNP: queuedAddFeature.neuron as NeuronWithPartialRelations,
+                            activation: 0,
+                            node_id: `${queuedAddFeature.neuron?.modelId}-${queuedAddFeature.neuron?.layer}-${queuedAddFeature.neuron?.index}`,
+                            token_prob: 0,
+                            is_target_logit: true,
+                            run_idx: 0,
+                            reverse_ctx_idx: 0,
+                            jsNodeId: `${queuedAddFeature.neuron?.modelId}-${queuedAddFeature.neuron?.layer}-${queuedAddFeature.neuron?.index}`,
+                            clerp: queuedAddFeature.description,
+                          };
+                          setCustomSteerNodes([...customSteerNodes, node]);
+                        }}
+                        className={`mx-0.5 bg-slate-200 px-1 font-mono text-[11px] text-base font-medium text-slate-600 shadow-none hover:bg-sky-200 hover:text-sky-700 ${
+                          BOS_TOKENS.includes(token) ? 'hidden' : ''
+                        }`}
+                      >
+                        {token.toString().replaceAll(' ', '\u00A0').replaceAll('\n', '↵')}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="mb-2 flex max-w-screen-sm flex-col text-center text-[10px] font-medium text-slate-400">
+                    <div className="mb-0">SELECTED FEATURE</div>
+                    <div className="mb-1 text-xs text-slate-500">{queuedAddFeature.description}</div>
+                    <FeatureDashboard
+                      key={`${queuedAddFeature?.neuron?.modelId}-${queuedAddFeature?.neuron?.layer}-${queuedAddFeature?.neuron?.index}`}
+                      initialNeuron={queuedAddFeature.neuron as NeuronWithPartialRelations}
+                      embed
+                      forceMiniStats
+                    />
+                  </div>
+                  {/* {JSON.stringify(queuedAddFeature, null, 2)} */}
+                </div>
+              ) : (
+                <div className="flex h-full max-h-full flex-1 flex-col">
+                  <ExplanationsSearcher
+                    initialModelId={
+                      ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
+                        selectedGraph?.metadata.scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
+                      ] || ''
+                    }
+                    defaultTab={SearchExplanationsType.BY_SOURCE}
+                    initialSourceSetName={
+                      MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID] || ''
+                    }
+                    showTabs={false}
+                    showModelSelector={false}
+                    allowSourceSetChange={false}
+                    isSteerSearch
+                    allowSteerSearchFullHeight
+                    onClickResultCallback={(result) => {
+                      setQueuedAddFeature(result);
+                      // addToSelectedFeatures({
+                      //   modelId: result.neuron?.modelId || '',
+                      //   layer: result.neuron?.layer || '',
+                      //   index: parseInt(result.neuron?.index || '0', 10),
+                      //   explanation: result.description || '',
+                      //   strength: result.neuron?.maxActApprox || 40,
+                      // });
+                      // setShowAddFeature(false);
+                    }}
+                    neverChangePageOnSearch
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        <div className="relative h-full max-h-full overflow-y-hidden">
           {selectedGraph ? (
             <div className="grid h-full max-h-full w-full grid-cols-2 gap-x-4 gap-y-1">
               <div className="flex h-full max-h-full min-h-0 flex-1 flex-col gap-y-1 px-0.5 pb-0.5 text-xs">
                 <Card className="flex h-full max-h-full w-full flex-col bg-white">
-                  <CardHeader className="sticky top-0 z-10 flex w-full flex-row items-center justify-between gap-x-5 rounded-t-xl bg-white pb-3 pt-6">
+                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between gap-x-5 rounded-t-xl bg-white pb-3 pt-6">
                     <div className="flex flex-col gap-y-1.5">
                       <CardTitle>Features to Steer</CardTitle>
                       <div className="text-xs text-slate-500">
-                        Click Steer on a feature, then drag slider to steer the feature at that position. Middle will
-                        ablate that feature. By default, this negatively steers the feature at the position where it was
-                        active.
+                        Click Steer on a feature. By default, this negatively steers the feature at the position where
+                        it was active, which should cause the steered output to make the feature &quot;disappear&quot;.
+                        You can also drag sliders to steer the feature at specific positions. Middle will ablate that
+                        feature.
                       </div>
                     </div>
                     <div className="flex flex-row gap-x-2">
                       <Button
                         onClick={() => {
-                          alert(
-                            "Oops, this isn't ready yet. Sorry! For now you can only steer features that you have pinned.",
-                          );
+                          setShowAddFeature(!showAddFeature);
                         }}
                         size="sm"
                         variant="outline"
-                        className="border-slate-300"
+                        className="w-28 border-slate-300"
                       >
-                        + Add Feature
+                        {showAddFeature ? 'Close' : '+ Add Feature'}
                       </Button>
                       <Button
                         onClick={() => {
@@ -705,14 +830,76 @@ export default function SteerModal() {
                         }}
                         size="sm"
                         variant="outline"
-                        disabled={steeredPositionFeatures.length === 0}
+                        disabled={steeredPositionFeatures.length === 0 || showAddFeature}
                         className="group aspect-square border-red-500 px-0 text-red-600 hover:border-red-600 hover:bg-red-100 disabled:border-slate-200 disabled:text-slate-400"
                       >
                         <Trash2 className="h-3.5 w-3.5 group-hover:text-red-700" />
                       </Button>
                     </div>
                   </CardHeader>
-                  <CardContent className="h-full overflow-y-scroll px-5">
+                  <CardContent className="relative h-full overflow-y-scroll px-5">
+                    {customSteerNodes.length > 0 && (
+                      <div className="mb-2 flex flex-col gap-y-1.5">
+                        <div className="rounded-md bg-slate-50 px-4 py-3 pb-3.5">
+                          <div className="mb-1.5 flex w-full flex-row items-center justify-between gap-x-1.5">
+                            <div className="flex flex-row gap-x-1.5 text-[10px] text-slate-400">ADDED FEATURES</div>
+                          </div>
+                          <div className="flex flex-col gap-y-1.5">
+                            {customSteerNodes.map((customNode) => (
+                              <div
+                                key={customNode.nodeId}
+                                className="flex flex-row items-center justify-between gap-x-1.5"
+                              >
+                                <NodeToSteer
+                                  node={customNode}
+                                  label={getOverrideClerpForNode(customNode) || ''}
+                                  selectedGraph={selectedGraph}
+                                  steeredPositionFeatures={steeredPositionFeatures}
+                                  setSteeredPositionFeatures={setSteeredPositionFeatures}
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`flex h-6 w-6 min-w-6 rounded p-0 text-red-700 hover:bg-red-100 ${
+                                    // if this is being steered, hide the trash can
+                                    steeredPositionFeatures.some(
+                                      (f) =>
+                                        f.layer ===
+                                          getLayerFromAnthropicFeatureId(
+                                            ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
+                                              selectedGraph?.metadata
+                                                .scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
+                                            ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
+                                            customNode.feature,
+                                          ) &&
+                                        f.index ===
+                                          getIndexFromAnthropicFeatureId(
+                                            ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
+                                              selectedGraph?.metadata
+                                                .scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
+                                            ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
+                                            customNode.feature,
+                                          ) &&
+                                        f.token_active_position === customNode.ctx_idx,
+                                    )
+                                      ? 'hidden'
+                                      : ''
+                                  }`}
+                                  onClick={() => {
+                                    setCustomSteerNodes(
+                                      customSteerNodes.filter((node) => node.nodeId !== customNode.nodeId),
+                                    );
+                                  }}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {visState.supernodes.length > 0 &&
                       visState.supernodes.map((supernode) => {
                         if (supernode.length === 0) {
@@ -788,7 +975,7 @@ export default function SteerModal() {
               </div>
               <div className="flex flex-1 flex-col gap-y-4 pb-0.5 pr-0.5">
                 <Card className="flex w-full flex-col bg-white">
-                  <CardHeader className="sticky top-0 z-10 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-6">
+                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-6">
                     <CardTitle>Settings & Steer</CardTitle>
                   </CardHeader>
                   <CardContent className="flex h-full flex-col justify-center px-5">
@@ -978,7 +1165,7 @@ export default function SteerModal() {
                   </CardContent>
                 </Card>
                 <Card className="flex h-full w-full flex-col bg-white">
-                  <CardHeader className="sticky top-0 z-10 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-5">
+                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-5">
                     <CardTitle>Results</CardTitle>
                   </CardHeader>
                   <CardContent className="flex h-full max-h-full flex-col px-6">

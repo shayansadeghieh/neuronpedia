@@ -45,8 +45,10 @@ export default function ExplanationsSearcher({
   defaultTab = SearchExplanationsType.BY_ALL,
   fromNav = false,
   showModelSelector = true,
+  allowSourceSetChange = true,
   hideResultDetails = false,
   isSteerSearch = false,
+  allowSteerSearchFullHeight = false,
   onClickResultCallback,
   filterToInferenceEnabled = false,
   neverChangePageOnSearch = false,
@@ -62,8 +64,10 @@ export default function ExplanationsSearcher({
   defaultTab?: SearchExplanationsType;
   fromNav?: boolean;
   showModelSelector?: boolean;
+  allowSourceSetChange?: boolean;
   hideResultDetails?: boolean;
   isSteerSearch?: boolean;
+  allowSteerSearchFullHeight?: boolean;
   onClickResultCallback?: (result: ExplanationWithPartialRelations) => void;
   filterToInferenceEnabled?: boolean;
   neverChangePageOnSearch?: boolean;
@@ -377,15 +381,17 @@ export default function ExplanationsSearcher({
                     />
                   </div>
                 )}
-                <SourceSetSelector
-                  modelId={modelId}
-                  sourceSet={sourceSet}
-                  filterToInferenceEnabled={filterToInferenceEnabled}
-                  sourceSetChangedCallback={sourceSetChanged}
-                  filterToRelease={filterToRelease}
-                  filterToOnlyVisible
-                  filterToOnlyHasDashboards
-                />
+                {allowSourceSetChange && (
+                  <SourceSetSelector
+                    modelId={modelId}
+                    sourceSet={sourceSet}
+                    filterToInferenceEnabled={filterToInferenceEnabled}
+                    sourceSetChangedCallback={sourceSetChanged}
+                    filterToRelease={filterToRelease}
+                    filterToOnlyVisible
+                    filterToOnlyHasDashboards
+                  />
+                )}
                 <div className="flex flex-col">
                   <DropdownMenu.Root>
                     <DropdownMenu.Trigger className="flex h-10 max-h-[40px] min-h-[40px] w-full flex-1 flex-row items-center justify-center gap-x-1 whitespace-pre rounded border border-slate-300 bg-white px-3 font-mono text-xs font-medium leading-tight text-sky-700 hover:bg-slate-50 focus:outline-none sm:pl-4 sm:pr-2">
@@ -410,7 +416,7 @@ export default function ExplanationsSearcher({
                     </DropdownMenu.Trigger>
                     <DropdownMenu.Portal>
                       <DropdownMenu.Content
-                        className="z-30 max-h-[305px] cursor-pointer overflow-scroll rounded-md border border-slate-300 bg-white text-[10px] font-medium text-sky-700 shadow"
+                        className="z-[100] max-h-[305px] cursor-pointer overflow-scroll rounded-md border border-slate-300 bg-white text-[10px] font-medium text-sky-700 shadow"
                         sideOffset={5}
                       >
                         <DropdownMenu.CheckboxItem
@@ -607,7 +613,9 @@ export default function ExplanationsSearcher({
               }
               hasMore={hasMore}
               className={`forceShowScrollBar relative flex flex-1 flex-col ${
-                isSteerSearch ? 'mt-1 h-full max-h-[250px] overflow-y-scroll px-1 py-1' : 'bg-white'
+                isSteerSearch
+                  ? `mt-1 h-full ${allowSteerSearchFullHeight ? 'max-h-[480px]' : 'max-h-[250px]'} overflow-y-scroll px-1 py-1`
+                  : 'bg-white'
               }`}
             >
               {loadedResults.map((result) => (
@@ -653,6 +661,23 @@ export default function ExplanationsSearcher({
                         result.neuron.activations[0] &&
                         result.neuron.activations[0].tokens && (
                           <div className="mt-2 flex w-full flex-row justify-between gap-x-2">
+                            {isSteerSearch && (
+                              <div className="flex flex-col items-center justify-center gap-x-2">
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="font-sans"
+                                  onClick={(e) => {
+                                    if (onClickResultCallback) {
+                                      e.preventDefault();
+                                      onClickResultCallback(result);
+                                    }
+                                  }}
+                                >
+                                  + Steer
+                                </Button>
+                              </div>
+                            )}
                             <button
                               type="button"
                               onClick={(e) => {
@@ -679,23 +704,7 @@ export default function ExplanationsSearcher({
                                 <div className="">INDEX {result.neuron?.index?.toUpperCase()}</div>
                               </div>
                             </button>
-                            {isSteerSearch ? (
-                              <div className="flex flex-col items-center justify-center gap-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="font-sans"
-                                  onClick={(e) => {
-                                    if (onClickResultCallback) {
-                                      e.preventDefault();
-                                      onClickResultCallback(result);
-                                    }
-                                  }}
-                                >
-                                  + Steer
-                                </Button>
-                              </div>
-                            ) : (
+                            {!isSteerSearch && (
                               <div className="flex flex-col items-center justify-center gap-x-2">
                                 <div className="whitespace-pre rounded bg-slate-100 text-slate-600">
                                   {replaceHtmlAnomalies(
