@@ -39,6 +39,8 @@ import { useCallback, useEffect, useState } from 'react';
 import NodeToSteer, { SteeredPositionIdentifier } from './steer-modal/node-to-steer';
 import TokenTooltip from './steer-modal/token-tooltip';
 
+const STEER_STRENGTH_ADDED_MULTIPLIER_CUSTOM_GRAPH = 1;
+
 export default function SteerModal() {
   const { isSteerModalOpen, setIsSteerModalOpen } = useGraphModalContext();
   const { visState, selectedMetadataGraph, selectedGraph, getOverrideClerpForNode } = useGraphContext();
@@ -70,6 +72,85 @@ export default function SteerModal() {
           f.token_active_position === identifier.tokenActivePosition,
       ) !== undefined,
     [steeredPositions],
+  );
+
+  const getTopActivationValue = useCallback((node: CLTGraphNode) => {
+    if (node.featureDetailNP && node.featureDetailNP?.activations && node.featureDetailNP.activations.length > 0) {
+      return node.featureDetailNP.activations[0].maxValue || 0;
+    }
+    return 0;
+  }, []);
+
+  // finds the top activation for this feature and multiplies it by the multipler.
+  const getDeltaToAddForMultiplier = useCallback(
+    (node: CLTGraphNode, multiplier: number) =>
+      // get the top activation
+      getTopActivationValue(node) * multiplier,
+    [getTopActivationValue],
+  );
+
+  const findSteeredPositionByPosition = useCallback(
+    (identifier: SteeredPositionIdentifier, position: number) =>
+      steeredPositions.find(
+        (f) =>
+          f.layer === identifier.layer &&
+          f.index === identifier.index &&
+          f.steer_position === position &&
+          f.token_active_position === identifier.tokenActivePosition,
+      ),
+    [steeredPositions],
+  );
+
+  const setSteeredPositionDeltaByPosition = useCallback(
+    (identifier: SteeredPositionIdentifier, position: number, delta: number) => {
+      const ablate = delta === 0;
+      const newDelta = ablate ? null : delta;
+      const feature = findSteeredPositionByPosition(identifier, position);
+      // feature not currently steered, add the steer at the specified position and delta, and also make it steer generated tokens
+      if (!feature) {
+        setSteeredPositions([
+          ...steeredPositions,
+          {
+            layer: identifier.layer,
+            index: identifier.index,
+            delta: newDelta,
+            steer_position: position,
+            ablate,
+            steer_generated_tokens: false,
+            token_active_position: identifier.tokenActivePosition,
+          },
+        ]);
+        return;
+      }
+      // feature is currently steered at this position, update the delta
+      setSteeredPositions(
+        steeredPositions.map((f) =>
+          f.layer === identifier.layer &&
+          f.index === identifier.index &&
+          f.steer_position === position &&
+          f.token_active_position === identifier.tokenActivePosition
+            ? { ...f, delta: newDelta, ablate }
+            : f,
+        ),
+      );
+    },
+    [findSteeredPositionByPosition, steeredPositions, setSteeredPositions],
+  );
+
+  const removeSteeredPosition = useCallback(
+    (identifier: SteeredPositionIdentifier) => {
+      setSteeredPositions(
+        steeredPositions.filter(
+          (f) =>
+            !(
+              f.layer === identifier.layer &&
+              f.index === identifier.index &&
+              f.token_active_position === identifier.tokenActivePosition
+            ),
+        ),
+      );
+    },
+    [steeredPositions, setSteeredPositions],
   );
 
   const resetSteerSettings = () => {
@@ -112,7 +193,7 @@ export default function SteerModal() {
           <DialogTitle className="flex w-full select-none flex-row items-center justify-center text-base text-slate-700">
             Steer/Intervention Mode (Beta)
           </DialogTitle>
-          {/* <div className="text-xs text-slate-500">{JSON.stringify(steeredPositionFeatures, null, 2)}</div> */}
+          {/* <div className="text-xs text-slate-500">{JSON.stringify(steeredPositions, null, 2)}</div> */}
         </DialogHeader>
         {showAddFeature && (
           <div className="absolute left-0 top-0 z-10 flex h-full w-full flex-row items-center justify-center gap-y-1.5 px-8 py-3">
@@ -132,9 +213,11 @@ export default function SteerModal() {
 
               {queuedAddFeature ? (
                 <div className="flex h-full max-h-full flex-1 flex-col items-center justify-center px-5 py-3 text-center text-base font-bold text-slate-500">
-                  <div className="mb-2 text-xs font-medium">
+                  <div className="mb-3 text-xs font-medium leading-loose">
                     To finish adding this feature for steering, click the token where this feature is active in the
                     prompt.
+                    <br />
+                    This feature will be steered positively at 1x on the selected position.
                   </div>
                   <div className="mb-8 flex flex-wrap items-end justify-center">
                     {selectedMetadataGraph?.promptTokens.map((token, index) => (
@@ -175,6 +258,17 @@ export default function SteerModal() {
                             clerp: queuedAddFeature.description,
                           };
                           setCustomSteerNodes([...customSteerNodes, node]);
+                          setSteeredPositions([
+                            ...steeredPositions,
+                            {
+                              ...makeNodeSteerIdentifier(node),
+                              delta: getDeltaToAddForMultiplier(node, STEER_STRENGTH_ADDED_MULTIPLIER_CUSTOM_GRAPH),
+                              ablate: false,
+                              steer_position: node.ctx_idx,
+                              steer_generated_tokens: false,
+                              token_active_position: node.ctx_idx,
+                            },
+                          ]);
                         }}
                         className={`mx-0.5 bg-slate-200 px-1 font-mono text-[11px] text-base font-medium text-slate-600 shadow-none hover:bg-sky-200 hover:text-sky-700 ${
                           BOS_TOKENS.includes(token) ? 'hidden' : ''
@@ -232,9 +326,8 @@ export default function SteerModal() {
                       <CardTitle>Features to Steer</CardTitle>
                       <div className="text-xs text-slate-500">
                         Click Steer on a feature. By default, this negatively steers the feature at the position where
-                        it was active, which should cause the steered output to make the feature &quot;disappear&quot;.
-                        You can also drag sliders to steer the feature at specific positions. Middle will ablate that
-                        feature.
+                        it was active, which should cause the steered output to make the feature less prominent. You can
+                        also drag sliders to steer the feature at specific positions. Middle will ablate that feature.
                       </div>
                     </div>
                     <div className="flex flex-row gap-x-2">
@@ -291,6 +384,11 @@ export default function SteerModal() {
                                   steeredPositions={steeredPositions}
                                   setSteeredPositions={setSteeredPositions}
                                   isSteered={isSteered}
+                                  findSteeredPositionByPosition={findSteeredPositionByPosition}
+                                  removeSteeredPosition={removeSteeredPosition}
+                                  setSteeredPositionDeltaByPosition={setSteeredPositionDeltaByPosition}
+                                  getDeltaToAddForMultiplier={getDeltaToAddForMultiplier}
+                                  getTopActivationValue={getTopActivationValue}
                                 />
                                 <Button
                                   variant="ghost"
@@ -365,6 +463,11 @@ export default function SteerModal() {
                                     steeredPositions={steeredPositions}
                                     setSteeredPositions={setSteeredPositions}
                                     isSteered={isSteered}
+                                    findSteeredPositionByPosition={findSteeredPositionByPosition}
+                                    removeSteeredPosition={removeSteeredPosition}
+                                    setSteeredPositionDeltaByPosition={setSteeredPositionDeltaByPosition}
+                                    getDeltaToAddForMultiplier={getDeltaToAddForMultiplier}
+                                    getTopActivationValue={getTopActivationValue}
                                   />
                                 );
                               })}
@@ -404,6 +507,11 @@ export default function SteerModal() {
                                   steeredPositions={steeredPositions}
                                   setSteeredPositions={setSteeredPositions}
                                   isSteered={isSteered}
+                                  findSteeredPositionByPosition={findSteeredPositionByPosition}
+                                  removeSteeredPosition={removeSteeredPosition}
+                                  setSteeredPositionDeltaByPosition={setSteeredPositionDeltaByPosition}
+                                  getDeltaToAddForMultiplier={getDeltaToAddForMultiplier}
+                                  getTopActivationValue={getTopActivationValue}
                                 />
                               );
                             })}

@@ -24,6 +24,8 @@ export type SteeredPositionIdentifier = {
   tokenActivePosition: number;
 };
 
+const STEER_MULTIPLIER_STEP = 0.1;
+
 // Each NodeToSteer is a single feature for a single active "original" token position.
 // Each node can have multiple positions that it's steered at.
 export default function NodeToSteer({
@@ -35,6 +37,11 @@ export default function NodeToSteer({
   steeredPositions,
   setSteeredPositions,
   isSteered,
+  findSteeredPositionByPosition,
+  removeSteeredPosition,
+  setSteeredPositionDeltaByPosition,
+  getDeltaToAddForMultiplier,
+  getTopActivationValue,
 }: {
   node: CLTGraphNode;
   sourceId: string;
@@ -44,20 +51,18 @@ export default function NodeToSteer({
   steeredPositions: SteerLogitFeature[];
   setSteeredPositions: (features: SteerLogitFeature[]) => void;
   isSteered: (identifier: SteeredPositionIdentifier) => boolean;
+  findSteeredPositionByPosition: (
+    identifier: SteeredPositionIdentifier,
+    position: number,
+  ) => SteerLogitFeature | undefined;
+  removeSteeredPosition: (identifier: SteeredPositionIdentifier) => void;
+  setSteeredPositionDeltaByPosition: (identifier: SteeredPositionIdentifier, position: number, delta: number) => void;
+  getDeltaToAddForMultiplier: (node: CLTGraphNode, multiplier: number) => number;
+  getTopActivationValue: (node: CLTGraphNode) => number;
 }) {
   const { setFeatureModalFeature, setFeatureModalOpen } = useGlobalContext();
   const scrollIntoViewRef = useRef<HTMLDivElement>(null);
   const [hoveredFeature, setHoveredFeature] = useState<NeuronWithPartialRelations | undefined>();
-
-  function findSteeredPositionByPosition(position: number) {
-    return steeredPositions.find(
-      (f) =>
-        f.layer === nodeSteerIdentifier.layer &&
-        f.index === nodeSteerIdentifier.index &&
-        f.steer_position === position &&
-        f.token_active_position === nodeSteerIdentifier.tokenActivePosition,
-    );
-  }
 
   function findSteeredPositionSteerGeneratedTokens() {
     return steeredPositions.find(
@@ -66,19 +71,6 @@ export default function NodeToSteer({
         f.index === nodeSteerIdentifier.index &&
         f.steer_generated_tokens &&
         f.token_active_position === nodeSteerIdentifier.tokenActivePosition,
-    );
-  }
-
-  function removeSteeredPosition() {
-    setSteeredPositions(
-      steeredPositions.filter(
-        (f) =>
-          !(
-            f.layer === nodeSteerIdentifier.layer &&
-            f.index === nodeSteerIdentifier.index &&
-            f.token_active_position === nodeSteerIdentifier.tokenActivePosition
-          ),
-      ),
     );
   }
 
@@ -111,39 +103,6 @@ export default function NodeToSteer({
     }
   }
 
-  function setSteeredPositionDeltaByPosition(position: number, delta: number) {
-    const ablate = delta === 0;
-    const newDelta = ablate ? null : delta;
-    const feature = findSteeredPositionByPosition(position);
-    // feature not currently steered, add the steer at the specified position and delta, and also make it steer generated tokens
-    if (!feature) {
-      setSteeredPositions([
-        ...steeredPositions,
-        {
-          layer: nodeSteerIdentifier.layer,
-          index: nodeSteerIdentifier.index,
-          delta: newDelta,
-          steer_position: position,
-          ablate,
-          steer_generated_tokens: false,
-          token_active_position: nodeSteerIdentifier.tokenActivePosition,
-        },
-      ]);
-      return;
-    }
-    // feature is currently steered at this position, update the delta
-    setSteeredPositions(
-      steeredPositions.map((f) =>
-        f.layer === nodeSteerIdentifier.layer &&
-        f.index === nodeSteerIdentifier.index &&
-        f.steer_position === position &&
-        f.token_active_position === nodeSteerIdentifier.tokenActivePosition
-          ? { ...f, delta: newDelta, ablate }
-          : f,
-      ),
-    );
-  }
-
   // number is the delta they all have in common, false means not all the same, null = ablate
   function allTokensHaveSameDelta(): number | false | null {
     if (steeredPositions.length <= 1) {
@@ -162,7 +121,7 @@ export default function NodeToSteer({
         // eslint-disable-next-line no-continue
         continue;
       }
-      const feature = findSteeredPositionByPosition(i);
+      const feature = findSteeredPositionByPosition(nodeSteerIdentifier, i);
       if (feature?.delta !== firstDelta) {
         return false;
       }
@@ -215,25 +174,28 @@ export default function NodeToSteer({
     setSteeredPositions(newSteeredPositionFeatures);
   }
 
-  function getTopActivationValue() {
-    if (node.featureDetailNP?.activations?.length && node.featureDetailNP.activations.length > 0) {
-      return node.featureDetailNP.activations[0].maxValue || 0;
-    }
-    return 0;
-  }
-
-  // finds the top activation for this feature and multiplies it by the multipler.
-  function getDeltaToAddForMultiplier(multiplier: number) {
-    // get the top activation
-    return getTopActivationValue() * multiplier;
-  }
-
   // Scroll to the position when the component mounts or when steered features change
   useEffect(() => {
     // for some reason the scroll doesn't set to the correct position if a timeout is not set
     setTimeout(() => {
       if (scrollIntoViewRef.current && isSteered(nodeSteerIdentifier)) {
-        scrollIntoViewRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        // Find the immediate parent container (the horizontal scroll container)
+        const parentContainer = scrollIntoViewRef.current.parentElement;
+        if (parentContainer) {
+          const elementRect = scrollIntoViewRef.current.getBoundingClientRect();
+          const parentRect = parentContainer.getBoundingClientRect();
+
+          // Calculate the scroll position to center the element in the parent
+          const scrollLeft =
+            parentContainer.scrollLeft +
+            (elementRect.left - parentRect.left) -
+            (parentRect.width - elementRect.width) / 2;
+
+          parentContainer.scrollTo({
+            left: scrollLeft,
+            behavior: 'smooth',
+          });
+        }
       }
     }, 1);
   }, [isSteered, nodeSteerIdentifier]);
@@ -244,11 +206,12 @@ export default function NodeToSteer({
         <Button
           onClick={() => {
             if (isSteered(nodeSteerIdentifier)) {
-              removeSteeredPosition();
+              removeSteeredPosition(nodeSteerIdentifier);
             } else {
               setSteeredPositionDeltaByPosition(
+                nodeSteerIdentifier,
                 node.ctx_idx,
-                getDeltaToAddForMultiplier(STEER_STRENGTH_ADDED_MULTIPLIER_GRAPH),
+                getDeltaToAddForMultiplier(node, STEER_STRENGTH_ADDED_MULTIPLIER_GRAPH),
               );
             }
           }}
@@ -362,16 +325,16 @@ export default function NodeToSteer({
                   defaultValue={[0]}
                   min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
                   max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
-                  step={0.1}
+                  step={STEER_MULTIPLIER_STEP}
                   value={(() => {
                     const delta = allTokensHaveSameDelta();
                     if (delta === null || delta === false) {
                       return [0];
                     }
-                    return [Number((delta / getTopActivationValue()).toFixed(1)) || 0];
+                    return [Number((delta / getTopActivationValue(node)).toFixed(1)) || 0];
                   })()}
                   onValueChange={(value) => {
-                    setAllTokensDelta(getDeltaToAddForMultiplier(value[0]));
+                    setAllTokensDelta(getDeltaToAddForMultiplier(node, value[0]));
                   }}
                   className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
                     allTokensHaveSameDelta() === false ? 'opacity-50 hover:opacity-70' : 'cursor-pointer'
@@ -394,7 +357,7 @@ export default function NodeToSteer({
                       <span className="text-[7px] font-bold">ABLATE</span>
                     ) : (
                       // @ts-ignore
-                      `${allTokensHaveSameDelta() ? (allTokensHaveSameDelta() > 0 ? '+' : '') : ''}${(allTokensHaveSameDelta() / getTopActivationValue()).toFixed(1) || '0'}×`
+                      `${allTokensHaveSameDelta() ? (allTokensHaveSameDelta() > 0 ? '+' : '') : ''}${(allTokensHaveSameDelta() / getTopActivationValue(node)).toFixed(1) || '0'}×`
                     )}
                   </Slider.Thumb>
                 </Slider.Root>
@@ -417,13 +380,22 @@ export default function NodeToSteer({
                       defaultValue={[0]}
                       min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
                       max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
-                      step={0.1}
-                      value={[(findSteeredPositionByPosition(i)?.delta || 0) / getTopActivationValue() || 0]}
+                      step={STEER_MULTIPLIER_STEP}
+                      value={[
+                        (findSteeredPositionByPosition(nodeSteerIdentifier, i)?.delta || 0) /
+                          getTopActivationValue(node) || 0,
+                      ]}
                       onValueChange={(value) => {
-                        setSteeredPositionDeltaByPosition(i, getDeltaToAddForMultiplier(value[0]));
+                        setSteeredPositionDeltaByPosition(
+                          nodeSteerIdentifier,
+                          i,
+                          getDeltaToAddForMultiplier(node, value[0]),
+                        );
                       }}
                       className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
-                        !findSteeredPositionByPosition(i) ? 'opacity-50 hover:opacity-70' : 'cursor-pointer'
+                        !findSteeredPositionByPosition(nodeSteerIdentifier, i)
+                          ? 'opacity-50 hover:opacity-70'
+                          : 'cursor-pointer'
                       }`}
                     >
                       <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
@@ -431,19 +403,19 @@ export default function NodeToSteer({
                       </Slider.Track>
                       <Slider.Thumb
                         onClick={() => {
-                          if (!findSteeredPositionByPosition(i)) {
-                            setSteeredPositionDeltaByPosition(i, 0);
+                          if (!findSteeredPositionByPosition(nodeSteerIdentifier, i)) {
+                            setSteeredPositionDeltaByPosition(nodeSteerIdentifier, i, 0);
                           }
                         }}
                         className="relative flex h-5 w-9 cursor-pointer select-none items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
                       >
-                        {!findSteeredPositionByPosition(i) ? (
+                        {!findSteeredPositionByPosition(nodeSteerIdentifier, i) ? (
                           <MousePointerClick className="h-3.5 w-3.5" />
-                        ) : findSteeredPositionByPosition(i)?.ablate ? (
+                        ) : findSteeredPositionByPosition(nodeSteerIdentifier, i)?.ablate ? (
                           <span className="text-[7px] font-bold">ABLATE</span>
                         ) : (
                           // @ts-ignore
-                          `${findSteeredPositionByPosition(i)?.delta ? (findSteeredPositionByPosition(i)?.delta > 0 ? '+' : '') : ''}${((findSteeredPositionByPosition(i)?.delta || 0) / getTopActivationValue()).toFixed(1) || '0'}×`
+                          `${findSteeredPositionByPosition(nodeSteerIdentifier, i)?.delta ? (findSteeredPositionByPosition(nodeSteerIdentifier, i)?.delta > 0 ? '+' : '') : ''}${((findSteeredPositionByPosition(nodeSteerIdentifier, i)?.delta || 0) / getTopActivationValue(node)).toFixed(1) || '0'}×`
                         )}
                       </Slider.Thumb>
                     </Slider.Root>
@@ -454,9 +426,11 @@ export default function NodeToSteer({
                       variant="ghost"
                       size="sm"
                       className={`flex h-6 w-6 min-w-6 rounded p-0 text-red-700 hover:bg-red-100 ${
-                        findSteeredPositionByPosition(i) ? 'text-red-700 hover:bg-red-100' : 'text-slate-400'
+                        findSteeredPositionByPosition(nodeSteerIdentifier, i)
+                          ? 'text-red-700 hover:bg-red-100'
+                          : 'text-slate-400'
                       }`}
-                      disabled={!findSteeredPositionByPosition(i)}
+                      disabled={!findSteeredPositionByPosition(nodeSteerIdentifier, i)}
                       onClick={() =>
                         setSteeredPositions(
                           steeredPositions.filter(
@@ -482,10 +456,10 @@ export default function NodeToSteer({
                   defaultValue={[0]}
                   min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
                   max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
-                  step={0.1}
-                  value={[(findSteeredPositionSteerGeneratedTokens()?.delta || 0) / getTopActivationValue() || 0]}
+                  step={STEER_MULTIPLIER_STEP}
+                  value={[(findSteeredPositionSteerGeneratedTokens()?.delta || 0) / getTopActivationValue(node) || 0]}
                   onValueChange={(value) => {
-                    setSteeredPositionDeltaSteerGeneratedTokens(getDeltaToAddForMultiplier(value[0]));
+                    setSteeredPositionDeltaSteerGeneratedTokens(getDeltaToAddForMultiplier(node, value[0]));
                   }}
                   className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
                     !findSteeredPositionSteerGeneratedTokens() ? 'opacity-50 hover:opacity-70' : 'cursor-pointer'
@@ -508,7 +482,7 @@ export default function NodeToSteer({
                       <span className="text-[7px] font-bold">ABLATE</span>
                     ) : (
                       // @ts-ignore
-                      `${findSteeredPositionSteerGeneratedTokens()?.delta ? (findSteeredPositionSteerGeneratedTokens()?.delta > 0 ? '+' : '') : ''}${((findSteeredPositionSteerGeneratedTokens()?.delta || 0) / getTopActivationValue()).toFixed(1) || '0'}×`
+                      `${findSteeredPositionSteerGeneratedTokens()?.delta ? (findSteeredPositionSteerGeneratedTokens()?.delta > 0 ? '+' : '') : ''}${((findSteeredPositionSteerGeneratedTokens()?.delta || 0) / getTopActivationValue(node)).toFixed(1) || '0'}×`
                     )}
                   </Slider.Thumb>
                 </Slider.Root>
