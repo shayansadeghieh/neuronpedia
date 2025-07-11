@@ -106,7 +106,7 @@ function NodeToSteer({
   setSteeredPositionFeatures: (features: SteerLogitFeature[]) => void;
 }) {
   const { setFeatureModalFeature, setFeatureModalOpen } = useGlobalContext();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollIntoViewRef = useRef<HTMLDivElement>(null);
 
   const modelId = ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
     selectedGraph?.metadata.scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
@@ -316,9 +316,8 @@ function NodeToSteer({
   useEffect(() => {
     // for some reason the scroll doesn't go all the way to the right if a timeout is not set
     setTimeout(() => {
-      if (scrollContainerRef.current && findSteeredPositionFeature()) {
-        scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
-        scrollContainerRef.current.style.opacity = '1';
+      if (scrollIntoViewRef.current && findSteeredPositionFeature()) {
+        scrollIntoViewRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     }, 1);
   }, [findSteeredPositionFeature()]);
@@ -488,16 +487,11 @@ function NodeToSteer({
                   <div>TOKENS</div>
                 </div>
               </div>
-              <div
-                ref={scrollContainerRef}
-                className="forceShowScrollBarHorizontal flex max-w-full flex-row items-end overflow-x-scroll px-2 py-2 pb-0.5"
-                style={{
-                  opacity: '0',
-                }}
-              >
+              <div className="forceShowScrollBarHorizontal flex max-w-full flex-row items-end overflow-x-scroll px-2 py-2 pb-0.5">
                 {selectedGraph?.metadata.prompt_tokens.map((token, i) => (
                   <div
                     key={`${node.nodeId}-${i}`}
+                    ref={node.ctx_idx === i ? scrollIntoViewRef : undefined}
                     className={`mx-1.5 min-w-fit flex-col items-center justify-center gap-y-1 ${
                       BOS_TOKENS.includes(token) ? 'hidden' : 'flex'
                     }`}
