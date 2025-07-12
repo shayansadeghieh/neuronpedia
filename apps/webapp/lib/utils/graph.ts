@@ -1,3 +1,4 @@
+import { ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID } from '@/app/[modelId]/graph/utils';
 import {
   GRAPH_RUNPOD_SECRET,
   GRAPH_RUNPOD_SERVER,
@@ -319,6 +320,13 @@ export const SteerResponseSchema = yup.object({
 });
 
 export type SteerResponse = yup.InferType<typeof SteerResponseSchema>;
+
+export type SteeredPositionIdentifier = {
+  modelId: keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID;
+  layer: number;
+  index: number;
+  tokenActivePosition: number;
+};
 
 export const steerLogits = async (
   modelId: string,

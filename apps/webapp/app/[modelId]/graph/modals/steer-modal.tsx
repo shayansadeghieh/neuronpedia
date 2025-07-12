@@ -1,3 +1,5 @@
+// TODO: we should use a context for this instead of passing all these functions around
+
 import FeatureDashboard from '@/app/[modelId]/[layer]/[index]/feature-dashboard';
 import {
   ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
@@ -19,27 +21,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/s
 import { LoadingSquare } from '@/components/svg/loading-square';
 import { BOS_TOKENS } from '@/lib/utils/activations';
 import { SearchExplanationsType } from '@/lib/utils/general';
-import { SteerLogitFeature, SteerLogitsRequest, SteerResponse } from '@/lib/utils/graph';
+import { SteeredPositionIdentifier, SteerLogitFeature, SteerLogitsRequest, SteerResponse } from '@/lib/utils/graph';
 import { getLayerNumFromSource } from '@/lib/utils/source';
 import {
   STEER_FREEZE_ATTENTION,
   STEER_FREQUENCY_PENALTY_GRAPH,
   STEER_FREQUENCY_PENALTY_MAX,
   STEER_FREQUENCY_PENALTY_MIN,
+  STEER_MULTIPLIER_STEP,
   STEER_N_COMPLETION_TOKENS_GRAPH,
   STEER_N_COMPLETION_TOKENS_GRAPH_MAX,
   STEER_SEED,
+  STEER_STRENGTH_ADDED_MULTIPLIER_CUSTOM_GRAPH,
+  STEER_STRENGTH_ADDED_MULTIPLIER_GRAPH,
+  STEER_STRENGTH_ADDED_MULTIPLIER_MAX,
+  STEER_STRENGTH_ADDED_MULTIPLIER_MIN,
   STEER_TEMPERATURE_GRAPH,
   STEER_TEMPERATURE_MAX,
 } from '@/lib/utils/steer';
 import { ExplanationWithPartialRelations, NeuronWithPartialRelations } from '@/prisma/generated/zod';
-import { QuestionMarkIcon, ResetIcon } from '@radix-ui/react-icons';
-import { Joystick, Trash2 } from 'lucide-react';
+import { EyeClosedIcon, EyeOpenIcon, QuestionMarkIcon, ResetIcon } from '@radix-ui/react-icons';
+import * as Slider from '@radix-ui/react-slider';
+import { Joystick, MousePointerClick, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import NodeToSteer, { SteeredPositionIdentifier } from './steer-modal/node-to-steer';
+import NodeToSteer from './steer-modal/node-to-steer';
 import TokenTooltip from './steer-modal/token-tooltip';
 
-const STEER_STRENGTH_ADDED_MULTIPLIER_CUSTOM_GRAPH = 1;
+// sometimes comparing the multipliers can be a bit off, so we allow a small tolerance
+const DELTA_COMPARISON_TOLERANCE = 0.1;
 
 export default function SteerModal() {
   const { isSteerModalOpen, setIsSteerModalOpen } = useGraphModalContext();
@@ -61,6 +70,25 @@ export default function SteerModal() {
       selectedGraph?.metadata.scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
     ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
   );
+  const [expandedSupernodeIndexes, setExpandedSupernodeIndexes] = useState<number[]>([]);
+
+  const getFeatureNodeForNodeId = (id: string): CLTGraphNode | null => {
+    const node = selectedGraph?.nodes.find((n) => n.nodeId === id);
+    if (!node || !nodeTypeHasFeatureDetail(node)) {
+      return null;
+    }
+    return node;
+  };
+
+  const makeNodeSteerIdentifier = (node: CLTGraphNode): SteeredPositionIdentifier => ({
+    modelId,
+    layer: getLayerFromAnthropicFeatureId(modelId, node.feature),
+    index: getIndexFromAnthropicFeatureId(modelId, node.feature),
+    tokenActivePosition: node.ctx_idx,
+  });
+
+  const makeNodeSourceId = (node: CLTGraphNode): string =>
+    `${getLayerFromAnthropicFeatureId(modelId, node.feature)}-${MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID]}`;
 
   // checks if a node (identified by layer, index, and token active position) is steered at all
   const isSteered = useCallback(
@@ -105,42 +133,50 @@ export default function SteerModal() {
     (identifier: SteeredPositionIdentifier, position: number, delta: number) => {
       const ablate = delta === 0;
       const newDelta = ablate ? null : delta;
-      const feature = findSteeredPositionByPosition(identifier, position);
-      // feature not currently steered, add the steer at the specified position and delta, and also make it steer generated tokens
-      if (!feature) {
-        setSteeredPositions([
-          ...steeredPositions,
-          {
-            layer: identifier.layer,
-            index: identifier.index,
-            delta: newDelta,
-            steer_position: position,
-            ablate,
-            steer_generated_tokens: false,
-            token_active_position: identifier.tokenActivePosition,
-          },
-        ]);
-        return;
-      }
-      // feature is currently steered at this position, update the delta
-      setSteeredPositions(
-        steeredPositions.map((f) =>
+
+      setSteeredPositions((prevSteeredPositions) => {
+        const feature = prevSteeredPositions.find(
+          (f) =>
+            f.layer === identifier.layer &&
+            f.index === identifier.index &&
+            f.steer_position === position &&
+            f.token_active_position === identifier.tokenActivePosition,
+        );
+
+        // feature not currently steered, add the steer at the specified position and delta, and also make it steer generated tokens
+        if (!feature) {
+          return [
+            ...prevSteeredPositions,
+            {
+              layer: identifier.layer,
+              index: identifier.index,
+              delta: newDelta,
+              steer_position: position,
+              ablate,
+              steer_generated_tokens: false,
+              token_active_position: identifier.tokenActivePosition,
+            },
+          ];
+        }
+
+        // feature is currently steered at this position, update the delta
+        return prevSteeredPositions.map((f) =>
           f.layer === identifier.layer &&
           f.index === identifier.index &&
           f.steer_position === position &&
           f.token_active_position === identifier.tokenActivePosition
             ? { ...f, delta: newDelta, ablate }
             : f,
-        ),
-      );
+        );
+      });
     },
-    [findSteeredPositionByPosition, steeredPositions, setSteeredPositions],
+    [setSteeredPositions],
   );
 
   const removeSteeredPosition = useCallback(
     (identifier: SteeredPositionIdentifier) => {
-      setSteeredPositions(
-        steeredPositions.filter(
+      setSteeredPositions((prevSteeredPositions) =>
+        prevSteeredPositions.filter(
           (f) =>
             !(
               f.layer === identifier.layer &&
@@ -150,14 +186,264 @@ export default function SteerModal() {
         ),
       );
     },
-    [steeredPositions, setSteeredPositions],
+    [setSteeredPositions],
   );
+
+  const findSteeredPositionSteerGeneratedTokens = (nodeSteerIdentifier: SteeredPositionIdentifier) =>
+    steeredPositions.find(
+      (f) =>
+        f.layer === nodeSteerIdentifier.layer &&
+        f.index === nodeSteerIdentifier.index &&
+        f.steer_generated_tokens &&
+        f.token_active_position === nodeSteerIdentifier.tokenActivePosition,
+    );
+
+  const setSteeredPositionDeltaSteerGeneratedTokens = (
+    nodeSteerIdentifier: SteeredPositionIdentifier,
+    delta: number,
+  ) => {
+    const ablate = delta === 0;
+    const newDelta = ablate ? null : delta;
+
+    setSteeredPositions((prevSteeredPositions) => {
+      const existingFeature = prevSteeredPositions.find(
+        (f) =>
+          f.layer === nodeSteerIdentifier.layer &&
+          f.index === nodeSteerIdentifier.index &&
+          f.steer_generated_tokens &&
+          f.token_active_position === nodeSteerIdentifier.tokenActivePosition,
+      );
+
+      if (existingFeature) {
+        return prevSteeredPositions.map((f) =>
+          f.layer === nodeSteerIdentifier.layer &&
+          f.index === nodeSteerIdentifier.index &&
+          f.steer_generated_tokens &&
+          f.token_active_position === nodeSteerIdentifier.tokenActivePosition
+            ? { ...f, delta: newDelta, ablate }
+            : f,
+        );
+      }
+      return [
+        ...prevSteeredPositions,
+        {
+          layer: nodeSteerIdentifier.layer,
+          index: nodeSteerIdentifier.index,
+          delta: newDelta,
+          ablate,
+          steer_generated_tokens: true,
+          token_active_position: nodeSteerIdentifier.tokenActivePosition,
+        },
+      ];
+    });
+  };
+
+  // number is the delta they all have in common, false means not all the same, null = ablate
+  const allTokensHaveSameDelta = (nodeSteerIdentifier: SteeredPositionIdentifier): number | false | null => {
+    if (steeredPositions.length <= 1 || !selectedGraph) {
+      return false;
+    }
+    // find the first delta for this feature at any position
+    const firstDelta = steeredPositions.find(
+      (f) => f.layer === nodeSteerIdentifier.layer && f.index === nodeSteerIdentifier.index,
+    )?.delta;
+    if (firstDelta === undefined) {
+      return false;
+    }
+    for (let i = 0; i < selectedGraph.metadata.prompt_tokens.length; i += 1) {
+      // don't check BOS
+      if (BOS_TOKENS.includes(selectedGraph.metadata.prompt_tokens[i])) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+      const feature = findSteeredPositionByPosition(nodeSteerIdentifier, i);
+      if (feature?.delta !== firstDelta) {
+        return false;
+      }
+    }
+    // check the "generated" too
+    const generatedFeature = findSteeredPositionSteerGeneratedTokens(nodeSteerIdentifier);
+    if (generatedFeature?.delta !== firstDelta) {
+      return false;
+    }
+    return firstDelta;
+  };
+
+  const setAllTokensDelta = (nodeSteerIdentifier: SteeredPositionIdentifier, delta: number) => {
+    if (!selectedGraph) {
+      return;
+    }
+
+    setSteeredPositions((prevSteeredPositions) => {
+      let newSteeredPositionFeatures = prevSteeredPositions;
+      // remove all steered positions for this node
+      newSteeredPositionFeatures = newSteeredPositionFeatures.filter(
+        (f) =>
+          !(
+            f.layer === nodeSteerIdentifier.layer &&
+            f.index === nodeSteerIdentifier.index &&
+            f.token_active_position === nodeSteerIdentifier.tokenActivePosition
+          ),
+      );
+      // then set this delta for every position
+      for (let i = 0; i < selectedGraph.metadata.prompt_tokens.length; i += 1) {
+        // don't steer BOS
+        if (BOS_TOKENS.includes(selectedGraph.metadata.prompt_tokens[i])) {
+          // eslint-disable-next-line no-continue
+          continue;
+        }
+        newSteeredPositionFeatures.push({
+          layer: nodeSteerIdentifier.layer,
+          index: nodeSteerIdentifier.index,
+          token_active_position: nodeSteerIdentifier.tokenActivePosition,
+          delta: delta === 0 ? null : delta,
+          ablate: delta === 0,
+          steer_position: i,
+          steer_generated_tokens: false,
+        });
+      }
+      // then add the "generated" too
+      newSteeredPositionFeatures.push({
+        layer: nodeSteerIdentifier.layer,
+        index: nodeSteerIdentifier.index,
+        delta: delta === 0 ? null : delta,
+        ablate: delta === 0,
+        steer_generated_tokens: true,
+        token_active_position: nodeSteerIdentifier.tokenActivePosition,
+      });
+      return newSteeredPositionFeatures;
+    });
+  };
+
+  const allFeaturesInSupernodeHaveSameMultiplier = (
+    supernode: string[],
+    position?: number,
+    steerGeneratedTokens?: boolean,
+  ): number | false | null => {
+    let toReturn: number | false | null | undefined;
+    // iterate through supernode - ignore first item bc that's the label
+    supernode.slice(1).forEach((id) => {
+      const node = getFeatureNodeForNodeId(id);
+      // ignore all nodes that don't have feature detail (eg mlp error nodes)
+      if (!node || !nodeTypeHasFeatureDetail(node)) {
+        return;
+      }
+      const nodeSteerIdentifier = makeNodeSteerIdentifier(node);
+      const delta = steerGeneratedTokens
+        ? findSteeredPositionSteerGeneratedTokens(nodeSteerIdentifier)?.delta
+        : position !== undefined
+          ? findSteeredPositionByPosition(nodeSteerIdentifier, position)?.delta
+          : allTokensHaveSameDelta(nodeSteerIdentifier);
+      if (delta === null) {
+        if (toReturn === undefined) {
+          toReturn = null;
+        } else if (toReturn !== null) {
+          toReturn = false;
+        }
+      } else if (delta === undefined) {
+        toReturn = false;
+      } else {
+        const multiplier = delta ? delta / getTopActivationValue(node) : 0;
+        if (toReturn === undefined) {
+          toReturn = multiplier;
+        } else if (
+          typeof toReturn === 'number' &&
+          typeof multiplier === 'number' &&
+          Math.abs(toReturn - multiplier) > DELTA_COMPARISON_TOLERANCE
+        ) {
+          toReturn = false;
+        }
+      }
+    });
+    if (toReturn === undefined) {
+      return false;
+    }
+    return toReturn;
+  };
+
+  const isAtLeastOneNodeInSupernodeSteered = (supernode: string[]) =>
+    supernode.some((id) => {
+      const node = getFeatureNodeForNodeId(id);
+      if (!node) {
+        return false;
+      }
+      return isSteered(makeNodeSteerIdentifier(node));
+    });
+
+  const setSteeredPositionMultiplierByPositionForSupernode = (
+    supernode: string[],
+    position: number,
+    delta: number,
+    steerGeneratedTokens?: boolean,
+  ) => {
+    supernode.slice(1).forEach((id) => {
+      const node = getFeatureNodeForNodeId(id);
+      if (node) {
+        if (steerGeneratedTokens) {
+          setSteeredPositionDeltaSteerGeneratedTokens(
+            makeNodeSteerIdentifier(node),
+            getDeltaToAddForMultiplier(node, delta),
+          );
+        } else {
+          setSteeredPositionDeltaByPosition(
+            makeNodeSteerIdentifier(node),
+            position,
+            getDeltaToAddForMultiplier(node, delta),
+          );
+        }
+      }
+    });
+  };
+
+  const findSteeredNodesInSupernodeAtPosition = (
+    supernode: string[],
+    position: number,
+    steerGeneratedTokens?: boolean,
+  ) => {
+    // find all nodes in steeredPositions that are in this supernode and have steer_position === position
+    const matchedNodes = steeredPositions.filter((f) => {
+      // check if the steered position is in this supernode
+      const nodesInSupernode = supernode
+        .slice(1)
+        .map((id) => getFeatureNodeForNodeId(id))
+        .filter((node) => node !== null);
+      if (nodesInSupernode.length === 0) {
+        return false;
+      }
+      if (steerGeneratedTokens) {
+        return nodesInSupernode.some(
+          (node) =>
+            f.layer === getLayerFromAnthropicFeatureId(modelId, node.feature) &&
+            f.index === getIndexFromAnthropicFeatureId(modelId, node.feature) &&
+            f.steer_generated_tokens &&
+            f.token_active_position === node.ctx_idx,
+        );
+      }
+      return nodesInSupernode.some(
+        (node) =>
+          f.layer === getLayerFromAnthropicFeatureId(modelId, node.feature) &&
+          f.index === getIndexFromAnthropicFeatureId(modelId, node.feature) &&
+          f.steer_position === position &&
+          f.token_active_position === node.ctx_idx,
+      );
+    });
+    return matchedNodes;
+  };
+
+  const lastSupernodeIsSteered = (supernode: string[]) => {
+    const lastNode = supernode[supernode.length - 1];
+    const node = getFeatureNodeForNodeId(lastNode);
+    if (!node) {
+      return false;
+    }
+    return isSteered(makeNodeSteerIdentifier(node));
+  };
 
   const resetSteerSettings = () => {
     setSteerResult(undefined);
     setIsSteering(false);
-    setSteeredPositions([]);
-    setCustomSteerNodes([]);
+    setSteeredPositions(() => []);
+    setCustomSteerNodes(() => []);
     setSteerTokens(STEER_N_COMPLETION_TOKENS_GRAPH);
     setTemperature(STEER_TEMPERATURE_GRAPH);
     setFreqPenalty(STEER_FREQUENCY_PENALTY_GRAPH);
@@ -168,6 +454,7 @@ export default function SteerModal() {
       ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
     );
     setRandomSeed(true);
+    setExpandedSupernodeIndexes([]);
     setFreezeAttention(STEER_FREEZE_ATTENTION);
   };
 
@@ -175,16 +462,6 @@ export default function SteerModal() {
     // reset everything when selected graph changes
     resetSteerSettings();
   }, [selectedGraph]);
-
-  const makeNodeSteerIdentifier = (node: CLTGraphNode): SteeredPositionIdentifier => ({
-    modelId,
-    layer: getLayerFromAnthropicFeatureId(modelId, node.feature),
-    index: getIndexFromAnthropicFeatureId(modelId, node.feature),
-    tokenActivePosition: node.ctx_idx,
-  });
-
-  const makeNodeSourceId = (node: CLTGraphNode): string =>
-    `${getLayerFromAnthropicFeatureId(modelId, node.feature)}-${MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID]}`;
 
   return (
     <Dialog open={isSteerModalOpen} onOpenChange={setIsSteerModalOpen}>
@@ -257,9 +534,9 @@ export default function SteerModal() {
                             jsNodeId: `${queuedAddFeature.neuron?.modelId}-${queuedAddFeature.neuron?.layer}-${queuedAddFeature.neuron?.index}`,
                             clerp: queuedAddFeature.description,
                           };
-                          setCustomSteerNodes([...customSteerNodes, node]);
-                          setSteeredPositions([
-                            ...steeredPositions,
+                          setCustomSteerNodes((prevCustomSteerNodes) => [...prevCustomSteerNodes, node]);
+                          setSteeredPositions((prevSteeredPositions) => [
+                            ...prevSteeredPositions,
                             {
                               ...makeNodeSteerIdentifier(node),
                               delta: getDeltaToAddForMultiplier(node, STEER_STRENGTH_ADDED_MULTIPLIER_CUSTOM_GRAPH),
@@ -326,8 +603,8 @@ export default function SteerModal() {
                       <CardTitle>Features to Steer</CardTitle>
                       <div className="text-xs text-slate-500">
                         Click Steer on a feature. By default, this negatively steers the feature at the position where
-                        it was active, which should cause the steered output to make the feature less prominent. You can
-                        also drag sliders to steer the feature at specific positions. Middle will ablate that feature.
+                        it was active. You can also drag the sliders to steer the feature at specific positions. Middle
+                        will ablate that feature.
                       </div>
                     </div>
                     <div className="flex flex-row gap-x-2">
@@ -345,7 +622,7 @@ export default function SteerModal() {
                         onClick={() => {
                           // eslint-disable-next-line
                           if (confirm('Are you sure you want to clear all steering?')) {
-                            setSteeredPositions([]);
+                            setSteeredPositions(() => []);
                           }
                         }}
                         size="sm"
@@ -377,6 +654,7 @@ export default function SteerModal() {
                                     index: getIndexFromAnthropicFeatureId(modelId, customNode.feature),
                                     tokenActivePosition: customNode.ctx_idx,
                                   }}
+                                  isCustomSteerNode
                                   sourceId={`${getLayerFromAnthropicFeatureId(modelId, customNode.feature)}-${MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID]}`}
                                   node={customNode}
                                   label={getOverrideClerpForNode(customNode) || ''}
@@ -389,6 +667,12 @@ export default function SteerModal() {
                                   setSteeredPositionDeltaByPosition={setSteeredPositionDeltaByPosition}
                                   getDeltaToAddForMultiplier={getDeltaToAddForMultiplier}
                                   getTopActivationValue={getTopActivationValue}
+                                  allTokensHaveSameDelta={allTokensHaveSameDelta}
+                                  findSteeredPositionSteerGeneratedTokens={findSteeredPositionSteerGeneratedTokens}
+                                  setSteeredPositionDeltaSteerGeneratedTokens={
+                                    setSteeredPositionDeltaSteerGeneratedTokens
+                                  }
+                                  setAllTokensDelta={setAllTokensDelta}
                                 />
                                 <Button
                                   variant="ghost"
@@ -419,8 +703,8 @@ export default function SteerModal() {
                                       : ''
                                   }`}
                                   onClick={() => {
-                                    setCustomSteerNodes(
-                                      customSteerNodes.filter((node) => node.nodeId !== customNode.nodeId),
+                                    setCustomSteerNodes((prevCustomSteerNodes) =>
+                                      prevCustomSteerNodes.filter((node) => node.nodeId !== customNode.nodeId),
                                     );
                                   }}
                                 >
@@ -434,22 +718,371 @@ export default function SteerModal() {
                     )}
 
                     {visState.supernodes.length > 0 &&
-                      visState.supernodes.map((supernode) => {
+                      visState.supernodes.map((supernode, supernodeIndex) => {
                         if (supernode.length === 0) {
                           return null;
                         }
                         return (
-                          <div key={supernode.join('-')} className="mb-2 rounded-md bg-slate-50 px-4 py-3 pb-3.5">
+                          <div
+                            key={supernode.join('-')}
+                            className="relative mb-2 rounded-md bg-slate-50 px-4 py-3 pb-3.5"
+                          >
                             <div className="mb-2.5 flex w-full flex-row items-center justify-between gap-x-1.5">
                               <div className="flex flex-row items-end gap-x-1.5 text-[13px]">
                                 <div>{supernode[0]}</div>
                                 <span className="text-[8px] text-slate-400">SUPERNODE</span>
                               </div>
                             </div>
+                            {isAtLeastOneNodeInSupernodeSteered(supernode) && lastSupernodeIsSteered(supernode) ? (
+                              <div className="absolute left-7 top-11 z-0 h-[calc(100%_-_246px)] w-[1px] bg-sky-700" />
+                            ) : (
+                              <div className="absolute left-7 top-11 z-0 h-[calc(100%_-_73px)] w-[1px] bg-sky-700" />
+                            )}
+
+                            <div className="mb-2 flex flex-row items-center justify-start gap-x-2">
+                              <Button
+                                onClick={() => {
+                                  if (isAtLeastOneNodeInSupernodeSteered(supernode)) {
+                                    // remove all nodes in supernode
+                                    supernode.forEach((id) => {
+                                      const node = getFeatureNodeForNodeId(id);
+                                      if (node) {
+                                        removeSteeredPosition(makeNodeSteerIdentifier(node));
+                                      }
+                                    });
+                                    // we did unsteer, so we hide the supernode controls
+                                    setExpandedSupernodeIndexes(
+                                      expandedSupernodeIndexes.filter((i) => i !== supernodeIndex),
+                                    );
+                                  } else {
+                                    // steer all nodes in supernode
+                                    supernode.forEach((id) => {
+                                      const node = getFeatureNodeForNodeId(id);
+                                      if (node) {
+                                        setSteeredPositionDeltaByPosition(
+                                          makeNodeSteerIdentifier(node),
+                                          node.ctx_idx,
+                                          getDeltaToAddForMultiplier(node, STEER_STRENGTH_ADDED_MULTIPLIER_GRAPH),
+                                        );
+                                      }
+                                    });
+                                    // we did expand, so we show the supernode controls
+                                    setExpandedSupernodeIndexes([...expandedSupernodeIndexes, supernodeIndex]);
+                                  }
+                                }}
+                                className={`relative z-10 h-6 w-24 rounded-full border text-[9px] font-medium uppercase ${
+                                  isAtLeastOneNodeInSupernodeSteered(supernode)
+                                    ? 'border-red-600 bg-red-50 text-red-600 hover:bg-red-100'
+                                    : 'border-sky-700 bg-white text-sky-800 hover:bg-sky-200'
+                                }`}
+                              >
+                                {isAtLeastOneNodeInSupernodeSteered(supernode) ? 'Unsteer All' : 'Steer All'}
+                              </Button>
+                              {isAtLeastOneNodeInSupernodeSteered(supernode) && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    if (expandedSupernodeIndexes.includes(supernodeIndex)) {
+                                      setExpandedSupernodeIndexes(
+                                        expandedSupernodeIndexes.filter((i) => i !== supernodeIndex),
+                                      );
+                                    } else {
+                                      setExpandedSupernodeIndexes([...expandedSupernodeIndexes, supernodeIndex]);
+                                    }
+                                  }}
+                                  className="flex h-6 w-[120px] flex-row items-center justify-center gap-x-1.5 rounded-full border-transparent bg-slate-200 px-0 py-0 text-[8.5px] uppercase text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-600"
+                                >
+                                  {expandedSupernodeIndexes.includes(supernodeIndex) ? (
+                                    <>
+                                      <EyeOpenIcon className="h-3 w-3" />
+                                      Group Controls
+                                    </>
+                                  ) : (
+                                    <>
+                                      <EyeClosedIcon className="h-3 w-3" />
+                                      Group Controls
+                                    </>
+                                  )}
+                                </Button>
+                              )}
+                            </div>
+
+                            {/* == start == steer the entire supernode ==  TODO: reduce duplicated code with nodeToSteer == */}
+                            {isAtLeastOneNodeInSupernodeSteered(supernode) &&
+                              expandedSupernodeIndexes.includes(supernodeIndex) && (
+                                <div className="flex max-w-full flex-1 flex-row items-start gap-x-1.5 pb-2 pl-6">
+                                  <div className="flex min-w-11 flex-col items-center justify-center gap-y-1 rounded bg-slate-200/50 py-2">
+                                    <Slider.Root
+                                      orientation="vertical"
+                                      defaultValue={[0]}
+                                      min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
+                                      max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
+                                      step={STEER_MULTIPLIER_STEP}
+                                      value={(() => {
+                                        const newMultiplier = allFeaturesInSupernodeHaveSameMultiplier(supernode);
+                                        const multiplier = newMultiplier || false;
+                                        if (multiplier === null || multiplier === false) {
+                                          return [0];
+                                        }
+                                        return [Number(multiplier.toFixed(1)) || 0];
+                                      })()}
+                                      onValueChange={(value) => {
+                                        // Apply the steering to all nodes in the supernode
+                                        supernode.slice(1).forEach((id) => {
+                                          const node = getFeatureNodeForNodeId(id);
+                                          if (node) {
+                                            setAllTokensDelta(
+                                              makeNodeSteerIdentifier(node),
+                                              getDeltaToAddForMultiplier(node, value[0]),
+                                            );
+                                          }
+                                        });
+                                      }}
+                                      className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode) === false ||
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode) === 0
+                                          ? 'opacity-50 hover:opacity-70'
+                                          : 'cursor-pointer'
+                                      }`}
+                                    >
+                                      <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
+                                        <Slider.Range className="absolute h-full rounded-full" />
+                                      </Slider.Track>
+                                      <Slider.Thumb
+                                        onClick={() => {
+                                          if (!allFeaturesInSupernodeHaveSameMultiplier(supernode)) {
+                                            supernode.forEach((id) => {
+                                              const node = getFeatureNodeForNodeId(id);
+                                              if (node) {
+                                                setAllTokensDelta(makeNodeSteerIdentifier(node), 0);
+                                              }
+                                            });
+                                          }
+                                        }}
+                                        className="relative flex h-5 w-9 cursor-pointer select-none items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
+                                      >
+                                        {allFeaturesInSupernodeHaveSameMultiplier(supernode) === false ||
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode) === 0 ? (
+                                          <MousePointerClick className="h-3.5 w-3.5" />
+                                        ) : allFeaturesInSupernodeHaveSameMultiplier(supernode) === null ? (
+                                          <span className="text-[7px] font-bold">ABLATE</span>
+                                        ) : (
+                                          // @ts-ignore
+                                          `${allFeaturesInSupernodeHaveSameMultiplier(supernode) ? (allFeaturesInSupernodeHaveSameMultiplier(supernode) > 0 ? '+' : '') : ''}${(allFeaturesInSupernodeHaveSameMultiplier(supernode) || 0).toFixed(1) || '0'}×`
+                                        )}
+                                      </Slider.Thumb>
+                                    </Slider.Root>
+                                    <div className="mt-0.5 flex h-5 flex-col items-center justify-center gap-y-[1px] rounded px-1 py-0 text-center text-[7px] font-medium leading-none text-slate-500">
+                                      <div>ALL</div>
+                                      <div>TOKENS</div>
+                                    </div>
+                                  </div>
+                                  <div className="forceShowScrollBarHorizontal flex max-w-full flex-row items-end overflow-x-scroll px-2 py-2 pb-0.5">
+                                    {selectedGraph?.metadata.prompt_tokens.map((token, i) => (
+                                      <div
+                                        key={`${token}-${i}`}
+                                        // ref={node.ctx_idx === i ? scrollIntoViewRef : undefined}
+                                        className={`mx-1.5 min-w-fit flex-col items-center justify-center gap-y-1 ${
+                                          BOS_TOKENS.includes(token) ? 'hidden' : 'flex'
+                                        }`}
+                                      >
+                                        <Slider.Root
+                                          orientation="vertical"
+                                          defaultValue={[0]}
+                                          min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
+                                          max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
+                                          step={STEER_MULTIPLIER_STEP}
+                                          value={[allFeaturesInSupernodeHaveSameMultiplier(supernode, i) || 0]}
+                                          onValueChange={(value) => {
+                                            setSteeredPositionMultiplierByPositionForSupernode(supernode, i, value[0]);
+                                          }}
+                                          className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
+                                            allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === false ||
+                                            allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === 0
+                                              ? 'opacity-50 hover:opacity-70'
+                                              : 'cursor-pointer'
+                                          }`}
+                                        >
+                                          <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
+                                            <Slider.Range className="absolute h-full rounded-full" />
+                                          </Slider.Track>
+                                          <Slider.Thumb
+                                            onClick={() => {
+                                              if (!allFeaturesInSupernodeHaveSameMultiplier(supernode, i)) {
+                                                supernode.slice(1).forEach((id) => {
+                                                  const node = getFeatureNodeForNodeId(id);
+                                                  if (node) {
+                                                    setSteeredPositionDeltaByPosition(
+                                                      makeNodeSteerIdentifier(node),
+                                                      i,
+                                                      0,
+                                                    );
+                                                  }
+                                                });
+                                              }
+                                            }}
+                                            className="relative flex h-5 w-9 cursor-pointer select-none items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
+                                          >
+                                            {allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === false ||
+                                            allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === 0 ? (
+                                              <MousePointerClick className="h-3.5 w-3.5" />
+                                            ) : allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === null ? (
+                                              <span className="text-[7px] font-bold">ABLATE</span>
+                                            ) : (
+                                              // @ts-ignore
+                                              `${allFeaturesInSupernodeHaveSameMultiplier(supernode, i) ? (allFeaturesInSupernodeHaveSameMultiplier(supernode, i) > 0 ? '+' : '') : ''}${(allFeaturesInSupernodeHaveSameMultiplier(supernode, i) || 0).toFixed(1) || '0'}×`
+                                            )}
+                                          </Slider.Thumb>
+                                        </Slider.Root>
+                                        <div className="mt-0.5 h-5 rounded bg-slate-200 px-1 py-0.5 font-mono text-[8.5px] text-slate-700">
+                                          {token.toString().replaceAll(' ', '\u00A0').replaceAll('\n', '↵')}
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className={`flex h-6 w-6 min-w-6 rounded p-0 ${
+                                            allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === false ||
+                                            allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === 0
+                                              ? 'text-slate-400'
+                                              : 'text-red-700 hover:bg-red-100'
+                                          }`}
+                                          disabled={
+                                            allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === false ||
+                                            allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === 0
+                                          }
+                                          onClick={() => {
+                                            const matchedNodes = findSteeredNodesInSupernodeAtPosition(supernode, i);
+                                            const newSteeredPositions = steeredPositions.filter((f) => {
+                                              if (
+                                                matchedNodes.some(
+                                                  (m) =>
+                                                    i === f.steer_position &&
+                                                    m.layer === f.layer &&
+                                                    m.index === f.index &&
+                                                    m.token_active_position === f.token_active_position,
+                                                )
+                                              ) {
+                                                return false;
+                                              }
+                                              return true;
+                                            });
+                                            setSteeredPositions(newSteeredPositions);
+                                          }}
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <div className="flex w-11 min-w-11 max-w-11 flex-col items-center justify-center gap-y-1 rounded bg-slate-200/50 py-2">
+                                    <Slider.Root
+                                      orientation="vertical"
+                                      defaultValue={[0]}
+                                      min={STEER_STRENGTH_ADDED_MULTIPLIER_MIN}
+                                      max={STEER_STRENGTH_ADDED_MULTIPLIER_MAX}
+                                      step={STEER_MULTIPLIER_STEP}
+                                      value={[
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) || 0,
+                                      ]}
+                                      onValueChange={(value) => {
+                                        // position (second arg) is ignored here
+                                        setSteeredPositionMultiplierByPositionForSupernode(
+                                          supernode,
+                                          0,
+                                          value[0],
+                                          true,
+                                        );
+                                      }}
+                                      className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) ===
+                                          false ||
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) === 0
+                                          ? 'opacity-50 hover:opacity-70'
+                                          : 'cursor-pointer'
+                                      }`}
+                                    >
+                                      <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
+                                        <Slider.Range className="absolute h-full rounded-full" />
+                                      </Slider.Track>
+                                      <Slider.Thumb
+                                        onClick={() => {
+                                          if (!allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true)) {
+                                            supernode.slice(1).forEach((id) => {
+                                              const node = getFeatureNodeForNodeId(id);
+                                              if (node) {
+                                                setSteeredPositionDeltaSteerGeneratedTokens(
+                                                  makeNodeSteerIdentifier(node),
+                                                  0,
+                                                );
+                                              }
+                                            });
+                                          }
+                                        }}
+                                        className="relative flex h-5 w-9 cursor-pointer select-none items-center justify-center overflow-visible rounded-full border border-sky-700 bg-white text-[10px] font-medium leading-none text-sky-700 shadow disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-100"
+                                      >
+                                        {allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) ===
+                                          false ||
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) === 0 ? (
+                                          <MousePointerClick className="h-3.5 w-3.5" />
+                                        ) : allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) ===
+                                          null ? (
+                                          <span className="text-[7px] font-bold">ABLATE</span>
+                                        ) : (
+                                          // @ts-ignore
+                                          `${allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) ? (allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) > 0 ? '+' : '') : ''}${(allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) || 0).toFixed(1) || '0'}×`
+                                        )}
+                                      </Slider.Thumb>
+                                    </Slider.Root>
+                                    <div className="mt-0.5 flex h-5 flex-col items-center justify-center gap-y-[1px] rounded px-1 py-0 text-center text-[7px] font-medium leading-none text-slate-500">
+                                      <div>NEW</div>
+                                      <div>TOKENS</div>
+                                    </div>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className={`flex h-6 w-6 min-w-6 rounded p-0 text-red-700 hover:bg-red-100 ${
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) ===
+                                          false ||
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) === 0
+                                          ? 'text-slate-400'
+                                          : 'text-red-700 hover:bg-red-100'
+                                      }`}
+                                      disabled={
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) ===
+                                          false ||
+                                        allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) === 0
+                                      }
+                                      onClick={() => {
+                                        const matchedNodes = findSteeredNodesInSupernodeAtPosition(supernode, 0, true);
+                                        const newSteeredPositions = steeredPositions.filter((f) => {
+                                          if (
+                                            matchedNodes.some(
+                                              (m) =>
+                                                f.steer_generated_tokens &&
+                                                m.layer === f.layer &&
+                                                m.index === f.index &&
+                                                m.token_active_position === f.token_active_position,
+                                            )
+                                          ) {
+                                            return false;
+                                          }
+                                          return true;
+                                        });
+                                        setSteeredPositions(newSteeredPositions);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
+                            {/* == end == steer the entire supernode == */}
+
                             <div className="flex flex-col gap-y-1.5">
                               {supernode.slice(1).map((id) => {
-                                const node = selectedGraph?.nodes.find((n) => n.nodeId === id);
-                                if (!node || !nodeTypeHasFeatureDetail(node)) {
+                                const node = getFeatureNodeForNodeId(id);
+                                if (!node) {
                                   return null;
                                 }
                                 return (
@@ -468,6 +1101,13 @@ export default function SteerModal() {
                                     setSteeredPositionDeltaByPosition={setSteeredPositionDeltaByPosition}
                                     getDeltaToAddForMultiplier={getDeltaToAddForMultiplier}
                                     getTopActivationValue={getTopActivationValue}
+                                    allTokensHaveSameDelta={allTokensHaveSameDelta}
+                                    findSteeredPositionSteerGeneratedTokens={findSteeredPositionSteerGeneratedTokens}
+                                    setSteeredPositionDeltaSteerGeneratedTokens={
+                                      setSteeredPositionDeltaSteerGeneratedTokens
+                                    }
+                                    setAllTokensDelta={setAllTokensDelta}
+                                    isInSupernode
                                   />
                                 );
                               })}
@@ -487,8 +1127,8 @@ export default function SteerModal() {
                           <div className="flex flex-col gap-y-1.5">
                             {visState.pinnedIds.map((id) => {
                               // find the node and ensure it has a feature detail
-                              const node = selectedGraph?.nodes.find((n) => n.nodeId === id);
-                              if (!node || !nodeTypeHasFeatureDetail(node)) {
+                              const node = getFeatureNodeForNodeId(id);
+                              if (!node) {
                                 return null;
                               }
                               // check if it's in a supernode
@@ -512,6 +1152,12 @@ export default function SteerModal() {
                                   setSteeredPositionDeltaByPosition={setSteeredPositionDeltaByPosition}
                                   getDeltaToAddForMultiplier={getDeltaToAddForMultiplier}
                                   getTopActivationValue={getTopActivationValue}
+                                  allTokensHaveSameDelta={allTokensHaveSameDelta}
+                                  findSteeredPositionSteerGeneratedTokens={findSteeredPositionSteerGeneratedTokens}
+                                  setSteeredPositionDeltaSteerGeneratedTokens={
+                                    setSteeredPositionDeltaSteerGeneratedTokens
+                                  }
+                                  setAllTokensDelta={setAllTokensDelta}
                                 />
                               );
                             })}
@@ -524,7 +1170,7 @@ export default function SteerModal() {
               </div>
               <div className="flex flex-1 flex-col gap-y-4 pb-0.5 pr-0.5">
                 <Card className="flex w-full flex-col bg-white">
-                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-6">
+                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-5">
                     <CardTitle>Settings & Steer</CardTitle>
                   </CardHeader>
                   <CardContent className="flex h-full flex-col justify-center px-5">
