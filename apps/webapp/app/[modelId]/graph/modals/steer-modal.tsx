@@ -770,7 +770,7 @@ export default function SteerModal() {
                                     setExpandedSupernodeIndexes([...expandedSupernodeIndexes, supernodeIndex]);
                                   }
                                 }}
-                                className={`relative z-10 h-6 w-24 rounded-full border text-[9px] font-medium uppercase ${
+                                className={`relative h-6 w-24 rounded-full border text-[9px] font-medium uppercase ${
                                   isAtLeastOneNodeInSupernodeSteered(supernode)
                                     ? 'border-red-600 bg-red-50 text-red-600 hover:bg-red-100'
                                     : 'border-sky-700 bg-white text-sky-800 hover:bg-sky-200'
@@ -811,7 +811,7 @@ export default function SteerModal() {
                             {/* == start == steer the entire supernode ==  TODO: reduce duplicated code with nodeToSteer == */}
                             {isAtLeastOneNodeInSupernodeSteered(supernode) &&
                               expandedSupernodeIndexes.includes(supernodeIndex) && (
-                                <div className="flex max-w-full flex-1 flex-row items-start gap-x-1.5 pb-2 pl-6">
+                                <div className="flex max-w-full flex-1 flex-row items-start gap-x-1.5 pb-1 pl-6">
                                   <div className="flex min-w-11 flex-col items-center justify-center gap-y-1 rounded bg-slate-200/50 py-2">
                                     <Slider.Root
                                       orientation="vertical"
