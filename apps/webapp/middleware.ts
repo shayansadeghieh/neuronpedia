@@ -10,7 +10,7 @@ const NORMAL_RATE_LIMITS = [
   { endpoint: '/api', limit: 25000 },
   { endpoint: '/api/activation/new', limit: 1000 },
   { endpoint: '/api/explanation/search', limit: 200 },
-  { endpoint: '/api/steer', limit: 300 },
+  { endpoint: '/api/steer', limit: 1000 },
   { endpoint: '/api/search-topk-by-token', limit: 500 },
   { endpoint: '/api/search-all', limit: 1600 },
   { endpoint: '/api/graph/generate', limit: 30 },
@@ -25,7 +25,7 @@ const HIGHER_RATE_LIMITS = [
   { endpoint: '/api', limit: 25000 },
   { endpoint: '/api/activation/new', limit: 1200 }, // higher
   { endpoint: '/api/explanation/search', limit: 2000 }, // higher
-  { endpoint: '/api/steer', limit: 500 }, // higher
+  { endpoint: '/api/steer', limit: 1000 }, // higher
   { endpoint: '/api/search-topk-by-token', limit: 1200 }, // higher
   { endpoint: '/api/search-all', limit: 1600 },
   { endpoint: '/api/graph/generate', limit: 320 }, // higher
