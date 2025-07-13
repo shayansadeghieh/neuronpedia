@@ -468,7 +468,7 @@ export default function SteerModal() {
       <DialogContent className="flex h-[90vh] max-h-[90vh] min-h-[90vh] w-full max-w-[95vw] flex-col gap-y-3 overflow-hidden bg-slate-50 pt-4">
         <DialogHeader className="flex w-full flex-col items-center justify-center">
           <DialogTitle className="flex w-full select-none flex-row items-center justify-center text-base text-slate-700">
-            Steer/Intervention Mode (Beta)
+            Steer Mode
           </DialogTitle>
           {/* <div className="text-xs text-slate-500">{JSON.stringify(steeredPositions, null, 2)}</div> */}
         </DialogHeader>
@@ -479,10 +479,16 @@ export default function SteerModal() {
               <Button
                 variant="outline"
                 className="absolute left-3 top-3 bg-slate-100 text-[11px] font-normal uppercase text-slate-500 hover:bg-slate-200"
-                onClick={() => setShowAddFeature(false)}
+                onClick={() => {
+                  if (queuedAddFeature) {
+                    setQueuedAddFeature(undefined);
+                  } else {
+                    setShowAddFeature(false);
+                  }
+                }}
                 size="sm"
               >
-                Cancel
+                {queuedAddFeature ? 'Back' : 'Cancel'}
               </Button>
               <div className="mb-0 mt-0.5 text-center text-base font-bold text-slate-600">
                 {queuedAddFeature ? 'Select Feature Active Position' : 'Search for Features to Steer'}
