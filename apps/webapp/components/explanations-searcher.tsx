@@ -655,6 +655,14 @@ export default function ExplanationsSearcher({
                           </span>
                         )}
                       </div>
+                      {isSteerSearch && (
+                        <span className="mt-2 text-center text-[10px] font-medium text-slate-500">
+                          Activation Density:{' '}
+                          {result.neuron?.frac_nonzero
+                            ? `${((result.neuron?.frac_nonzero || 0) * 100).toFixed(2)}%`
+                            : 'N/A'}
+                        </span>
+                      )}
                       {result.neuron &&
                         result.neuron.activations &&
                         result.neuron.activations.length > 0 &&
