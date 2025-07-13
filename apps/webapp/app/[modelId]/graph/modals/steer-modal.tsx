@@ -72,6 +72,27 @@ export default function SteerModal() {
   );
   const [expandedSupernodeIndexes, setExpandedSupernodeIndexes] = useState<number[]>([]);
 
+  const getSupernodesFromUrl = () => {
+    // TODO: we should be using visstate.supernodes but it isn't updating for some reason
+    const url = new URL(window.location.href);
+    const supernodes = url.searchParams.get('supernodes');
+    if (supernodes) {
+      try {
+        // Parse the supernodes parameter as a JSON array
+        const parsedSupernodes = JSON.parse(supernodes);
+
+        // Validate that it's an array of arrays
+        if (Array.isArray(parsedSupernodes) && parsedSupernodes.every(Array.isArray)) {
+          // Return the parsed supernodes array
+          return parsedSupernodes;
+        }
+      } catch (error) {
+        console.error('Error parsing supernodes from URL:', error);
+      }
+    }
+    return [];
+  };
+
   const getFeatureNodeForNodeId = (id: string): CLTGraphNode | null => {
     const node = selectedGraph?.nodes.find((n) => n.nodeId === id);
     if (!node || !nodeTypeHasFeatureDetail(node)) {
@@ -723,8 +744,8 @@ export default function SteerModal() {
                       </div>
                     )}
 
-                    {visState.supernodes.length > 0 &&
-                      visState.supernodes.map((supernode, supernodeIndex) => {
+                    {getSupernodesFromUrl().length > 0 &&
+                      getSupernodesFromUrl().map((supernode, supernodeIndex) => {
                         if (supernode.length === 0) {
                           return null;
                         }
@@ -1138,7 +1159,7 @@ export default function SteerModal() {
                                 return null;
                               }
                               // check if it's in a supernode
-                              const supernode = visState.supernodes.find((sn) => sn.includes(id));
+                              const supernode = getSupernodesFromUrl().find((sn) => sn.includes(id));
                               if (supernode) {
                                 return null;
                               }
