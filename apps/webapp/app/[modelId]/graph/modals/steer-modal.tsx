@@ -701,7 +701,12 @@ export default function SteerModal() {
                             const explanation =
                               n.explanations && n.explanations.length > 0
                                 ? n.explanations.find((e) => e.typeName === PREFERRED_EXPLANATION_TYPE_NAME)
+                                  ? n.explanations.find((e) => e.typeName === PREFERRED_EXPLANATION_TYPE_NAME)
+                                  : n.explanations.length > 0
+                                    ? n.explanations[0]
+                                    : null
                                 : null;
+
                             // remove all activations except the top 3
                             if (n.activations) {
                               // eslint-disable-next-line
@@ -728,6 +733,8 @@ export default function SteerModal() {
                               umap_cluster: explanation?.umap_cluster || 0,
                               umap_log_feature_sparsity: explanation?.umap_log_feature_sparsity || 0,
                             });
+                            setManualLayer('');
+                            setManualIndex('');
                           })
                           .catch((error) => {
                             alert('Error getting that feature. Double check the layer and index.');
