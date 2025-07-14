@@ -42,6 +42,7 @@ import {
 import { ExplanationWithPartialRelations, NeuronWithPartialRelations } from '@/prisma/generated/zod';
 import { EyeClosedIcon, EyeOpenIcon, QuestionMarkIcon, ResetIcon } from '@radix-ui/react-icons';
 import * as Slider from '@radix-ui/react-slider';
+import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { Joystick, MousePointerClick, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import NodeToSteer from './steer-modal/node-to-steer';
@@ -71,6 +72,9 @@ export default function SteerModal() {
     ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
   );
   const [expandedSupernodeIndexes, setExpandedSupernodeIndexes] = useState<number[]>([]);
+  const [addMode, setAddMode] = useState<'search' | 'manual'>('search');
+  const [manualLayer, setManualLayer] = useState<string>('');
+  const [manualIndex, setManualIndex] = useState<string>('');
 
   const getFeatureNodeForNodeId = (id: string): CLTGraphNode | null => {
     const node = selectedGraph?.nodes.find((n) => n.nodeId === id);
@@ -456,6 +460,9 @@ export default function SteerModal() {
     setRandomSeed(true);
     setExpandedSupernodeIndexes([]);
     setFreezeAttention(STEER_FREEZE_ATTENTION);
+    setAddMode('search');
+    setManualLayer('');
+    setManualIndex('');
   };
 
   useEffect(() => {
@@ -484,14 +491,49 @@ export default function SteerModal() {
                     setQueuedAddFeature(undefined);
                   } else {
                     setShowAddFeature(false);
+                    setManualLayer('');
+                    setManualIndex('');
                   }
                 }}
                 size="sm"
               >
                 {queuedAddFeature ? 'Back' : 'Cancel'}
               </Button>
+              {!queuedAddFeature && (
+                <div className="mb-3 flex flex-col items-center justify-center gap-y-2">
+                  <ToggleGroup.Root
+                    className="inline-flex flex-1 overflow-hidden rounded-md border border-slate-300 bg-slate-300 px-0 py-0"
+                    type="single"
+                    defaultValue={addMode}
+                    value={addMode}
+                    onValueChange={(value) => {
+                      setAddMode(value as 'search' | 'manual');
+                      setManualLayer('');
+                      setManualIndex('');
+                    }}
+                    aria-label="Choose how to add a feature"
+                  >
+                    <ToggleGroup.Item
+                      key="search"
+                      className="flex-1 whitespace-pre px-1 py-3 text-[12px] font-medium leading-none text-slate-500 transition-all hover:bg-slate-100 data-[state=on]:bg-white data-[state=on]:text-slate-600 sm:px-5 sm:text-[12px]"
+                      value="search"
+                      aria-label="search"
+                    >
+                      Search for Feature
+                    </ToggleGroup.Item>
+                    <ToggleGroup.Item
+                      key="manual"
+                      className="flex-1 whitespace-pre px-1 py-3 text-[12px] font-medium leading-none text-slate-500 transition-all hover:bg-slate-100 data-[state=on]:bg-white data-[state=on]:text-slate-600 sm:px-5 sm:text-[12px]"
+                      value="manual"
+                      aria-label="manual"
+                    >
+                      Use Layer and Index
+                    </ToggleGroup.Item>
+                  </ToggleGroup.Root>
+                </div>
+              )}
               <div className="mb-0 mt-0.5 text-center text-base font-bold text-slate-600">
-                {queuedAddFeature ? 'Select Feature Active Position' : 'Search for Features to Steer'}
+                {queuedAddFeature && 'Select Feature Active Position'}
               </div>
 
               {queuedAddFeature ? (
@@ -572,7 +614,7 @@ export default function SteerModal() {
                     />
                   </div>
                 </div>
-              ) : (
+              ) : addMode === 'search' ? (
                 <div className="flex h-full max-h-full flex-1 flex-col">
                   <ExplanationsSearcher
                     initialModelId={
@@ -591,9 +633,112 @@ export default function SteerModal() {
                     allowSteerSearchFullHeight
                     onClickResultCallback={(result) => {
                       setQueuedAddFeature(result);
+                      setManualLayer('');
+                      setManualIndex('');
                     }}
                     neverChangePageOnSearch
                   />
+                </div>
+              ) : (
+                <div className="relative mt-8 flex h-full flex-col items-center">
+                  <div className="flex flex-row items-end gap-x-2">
+                    <div className="flex flex-col">
+                      <label
+                        htmlFor="manualLayer"
+                        className="flex flex-col items-center justify-center gap-y-0.5 text-[10px] font-medium uppercase text-slate-400"
+                      >
+                        Layer
+                        <input
+                          type="number"
+                          id="manualLayer"
+                          className="h-10 w-16 rounded border border-slate-300 px-2 text-center font-mono text-xs text-sky-700 placeholder:text-slate-300 focus:border-sky-700 focus:outline-none"
+                          placeholder="0"
+                          value={manualLayer}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^0-9]/g, '');
+                            setManualLayer(value);
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <div className="flex flex-col">
+                      <label
+                        htmlFor="manualIndex"
+                        className="flex flex-col items-center justify-center gap-y-0.5 text-[10px] font-medium uppercase text-slate-400"
+                      >
+                        Index
+                        <input
+                          type="number"
+                          id="manualIndex"
+                          className="h-10 w-20 rounded border border-slate-300 px-2 text-center font-mono text-xs text-sky-700 placeholder:text-slate-300 focus:border-sky-700 focus:outline-none"
+                          placeholder="0"
+                          value={manualIndex}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^0-9]/g, '');
+                            setManualIndex(value);
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (Number(manualLayer) < 0 || Number(manualIndex) < 0) {
+                          alert('Layer and index must be greater than or equal to 0.');
+                          return;
+                        }
+                        if (!manualLayer || !manualIndex) {
+                          alert('Please enter both layer and index.');
+                          return;
+                        }
+                        const sourceId = `${manualLayer}-${MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID]}`;
+                        await fetch(`/api/feature/${modelId}/${sourceId}/${manualIndex}`, {
+                          method: 'GET',
+                          headers: { 'Content-Type': 'application/json' },
+                        })
+                          .then((response) => response.json())
+                          .then((n: NeuronWithPartialRelations) => {
+                            const explanation =
+                              n.explanations && n.explanations.length > 0
+                                ? n.explanations.find((e) => e.typeName === PREFERRED_EXPLANATION_TYPE_NAME)
+                                : null;
+                            // remove all activations except the top 3
+                            if (n.activations) {
+                              // eslint-disable-next-line
+                              n.activations = n.activations.slice(0, 3);
+                            }
+                            setQueuedAddFeature({
+                              neuron: n,
+                              description: explanation?.description || 'No Label Found',
+                              typeName: explanation?.typeName || PREFERRED_EXPLANATION_TYPE_NAME,
+                              explanationModelName: explanation?.explanationModelName || '',
+                              id: explanation?.id || '',
+                              modelId: explanation?.modelId || '',
+                              createdAt: explanation?.createdAt || new Date(),
+                              updatedAt: explanation?.updatedAt || new Date(),
+                              layer: explanation?.layer || '',
+                              index: explanation?.index || '',
+                              authorId: explanation?.authorId || '',
+                              triggeredByUserId: explanation?.triggeredByUserId || '',
+                              notes: explanation?.notes || '',
+                              scoreV1: explanation?.scoreV1 || 0,
+                              scoreV2: explanation?.scoreV2 || 0,
+                              umap_x: explanation?.umap_x || 0,
+                              umap_y: explanation?.umap_y || 0,
+                              umap_cluster: explanation?.umap_cluster || 0,
+                              umap_log_feature_sparsity: explanation?.umap_log_feature_sparsity || 0,
+                            });
+                          })
+                          .catch((error) => {
+                            alert('Error getting that feature. Double check the layer and index.');
+                            console.error(error);
+                          });
+                      }}
+                      className="h-10 rounded bg-sky-600 px-4 text-xs font-medium text-white hover:bg-sky-700"
+                    >
+                      + Add
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
