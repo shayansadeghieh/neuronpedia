@@ -24,11 +24,11 @@ const HIGHER_RATE_LIMITS = [
   { endpoint: '/', limit: 25000 },
   { endpoint: '/api', limit: 25000 },
   { endpoint: '/api/activation/new', limit: 1200 }, // higher
-  { endpoint: '/api/explanation/search', limit: 200 },
-  { endpoint: '/api/steer', limit: 300 },
+  { endpoint: '/api/explanation/search', limit: 2000 }, // higher
+  { endpoint: '/api/steer', limit: 1000 }, // higher
   { endpoint: '/api/search-topk-by-token', limit: 1200 }, // higher
   { endpoint: '/api/search-all', limit: 1600 },
-  { endpoint: '/api/graph/generate', limit: 30 },
+  { endpoint: '/api/graph/generate', limit: 320 }, // higher
   { endpoint: '/api/features/upload-batch', limit: 1000 },
   { endpoint: '/api/model/new', limit: 5 },
   { endpoint: '/api/source-set/new', limit: 10 },

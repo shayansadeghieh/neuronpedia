@@ -166,7 +166,7 @@ export default function GraphFeatureDetail() {
                       e.preventDefault();
                     }
                   }}
-                  className="w-full flex-1 rounded border border-slate-300 px-2 py-0 text-xs placeholder:text-slate-300"
+                  className="temp-edit-feat-detail w-full flex-1 rounded border border-slate-300 px-2 py-0 text-xs placeholder:text-slate-300"
                 />
                 {getOriginalClerpForNode(node) && (
                   <div className="text-xs">
@@ -178,8 +178,13 @@ export default function GraphFeatureDetail() {
                 )}
               </div>
             ) : (
-              <div className="text-[10px] leading-snug sm:text-xs sm:leading-normal">
+              <div className="flex flex-col items-start justify-start text-[10px] leading-snug sm:text-xs sm:leading-normal">
                 {getNodeSupernodeAndOverrideLabel(node)}
+                {node.activation && (
+                  <span className="text-[9px] font-medium uppercase text-slate-400">
+                    Activation: {node.activation.toFixed(2)}
+                  </span>
+                )}
               </div>
             )}
           </div>

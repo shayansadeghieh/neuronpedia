@@ -1,11 +1,26 @@
+import { ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID } from '@/app/[modelId]/graph/utils';
 import {
   GRAPH_RUNPOD_SECRET,
   GRAPH_RUNPOD_SERVER,
   GRAPH_SERVER,
   GRAPH_SERVER_SECRET,
   USE_LOCALHOST_GRAPH,
+  USE_RUNPOD_GRAPH,
 } from '@/lib/env';
 import * as yup from 'yup';
+import {
+  STEER_FREEZE_ATTENTION,
+  STEER_FREQUENCY_PENALTY,
+  STEER_FREQUENCY_PENALTY_MAX,
+  STEER_FREQUENCY_PENALTY_MIN,
+  STEER_N_COMPLETION_TOKENS,
+  STEER_N_COMPLETION_TOKENS_MAX,
+  STEER_SEED,
+  STEER_TEMPERATURE,
+  STEER_TEMPERATURE_MAX,
+  STEER_TOPK_LOGITS,
+  STEER_TOPK_LOGITS_MAX,
+} from './steer';
 
 export const MAX_RUNPOD_JOBS_IN_QUEUE = 1000;
 export const RUNPOD_BUSY_ERROR = 'RUNPOD_BUSY';
@@ -89,42 +104,6 @@ export const graphGenerateSchemaClient = yup.object({
     .required('Slug is required.'),
 });
 
-export const generateGraph = async (
-  prompt: string,
-  modelId: string,
-  maxNLogits: number,
-  desiredLogitProb: number,
-  nodeThreshold: number,
-  edgeThreshold: number,
-  slugIdentifier: string,
-  maxFeatureNodes: number,
-) => {
-  const response = await fetch(`${USE_LOCALHOST_GRAPH ? 'http://localhost:5004' : GRAPH_SERVER}/generate-graph`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept-Encoding': 'gzip',
-      'x-secret-key': GRAPH_SERVER_SECRET,
-    },
-    body: JSON.stringify({
-      prompt,
-      model_id: GRAPH_MODEL_MAP[modelId as keyof typeof GRAPH_MODEL_MAP],
-      batch_size: GRAPH_BATCH_SIZE,
-      max_n_logits: maxNLogits,
-      desired_logit_prob: desiredLogitProb,
-      node_threshold: nodeThreshold,
-      edge_threshold: edgeThreshold,
-      slug_identifier: slugIdentifier,
-      max_feature_nodes: maxFeatureNodes,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`External API returned ${response.status}: ${response.statusText}`);
-  }
-  return response.json();
-};
-
 export const checkRunpodQueueJobs = async () => {
   const response = await fetch(`${GRAPH_RUNPOD_SERVER}/health`, {
     headers: {
@@ -164,23 +143,36 @@ export const getGraphTokenize = async (
   maxNLogits: number,
   desiredLogitProb: number,
 ): Promise<GraphTokenizeResponse> => {
-  const response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
-    },
-    body: JSON.stringify({
-      input: {
-        prompt,
-        max_n_logits: maxNLogits,
-        desired_logit_prob: desiredLogitProb,
-        request_type: 'forward_pass',
+  let response;
+  const body = {
+    prompt,
+    max_n_logits: maxNLogits,
+    desired_logit_prob: desiredLogitProb,
+    request_type: 'forward_pass',
+  };
+  if (USE_RUNPOD_GRAPH) {
+    response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
       },
-    }),
-  });
+      body: JSON.stringify({
+        input: body,
+      }),
+    });
+  } else {
+    response = await fetch(`${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : GRAPH_SERVER}/forward-pass`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-secret-key': GRAPH_SERVER_SECRET,
+      },
+      body: JSON.stringify(body),
+    });
+  }
 
-  const json = await response.json();
+  let json = await response.json();
   if (json.error) {
     throw new Error(json.error);
   }
@@ -188,7 +180,11 @@ export const getGraphTokenize = async (
     throw new Error(`External API returned ${response.status}: ${response.statusText}`);
   }
 
-  const salientLogits: SalientLogit[] = json.output.salient_logits.map((logit: SalientLogit) => ({
+  if (USE_RUNPOD_GRAPH) {
+    json = json.output;
+  }
+
+  const salientLogits: SalientLogit[] = json.salient_logits.map((logit: SalientLogit) => ({
     token: logit.token,
     token_id: logit.token_id,
     probability: logit.probability,
@@ -196,10 +192,10 @@ export const getGraphTokenize = async (
 
   const toReturn: GraphTokenizeResponse = {
     prompt,
-    input_tokens: json.output.input_tokens,
+    input_tokens: json.input_tokens,
     salient_logits: salientLogits,
-    total_salient_tokens: json.output.total_salient_tokens,
-    cumulative_probability: json.output.cumulative_probability,
+    total_salient_tokens: json.total_salient_tokens,
+    cumulative_probability: json.cumulative_probability,
   };
 
   return toReturn;
@@ -217,31 +213,43 @@ export const generateGraphAndUploadToS3 = async (
   signedUrl: string,
   userId: string | undefined,
 ) => {
-  const response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
-    },
-    body: JSON.stringify({
-      input: {
-        prompt,
-        model_id: GRAPH_MODEL_MAP[modelId as keyof typeof GRAPH_MODEL_MAP],
-        batch_size: GRAPH_BATCH_SIZE,
-        max_n_logits: maxNLogits,
-        desired_logit_prob: desiredLogitProb,
-        node_threshold: nodeThreshold,
-        edge_threshold: edgeThreshold,
-        slug_identifier: slugIdentifier,
-        max_feature_nodes: maxFeatureNodes,
-        signed_url: signedUrl,
-        user_id: userId,
+  let response;
+  const body = {
+    prompt,
+    model_id: GRAPH_MODEL_MAP[modelId as keyof typeof GRAPH_MODEL_MAP],
+    batch_size: GRAPH_BATCH_SIZE,
+    max_n_logits: maxNLogits,
+    desired_logit_prob: desiredLogitProb,
+    node_threshold: nodeThreshold,
+    edge_threshold: edgeThreshold,
+    slug_identifier: slugIdentifier,
+    max_feature_nodes: maxFeatureNodes,
+    signed_url: signedUrl,
+    user_id: userId,
+  };
+  if (USE_RUNPOD_GRAPH) {
+    response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
       },
-    }),
-  });
-
+      body: JSON.stringify({
+        input: body,
+      }),
+    });
+  } else {
+    response = await fetch(`${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : GRAPH_SERVER}/generate-graph`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-secret-key': GRAPH_SERVER_SECRET,
+      },
+      body: JSON.stringify(body),
+    });
+  }
   const json = await response.json();
-  console.log('server json from runpod', json);
+  console.log('server json response', json);
   if (json.error) {
     throw new Error(json.error);
   }
@@ -250,4 +258,142 @@ export const generateGraphAndUploadToS3 = async (
     throw new Error(`External API returned ${response.status}: ${response.statusText}`);
   }
   return json;
+};
+
+export const SteerLogitFeatureSchema = yup.object({
+  layer: yup.number().required('Layer is required'),
+  index: yup.number().required('Index is required'),
+  token_active_position: yup.number().required('Token active position is required'),
+  steer_position: yup.number().nullable(),
+  steer_generated_tokens: yup.boolean().required('Steer generated tokens is required'),
+  delta: yup.number().nullable(),
+  ablate: yup.boolean().required('Ablate is required'),
+});
+
+export type SteerLogitFeature = yup.InferType<typeof SteerLogitFeatureSchema>;
+
+export const SteerLogitsRequestSchema = yup.object({
+  modelId: yup.string().required('Model ID is required'),
+  prompt: yup.string().required('Prompt is required'),
+  features: yup.array().of(SteerLogitFeatureSchema).required('Features are required'),
+  nTokens: yup.number().default(STEER_N_COMPLETION_TOKENS).min(1).max(STEER_N_COMPLETION_TOKENS_MAX),
+  topK: yup.number().default(STEER_TOPK_LOGITS).min(0).max(STEER_TOPK_LOGITS_MAX),
+  freezeAttention: yup.boolean().default(STEER_FREEZE_ATTENTION),
+  temperature: yup.number().default(STEER_TEMPERATURE).min(0.0).max(STEER_TEMPERATURE_MAX),
+  freqPenalty: yup
+    .number()
+    .default(STEER_FREQUENCY_PENALTY)
+    .min(STEER_FREQUENCY_PENALTY_MIN)
+    .max(STEER_FREQUENCY_PENALTY_MAX),
+  seed: yup.number().default(STEER_SEED).nullable(),
+  steeredOutputOnly: yup.boolean().default(false),
+});
+
+export type SteerLogitsRequest = yup.InferType<typeof SteerLogitsRequestSchema>;
+
+export const SteerResponseLogitsByTokenSchema = yup
+  .array()
+  .of(
+    yup
+      .object({
+        token: yup.string().required(),
+        top_logits: yup
+          .array()
+          .of(
+            yup.object({
+              prob: yup.number().required(),
+              token: yup.string().required(),
+            }),
+          )
+          .required(),
+      })
+      .required(),
+  )
+  .required();
+
+export type SteerResponseLogitsByToken = yup.InferType<typeof SteerResponseLogitsByTokenSchema>;
+
+export const SteerResponseSchema = yup.object({
+  DEFAULT_GENERATION: yup.string().required('Default generation is required'),
+  STEERED_GENERATION: yup.string().required('Steered generation is required'),
+  DEFAULT_LOGITS_BY_TOKEN: SteerResponseLogitsByTokenSchema,
+  STEERED_LOGITS_BY_TOKEN: SteerResponseLogitsByTokenSchema,
+});
+
+export type SteerResponse = yup.InferType<typeof SteerResponseSchema>;
+
+export type SteeredPositionIdentifier = {
+  modelId: keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID;
+  layer: number;
+  index: number;
+  tokenActivePosition: number;
+};
+
+export const steerLogits = async (
+  modelId: string,
+  prompt: string,
+  features: SteerLogitFeature[],
+  nTokens: number,
+  topK: number,
+  freezeAttention: boolean,
+  temperature: number,
+  freqPenalty: number,
+  seed: number | null,
+  steeredOutputOnly: boolean,
+) => {
+  let response;
+  // TODO: clean up model id usage
+  const mappedModelId = GRAPH_GENERATION_ENABLED_MODELS.includes(modelId)
+    ? GRAPH_MODEL_MAP[modelId as keyof typeof GRAPH_MODEL_MAP]
+    : modelId;
+  const body = {
+    model_id: mappedModelId,
+    prompt,
+    features,
+    n_tokens: nTokens,
+    top_k: topK,
+    freeze_attention: freezeAttention,
+    request_type: 'steer', // for Runpod
+    temperature,
+    freq_penalty: freqPenalty,
+    seed,
+    steered_output_only: steeredOutputOnly,
+  };
+  if (USE_RUNPOD_GRAPH) {
+    response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
+      },
+      body: JSON.stringify({
+        input: body,
+      }),
+    });
+  } else {
+    response = await fetch(`${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : GRAPH_SERVER}/steer`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-secret-key': GRAPH_SERVER_SECRET,
+      },
+      body: JSON.stringify(body),
+    });
+  }
+
+  let json = await response.json();
+  if (json.error) {
+    throw new Error(json.error);
+  }
+  if (!response.ok) {
+    throw new Error(`External API returned ${response.status}: ${response.statusText}`);
+  }
+
+  if (USE_RUNPOD_GRAPH) {
+    json = json.output;
+  }
+
+  const validatedResponse = SteerResponseSchema.validateSync(json);
+
+  return validatedResponse;
 };
