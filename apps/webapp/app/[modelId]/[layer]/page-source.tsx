@@ -2,6 +2,7 @@ import BreadcrumbsComponent from '@/components/breadcrumbs-component';
 import BrowserPane from '@/components/panes/browser-pane/browser-pane';
 import JumpToPane from '@/components/panes/jump-to-pane';
 import SAEEvalsPane from '@/components/panes/sae-evals-pane/sae-evals-pane';
+import SearchInferenceSourcePane from '@/components/panes/search-inference-source-pane';
 import UmapPane from '@/components/panes/umap-pane';
 import { BreadcrumbItem, BreadcrumbLink } from '@/components/shadcn/breadcrumbs';
 import { getVisibilityBadge } from '@/components/visibility-badge';
@@ -51,8 +52,8 @@ export default function PageSource({ source }: { source: SourceWithRelations }) 
         />
       )}
 
-      <div className="flex w-full  flex-row items-center justify-center border-b border-slate-200 py-6">
-        <div className="flex w-full max-w-screen-lg flex-row  items-center justify-between">
+      <div className="flex w-full flex-row items-center justify-center border-b border-slate-200 py-6">
+        <div className="flex w-full max-w-screen-lg flex-row items-center justify-between">
           <div className="flex flex-col items-start">
             {source.visibility !== Visibility.PUBLIC && (
               <div className="pb-1">{getVisibilityBadge(source.visibility)}</div>
@@ -65,7 +66,7 @@ export default function PageSource({ source }: { source: SourceWithRelations }) 
               <Link
                 prefetch={false}
                 href={`/${source.set?.releases?.name}`}
-                className=" text-sky-700 hover:text-sky-600 hover:underline"
+                className="text-sky-700 hover:text-sky-600 hover:underline"
               >
                 {source.set?.releases?.name}
               </Link>{' '}
@@ -74,7 +75,7 @@ export default function PageSource({ source }: { source: SourceWithRelations }) 
                 <Link
                   prefetch={false}
                   href={`/${source.modelId}/${source.set?.name}`}
-                  className=" text-sky-700 hover:text-sky-600 hover:underline"
+                  className="text-sky-700 hover:text-sky-600 hover:underline"
                 >
                   {source.set?.type}
                 </Link>
@@ -108,6 +109,14 @@ export default function PageSource({ source }: { source: SourceWithRelations }) 
               <SaeLensConfigPane inSAEPage sae={source as SourceWithPartialRelations} />
             </div>
           </div>
+
+          {source.inferenceEnabled && (
+            <SearchInferenceSourcePane
+              model={source.set?.model}
+              sourceSetName={source.set?.name || ''}
+              initialSelectedLayers={[source.id]}
+            />
+          )}
 
           {source.hasUmap && (
             <div className="w-full">
