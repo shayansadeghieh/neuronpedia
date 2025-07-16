@@ -274,7 +274,7 @@ export default function SearchTopkByToken({
 
   return (
     <div className="mt-0 flex h-full w-full flex-col items-center justify-center gap-y-0 pt-0 sm:flex-row">
-      <div className="flex w-full max-w-screen-md flex-col sm:h-full sm:flex-1">
+      <div className="flex w-full max-w-screen-lg flex-col sm:h-full sm:flex-1">
         <div className="flex w-full flex-row items-center justify-start gap-x-2">
           <ModelSelector
             filterToRelease={filterModelsToRelease}

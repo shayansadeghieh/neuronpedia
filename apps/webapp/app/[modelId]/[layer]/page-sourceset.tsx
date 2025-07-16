@@ -3,12 +3,19 @@
 import BreadcrumbsComponent from '@/components/breadcrumbs-component';
 import BrowserPane from '@/components/panes/browser-pane/browser-pane';
 import JumpToPane from '@/components/panes/jump-to-pane';
+import SearchExplanationsPane from '@/components/panes/search-explanations-pane';
+import SearchInferenceSourcePane from '@/components/panes/search-inference-source-pane';
+import SearchTopkByTokenPane from '@/components/panes/search-topk-by-token-pane';
 import UmapPane from '@/components/panes/umap-pane';
 import { BreadcrumbItem, BreadcrumbLink } from '@/components/shadcn/breadcrumbs';
 import { getVisibilityBadge } from '@/components/visibility-badge';
 import { Visibility } from '@prisma/client';
 import Link from 'next/link';
-import { SourceReleaseWithRelations, SourceSetWithPartialRelations } from 'prisma/generated/zod';
+import {
+  ModelWithPartialRelations,
+  SourceReleaseWithRelations,
+  SourceSetWithPartialRelations,
+} from 'prisma/generated/zod';
 
 export default function PageSourceSet({ sourceSet }: { sourceSet: SourceSetWithPartialRelations }) {
   let defaultSourceId: string | undefined;
@@ -111,6 +118,38 @@ export default function PageSourceSet({ sourceSet }: { sourceSet: SourceSetWithP
 
       <div className="flex w-full max-w-screen-xl flex-col items-center pb-5 pt-6 text-slate-700">
         <div className="mb-6 flex w-full flex-col items-stretch gap-x-3 gap-y-6">
+          {sourceSet.allowInferenceSearch && sourceSet.model && (
+            <SearchInferenceSourcePane
+              model={sourceSet.model as ModelWithPartialRelations}
+              sourceSetName={sourceSet.name}
+            />
+          )}
+
+          {sourceSet.allowInferenceSearch && sourceSet.model && (
+            <div className="flex w-full items-center justify-center">
+              <div className="flex w-full max-w-screen-lg">
+                <SearchTopkByTokenPane
+                  modelId={sourceSet.modelId}
+                  source={defaultSourceId || ''}
+                  showResultsInNewPage
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex w-full items-center justify-center">
+            <div className="flex w-full max-w-screen-lg">
+              <SearchExplanationsPane
+                initialModelId={sourceSet.modelId}
+                initialSourceSetName={sourceSet.name}
+                initialSelectedLayers={[defaultSourceId || '']}
+                filterToRelease={sourceSet.releases as SourceReleaseWithRelations}
+                defaultTab="bySource"
+                showTabs={false}
+              />
+            </div>
+          </div>
+
           {sourceSet.showUmap && (
             <div className="w-full pb-6">
               <UmapPane

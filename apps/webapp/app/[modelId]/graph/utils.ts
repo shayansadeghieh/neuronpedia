@@ -81,6 +81,18 @@ export function getIndexFromAnthropicFeatureId(modelId: keyof typeof MODEL_DIGIT
   return parseInt(indexStr, 10);
 }
 
+export function getAnthropicFeatureIdFromLayerAndIndex(
+  modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
+  layer: number,
+  index: number,
+) {
+  const digitsInNumFeatures = MODEL_DIGITS_IN_FEATURE_ID[modelId];
+
+  const paddedIndex = index.toString().padStart(digitsInNumFeatures, '0');
+
+  return parseInt(`${layer}${paddedIndex}`, 10);
+}
+
 export function convertAnthropicFeatureIdToNeuronpediaSourceSet(
   modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
   featureId: number,
