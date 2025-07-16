@@ -54,13 +54,18 @@ webapp-demo-check: ## Webapp: Public Demo Environment - Check Config
 	@echo "Printing the webapp configuration - this is useful to see if your environment variables are set correctly."
 	ENV_FILE=.env.demo docker compose -f docker/compose.yaml config webapp
 
+CUSTOM_CA_BUNDLE ?= .nocustomca
 webapp-localhost-build: ## Webapp: Localhost Environment - Build (Production Build)
 	@echo "Building the webapp for connecting to the localhost database..."
 	@if ! which docker > /dev/null 2>&1; then \
 		echo "Error: Docker is not installed. Please install Docker first."; \
 		exit 1; \
 	fi
-	ENV_FILE=.env.localhost docker compose -f docker/compose.yaml build webapp db-init postgres
+	@if [ "$(CUSTOM_CA_BUNDLE)" != ".nocustomca" ]; then \
+		echo "Using custom CA bundle: $(CUSTOM_CA_BUNDLE)"; \
+	fi
+	CUSTOM_CA_BUNDLE=$(CUSTOM_CA_BUNDLE) ENV_FILE=../.env.localhost \
+		docker compose -f docker/compose.yaml build webapp db-init postgres
 
 webapp-localhost-run: ## Webapp: Localhost Environment - Run (Production Build)
 	@echo "Bringing up the webapp and connecting to the localhost database..."
@@ -68,7 +73,7 @@ webapp-localhost-run: ## Webapp: Localhost Environment - Run (Production Build)
 		echo "Error: Docker is not installed. Please install Docker first."; \
 		exit 1; \
 	fi
-	ENV_FILE=.env.localhost docker compose -f docker/compose.yaml --env-file .env.localhost --env-file .env up webapp db-init postgres
+	docker compose -f docker/compose.yaml --env-file .env.localhost --env-file .env up webapp db-init postgres
 
 install-nodejs: # Install Node.js for Webapp
 	curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
