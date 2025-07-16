@@ -1,13 +1,18 @@
 # syntax=docker.io/docker/dockerfile:1
-FROM node:22-alpine AS base
+
+FROM node:22-alpine3.22 AS base
+
+# The ``RUN apk add --no-cache openssl bash`` step might fail without the following ``sed`` command
+# Details: https://github.com/alpinelinux/docker-alpine/issues/98#issuecomment-679278499
+RUN sed -i 's/https/http/' /etc/apk/repositories
 
 # Optional custom CA bundle file support
 ARG CUSTOM_CA_BUNDLE
-# Copy the CA bundle file if provided, otherwise copy nothing (using .dockerignore as a no-op)
-COPY ${CUSTOM_CA_BUNDLE:-.dockerignore} /tmp/ca-bundle-temp
+# Copy the CA bundle file if provided, otherwise copy nothing (using .nocustomca as a no-op)
+COPY ${CUSTOM_CA_BUNDLE:-docker/.nocustomca} /tmp/ca-bundle-temp
 
 # Set up CA certificates and environment if bundle was provided
-RUN if [ -f /tmp/ca-bundle-temp ] && [ "${CUSTOM_CA_BUNDLE}" != ".dockerignore" ]; then \
+RUN if [ -f /tmp/ca-bundle-temp ] && [ "${CUSTOM_CA_BUNDLE}" != ".nocustomca" ]; then \
     mkdir -p /usr/local/share/ca-certificates && \
     mv /tmp/ca-bundle-temp /usr/local/share/ca-certificates/custom-ca.crt && \
     cat /usr/local/share/ca-certificates/custom-ca.crt >> /etc/ssl/certs/ca-certificates.crt; \
@@ -19,12 +24,16 @@ RUN if [ -f /tmp/ca-bundle-temp ] && [ "${CUSTOM_CA_BUNDLE}" != ".dockerignore" 
 ENV SSL_CERT_FILE=${CUSTOM_CA_BUNDLE:+/etc/ssl/certs/ca-certificates.crt}
 ENV REQUESTS_CA_BUNDLE=${CUSTOM_CA_BUNDLE:+/etc/ssl/certs/ca-certificates.crt}
 ENV GIT_SSL_CAINFO=${CUSTOM_CA_BUNDLE:+/etc/ssl/certs/ca-certificates.crt}
-ENV NODE_TLS_REJECT_UNAUTHORIZED=${CUSTOM_CA_BUNDLE:+0}
+# ENV NODE_TLS_REJECT_UNAUTHORIZED=${CUSTOM_CA_BUNDLE:+0}
+ENV NODE_EXTRA_CA_CERTS=${CUSTOM_CA_BUNDLE:+/etc/ssl/certs/ca-certificates.crt}
 
 # Configure npm if CA bundle was provided
-RUN if [ -n "${CUSTOM_CA_BUNDLE}" ] && [ "${CUSTOM_CA_BUNDLE}" != ".dockerignore" ]; then \
+RUN if [ -n "${CUSTOM_CA_BUNDLE}" ] && [ "${CUSTOM_CA_BUNDLE}" != ".nocustomca" ]; then \
     npm config set cafile "/etc/ssl/certs/ca-certificates.crt"; \
     fi
+
+# Install OpenSSL and bash
+RUN apk add --no-cache openssl bash
 
 ###############################################################################################
 # Install dependencies only when needed
@@ -40,9 +49,6 @@ RUN npm ci
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-
-# Install OpenSSL and bash for the build stage
-RUN apk add --no-cache openssl bash
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/webapp ./
@@ -62,9 +68,6 @@ RUN bash -c 'set -a && source .env && set +a && npx prisma generate && npm run b
 # Database initialization image (has access to ts-node and dev dependencies)
 FROM base AS db-init
 WORKDIR /app
-
-# Install OpenSSL and bash
-RUN apk add --no-cache openssl bash
 
 # Copy all dependencies (including devDependencies for ts-node)
 COPY --from=deps /app/node_modules ./node_modules
@@ -91,9 +94,6 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-
-# Install OpenSSL for runtime
-RUN apk add --no-cache openssl bash
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
