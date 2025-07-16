@@ -1,3 +1,4 @@
+# compose.yaml
 name: neuronpedia
 services:
   webapp:
@@ -8,11 +9,11 @@ services:
       target: runner
       args:
         ENV_FILE: ${ENV_FILE:-.env.localhost}
-        CUSTOM_CA_BUNDLE: ${CUSTOM_CA_BUNDLE:-}
+        CUSTOM_CA_BUNDLE: ${CUSTOM_CA_BUNDLE:-./docker/.nocustomca}
     ports:
       - "3000:3000"
     env_file:
-      - ${ENV_FILE:-.env.localhost}
+      - ${ENV_FILE:-../.env.localhost}
     depends_on:
       db-init:
         condition: service_completed_successfully
@@ -25,7 +26,7 @@ services:
       target: db-init
       args:
         ENV_FILE: ${ENV_FILE:-.env.localhost}
-        CUSTOM_CA_BUNDLE: ${CUSTOM_CA_BUNDLE:-}
+        CUSTOM_CA_BUNDLE: ${CUSTOM_CA_BUNDLE:-.docker/.nocustomca}
     restart: "no"
     environment:
       - POSTGRES_URL_NON_POOLING=${POSTGRES_URL_NON_POOLING}

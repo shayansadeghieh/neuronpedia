@@ -1,7 +1,7 @@
 services:
   inference:
     volumes:
-      - ./apps/inference:/app/apps/inference
+      - ../apps/inference:/app/apps/inference
     environment:
       - RELOAD=${RELOAD:-0}
     command: >

@@ -4,7 +4,7 @@ services:
       - NODE_ENV=test
       - WATCHPACK_POLLING=true
     volumes:
-      - ./apps/webapp/tests-playwright:/app/apps/webapp/tests-playwright
+      - ../apps/webapp/tests-playwright:/app/apps/webapp/tests-playwright
     command: >
       sh -c "npx playwright install --with-deps && 
              npm run test:playwright"
