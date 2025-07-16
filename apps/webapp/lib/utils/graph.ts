@@ -286,6 +286,7 @@ export const SteerLogitsRequestSchema = yup.object({
     .min(STEER_FREQUENCY_PENALTY_MIN)
     .max(STEER_FREQUENCY_PENALTY_MAX),
   seed: yup.number().default(STEER_SEED).nullable(),
+  steeredOutputOnly: yup.boolean().default(false),
 });
 
 export type SteerLogitsRequest = yup.InferType<typeof SteerLogitsRequestSchema>;
@@ -338,6 +339,7 @@ export const steerLogits = async (
   temperature: number,
   freqPenalty: number,
   seed: number | null,
+  steeredOutputOnly: boolean,
 ) => {
   let response;
   // TODO: clean up model id usage
@@ -355,6 +357,7 @@ export const steerLogits = async (
     temperature,
     freq_penalty: freqPenalty,
     seed,
+    steered_output_only: steeredOutputOnly,
   };
   if (USE_RUNPOD_GRAPH) {
     response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {

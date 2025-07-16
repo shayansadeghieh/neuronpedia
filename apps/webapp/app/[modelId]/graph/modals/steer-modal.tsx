@@ -75,6 +75,7 @@ export default function SteerModal() {
   const [addMode, setAddMode] = useState<'search' | 'manual'>('search');
   const [manualLayer, setManualLayer] = useState<string>('');
   const [manualIndex, setManualIndex] = useState<string>('');
+  const [lastSteerRequestBody, setLastSteerRequestBody] = useState<SteerLogitsRequest | undefined>(undefined);
 
   const getFeatureNodeForNodeId = (id: string): CLTGraphNode | null => {
     const node = selectedGraph?.nodes.find((n) => n.nodeId === id);
@@ -465,17 +466,134 @@ export default function SteerModal() {
     setManualIndex('');
   };
 
+  function doSteerCall() {
+    setIsSteering(true);
+
+    if (steeredPositions.length === 0) {
+      alert(
+        "Error: You haven't chosen any features to ablate or steer.\n\nClick Steer on at least one feature on the left.",
+      );
+      setIsSteering(false);
+      return;
+    }
+
+    // TODO: remove <bos> hack
+    const requestBody: SteerLogitsRequest = {
+      modelId: selectedGraph?.metadata.scan || '',
+      prompt: selectedGraph?.metadata.prompt.replaceAll('<bos>', '') || '',
+      features: steeredPositions,
+      nTokens: steerTokens,
+      topK: 5,
+      freezeAttention,
+      temperature,
+      freqPenalty,
+      seed,
+      steeredOutputOnly: false,
+    };
+
+    let steeredOutputOnly = false;
+    if (lastSteerRequestBody && steerResult?.DEFAULT_GENERATION && steerResult?.DEFAULT_GENERATION?.length > 0) {
+      // compare all properties except features
+      const lastRequestBody = lastSteerRequestBody;
+      const thisRequestBody = requestBody;
+      if (
+        lastRequestBody.modelId === thisRequestBody.modelId &&
+        lastRequestBody.prompt === thisRequestBody.prompt &&
+        lastRequestBody.nTokens === thisRequestBody.nTokens &&
+        lastRequestBody.topK === thisRequestBody.topK &&
+        lastRequestBody.freezeAttention === thisRequestBody.freezeAttention &&
+        lastRequestBody.temperature === thisRequestBody.temperature &&
+        lastRequestBody.freqPenalty === thisRequestBody.freqPenalty &&
+        lastRequestBody.seed === thisRequestBody.seed
+      ) {
+        steeredOutputOnly = true;
+      }
+      setSteerResult({
+        ...steerResult,
+        STEERED_GENERATION: '',
+        STEERED_LOGITS_BY_TOKEN: [],
+      });
+    } else {
+      // only reset if we're not steering output only
+      setSteerResult(undefined);
+    }
+
+    requestBody.steeredOutputOnly = steeredOutputOnly;
+    setLastSteerRequestBody(requestBody);
+
+    fetch('/api/steer-logits', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    })
+      .then((response) => response.json())
+      .then((data: SteerResponse) => {
+        if (steeredOutputOnly && steerResult) {
+          // update the steerResult ONLY with the steered output
+          setSteerResult({
+            ...steerResult,
+            STEERED_GENERATION: data.STEERED_GENERATION,
+            STEERED_LOGITS_BY_TOKEN: data.STEERED_LOGITS_BY_TOKEN,
+          });
+        } else {
+          // update everything
+          setSteerResult(data);
+        }
+        setIsSteering(false);
+      })
+      .catch((error) => {
+        console.error('Error steering logits:', error);
+        setIsSteering(false);
+      });
+  }
+
   useEffect(() => {
     // reset everything when selected graph changes
     resetSteerSettings();
   }, [selectedGraph]);
 
+  // this is for steering automatically after 1.5 seconds. we currently don't want this behavior
+  //
+  //   const steerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  //
+  //   useEffect(() => {
+  //     if (steeredPositions.length > 0) {
+  //       // Clear any existing timeout
+  //       if (steerTimeoutRef.current) {
+  //         clearTimeout(steerTimeoutRef.current);
+  //       }
+  //
+  //       // Set a new timeout to call doSteerCall after 1 second
+  //       steerTimeoutRef.current = setTimeout(() => {
+  //         doSteerCall();
+  //       }, 1500);
+  //     } else {
+  //       // Clear output immediately if no positions
+  //       setSteerResult(undefined);
+  //       // Also clear any pending timeout
+  //       if (steerTimeoutRef.current) {
+  //         clearTimeout(steerTimeoutRef.current);
+  //         steerTimeoutRef.current = null;
+  //       }
+  //     }
+  //
+  //     // Cleanup function to clear timeout on unmount or when steeredPositions changes
+  //     return () => {
+  //       if (steerTimeoutRef.current) {
+  //         clearTimeout(steerTimeoutRef.current);
+  //         steerTimeoutRef.current = null;
+  //       }
+  //     };
+  //   }, [steeredPositions, temperature, freqPenalty, seed, freezeAttention, steerTokens]);
+
   return (
     <Dialog open={isSteerModalOpen} onOpenChange={setIsSteerModalOpen}>
-      <DialogContent className="flex h-[90vh] max-h-[90vh] min-h-[90vh] w-full max-w-[95vw] flex-col gap-y-3 overflow-hidden bg-slate-50 pt-4">
+      <DialogContent className="flex h-[94vh] max-h-[94vh] min-h-[94vh] w-full max-w-[95vw] flex-col gap-y-3 overflow-hidden bg-slate-50 pt-4">
         <DialogHeader className="flex w-full flex-col items-center justify-center">
           <DialogTitle className="flex w-full select-none flex-row items-center justify-center text-base text-slate-700">
-            Steer Mode
+            Steering Mode
           </DialogTitle>
           {/* <div className="text-xs text-slate-500">{JSON.stringify(steeredPositions, null, 2)}</div> */}
         </DialogHeader>
@@ -756,46 +874,48 @@ export default function SteerModal() {
             <div className="grid h-full max-h-full w-full grid-cols-2 gap-x-4 gap-y-1">
               <div className="flex h-full max-h-full min-h-0 flex-1 flex-col gap-y-1 px-0.5 pb-0.5 text-xs">
                 <Card className="flex h-full max-h-full w-full flex-col bg-white">
-                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between gap-x-5 rounded-t-xl bg-white pb-3 pt-6">
-                    <div className="flex flex-col gap-y-1.5">
-                      <CardTitle>Features to Steer</CardTitle>
-                      <div className="text-xs text-slate-500">
-                        Click Steer on a feature. By default, this negatively steers the feature at the position where
-                        it was active. You can also drag the sliders to steer the feature at specific positions. Middle
-                        will ablate that feature.
+                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between gap-x-5 rounded-t-xl bg-white pb-3 pt-5">
+                    <div className="flex w-full flex-col gap-y-1.5">
+                      <CardTitle className="flex flex-row items-center justify-between">
+                        Features to Steer{' '}
+                        <div className="flex flex-row gap-x-2">
+                          <Button
+                            onClick={() => {
+                              setShowAddFeature(!showAddFeature);
+                            }}
+                            size="sm"
+                            variant="outline"
+                            className="w-28 border-slate-300"
+                          >
+                            {showAddFeature ? 'Close' : '+ Add Feature'}
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              // eslint-disable-next-line
+                              if (confirm('Are you sure you want to reset all steered features?')) {
+                                setSteeredPositions(() => []);
+                              }
+                            }}
+                            size="sm"
+                            variant="outline"
+                            disabled={steeredPositions.length === 0 || showAddFeature}
+                            className="group aspect-square border-red-500 px-0 text-red-600 hover:border-red-600 hover:bg-red-100 disabled:border-slate-200 disabled:text-slate-400"
+                          >
+                            <Trash2 className="h-3.5 w-3.5 group-hover:text-red-700" />
+                          </Button>
+                        </div>
+                      </CardTitle>
+                      <div className="mt-0 text-xs leading-relaxed text-slate-500">
+                        Click Steer. By default, this negatively steers the feature at the position where it was active.
+                        <br />
+                        Drag sliders to steer at specific positions. Middle position ablates.
                       </div>
-                    </div>
-                    <div className="flex flex-row gap-x-2">
-                      <Button
-                        onClick={() => {
-                          setShowAddFeature(!showAddFeature);
-                        }}
-                        size="sm"
-                        variant="outline"
-                        className="w-28 border-slate-300"
-                      >
-                        {showAddFeature ? 'Close' : '+ Add Feature'}
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          // eslint-disable-next-line
-                          if (confirm('Are you sure you want to clear all steering?')) {
-                            setSteeredPositions(() => []);
-                          }
-                        }}
-                        size="sm"
-                        variant="outline"
-                        disabled={steeredPositions.length === 0 || showAddFeature}
-                        className="group aspect-square border-red-500 px-0 text-red-600 hover:border-red-600 hover:bg-red-100 disabled:border-slate-200 disabled:text-slate-400"
-                      >
-                        <Trash2 className="h-3.5 w-3.5 group-hover:text-red-700" />
-                      </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="relative h-full overflow-y-scroll px-5">
                     {customSteerNodes.length > 0 && (
                       <div className="mb-2 flex flex-col gap-y-1.5">
-                        <div className="rounded-md bg-slate-50 px-4 py-3 pb-3.5">
+                        <div className="rounded-md bg-slate-50 px-4 py-3 pb-2">
                           <div className="mb-1.5 flex w-full flex-row items-center justify-between gap-x-1.5">
                             <div className="flex flex-row gap-x-1.5 text-[10px] text-slate-400">ADDED FEATURES</div>
                           </div>
@@ -831,9 +951,11 @@ export default function SteerModal() {
                                     setSteeredPositionDeltaSteerGeneratedTokens
                                   }
                                   setAllTokensDelta={setAllTokensDelta}
+                                  isSteering={isSteering}
                                 />
                                 <Button
                                   variant="ghost"
+                                  disabled={isSteering}
                                   size="sm"
                                   className={`flex h-6 w-6 min-w-6 rounded p-0 text-red-700 hover:bg-red-100 ${
                                     // if this is being steered, hide the trash can
@@ -893,13 +1015,22 @@ export default function SteerModal() {
                               </div>
                             </div>
                             {isAtLeastOneNodeInSupernodeSteered(supernode) && lastSupernodeIsSteered(supernode) ? (
-                              <div className="absolute left-7 top-11 z-0 h-[calc(100%_-_246px)] w-[1px] bg-sky-700" />
+                              <div
+                                className={`absolute left-7 top-[62px] z-0 h-[calc(100%_-_264px)] w-[1px] bg-sky-700 ${
+                                  isSteering ? 'opacity-50' : ''
+                                }`}
+                              />
                             ) : (
-                              <div className="absolute left-7 top-11 z-0 h-[calc(100%_-_73px)] w-[1px] bg-sky-700" />
+                              <div
+                                className={`absolute left-7 top-[62px] z-0 h-[calc(100%_-_91px)] w-[1px] bg-sky-700 ${
+                                  isSteering ? 'opacity-50' : ''
+                                }`}
+                              />
                             )}
 
                             <div className="mb-2 flex flex-row items-center justify-start gap-x-2">
                               <Button
+                                disabled={isSteering}
                                 onClick={() => {
                                   if (isAtLeastOneNodeInSupernodeSteered(supernode)) {
                                     // remove all nodes in supernode
@@ -939,6 +1070,7 @@ export default function SteerModal() {
                               </Button>
                               {isAtLeastOneNodeInSupernodeSteered(supernode) && (
                                 <Button
+                                  disabled={isSteering}
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
@@ -970,7 +1102,7 @@ export default function SteerModal() {
                             {/* == start == steer the entire supernode ==  TODO: reduce duplicated code with nodeToSteer == */}
                             {isAtLeastOneNodeInSupernodeSteered(supernode) &&
                               expandedSupernodeIndexes.includes(supernodeIndex) && (
-                                <div className="flex max-w-full flex-1 flex-row items-start gap-x-1.5 pb-1 pl-6">
+                                <div className="flex max-w-full flex-1 flex-row items-start gap-x-1.5 pb-2 pl-6">
                                   <div className="flex min-w-11 flex-col items-center justify-center gap-y-1 rounded bg-slate-200/50 py-2">
                                     <Slider.Root
                                       orientation="vertical"
@@ -1004,6 +1136,7 @@ export default function SteerModal() {
                                           ? 'opacity-50 hover:opacity-70'
                                           : 'cursor-pointer'
                                       }`}
+                                      disabled={isSteering}
                                     >
                                       <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
                                         <Slider.Range className="absolute h-full rounded-full" />
@@ -1062,6 +1195,7 @@ export default function SteerModal() {
                                               ? 'opacity-50 hover:opacity-70'
                                               : 'cursor-pointer'
                                           }`}
+                                          disabled={isSteering}
                                         >
                                           <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
                                             <Slider.Range className="absolute h-full rounded-full" />
@@ -1107,6 +1241,7 @@ export default function SteerModal() {
                                               : 'text-red-700 hover:bg-red-100'
                                           }`}
                                           disabled={
+                                            isSteering ||
                                             allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === false ||
                                             allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === 0
                                           }
@@ -1160,6 +1295,7 @@ export default function SteerModal() {
                                           ? 'opacity-50 hover:opacity-70'
                                           : 'cursor-pointer'
                                       }`}
+                                      disabled={isSteering}
                                     >
                                       <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
                                         <Slider.Range className="absolute h-full rounded-full" />
@@ -1208,6 +1344,7 @@ export default function SteerModal() {
                                           : 'text-red-700 hover:bg-red-100'
                                       }`}
                                       disabled={
+                                        isSteering ||
                                         allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) ===
                                           false ||
                                         allFeaturesInSupernodeHaveSameMultiplier(supernode, undefined, true) === 0
@@ -1267,6 +1404,7 @@ export default function SteerModal() {
                                     }
                                     setAllTokensDelta={setAllTokensDelta}
                                     isInSupernode
+                                    isSteering={isSteering}
                                   />
                                 );
                               })}
@@ -1317,6 +1455,7 @@ export default function SteerModal() {
                                     setSteeredPositionDeltaSteerGeneratedTokens
                                   }
                                   setAllTokensDelta={setAllTokensDelta}
+                                  isSteering={isSteering}
                                 />
                               );
                             })}
@@ -1329,11 +1468,11 @@ export default function SteerModal() {
               </div>
               <div className="flex flex-1 flex-col gap-y-4 pb-0.5 pr-0.5">
                 <Card className="flex w-full flex-col bg-white">
-                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-5">
-                    <CardTitle>Settings & Steer</CardTitle>
+                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-6">
+                    <CardTitle>Settings</CardTitle>
                   </CardHeader>
-                  <CardContent className="flex h-full flex-col justify-center px-5">
-                    <div className="mt-2 grid w-full grid-cols-3 items-center justify-center gap-x-1 gap-y-1.5">
+                  <CardContent className="flex h-full flex-col justify-center px-5 pb-6">
+                    <div className="mt-4 grid w-full grid-cols-3 items-center justify-center gap-x-1 gap-y-1.5">
                       <div className="flex w-full flex-row items-center justify-start gap-x-3">
                         <div className="w-[70px] text-right text-[10px] font-medium uppercase leading-tight text-slate-400">
                           Tokens
@@ -1458,58 +1597,23 @@ export default function SteerModal() {
                         />
                       </div>
                     </div>
-                    <div className="mt-5 flex w-full flex-row gap-x-2">
+                    <div className="mt-7 flex w-full flex-row justify-center gap-x-2">
                       <Button
+                        disabled={isSteering}
                         variant="outline"
                         onClick={() => {
                           resetSteerSettings();
                         }}
-                        className="flex flex-1 flex-row gap-x-1.5 self-center text-xs font-bold uppercase text-slate-400"
+                        className="flex w-36 min-w-36 max-w-36 flex-1 flex-row gap-x-1.5 self-center text-xs font-bold uppercase text-slate-400"
                       >
                         <ResetIcon className="h-4 w-4" /> Reset
                       </Button>
                       <Button
+                        disabled={isSteering}
                         variant="emerald"
                         className="flex flex-1 flex-row gap-x-1.5 self-center text-xs font-bold uppercase"
                         onClick={() => {
-                          if (steeredPositions.length === 0) {
-                            alert(
-                              'Error: You haven\'t chosen any features to ablate or steer.\n\nUnder "Features to Steer", drag a feature\'s slider to the left to negatively steer it, to the right to positively steer it, or to the center to ablate it.',
-                            );
-                            return;
-                          }
-                          setIsSteering(true);
-                          setSteerResult(undefined);
-                          // TODO: remove <bos> hack
-                          const requestBody: SteerLogitsRequest = {
-                            modelId: selectedGraph?.metadata.scan,
-                            prompt: selectedGraph?.metadata.prompt.replaceAll('<bos>', '') || '',
-                            features: steeredPositions,
-                            nTokens: steerTokens,
-                            topK: 5,
-                            freezeAttention,
-                            temperature,
-                            freqPenalty,
-                            seed,
-                          };
-
-                          // Make the API request
-                          fetch('/api/steer-logits', {
-                            method: 'POST',
-                            headers: {
-                              'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify(requestBody),
-                          })
-                            .then((response) => response.json())
-                            .then((data: SteerResponse) => {
-                              setSteerResult(data);
-                              setIsSteering(false);
-                            })
-                            .catch((error) => {
-                              console.error('Error steering logits:', error);
-                              setIsSteering(false);
-                            });
+                          doSteerCall();
                         }}
                       >
                         <Joystick className="h-4 w-4" />
@@ -1519,47 +1623,77 @@ export default function SteerModal() {
                   </CardContent>
                 </Card>
                 <Card className="flex h-full w-full flex-col bg-white">
-                  <CardHeader className="sticky top-0 flex w-full flex-row items-center justify-between rounded-t-xl bg-white pb-3 pt-5">
+                  <CardHeader className="sticky top-0 flex w-full flex-col items-start justify-start space-y-3 rounded-t-xl bg-white pb-3 pt-7">
                     <CardTitle>Results</CardTitle>
+                    <div className="text-xs text-slate-500">
+                      These automatically update after steering or adjusting settings. Hover over output tokens to see
+                      their logprobs.
+                    </div>
                   </CardHeader>
-                  <CardContent className="flex h-full max-h-full flex-col px-6">
+                  <CardContent className="flex h-full max-h-full flex-row gap-x-4 px-8">
                     <div className="flex-1">
-                      <div className="mb-1.5 mt-3 text-xs font-bold uppercase text-slate-400">Prompt</div>
-                      <div className="flex flex-wrap items-end gap-x-0 gap-y-[3px]">
-                        {selectedMetadataGraph?.promptTokens.map((token, index) => (
-                          <span key={index} className="py-[3px] font-mono text-[11px] text-slate-800">
-                            {token.toString().replaceAll(' ', '\u00A0').replaceAll('\n', '↵').replaceAll('<bos>', '')}
-                          </span>
-                        ))}
+                      <div className="mb-1.5 mt-3 text-center text-sm font-bold text-slate-700">Default Output</div>
+                      <div className="w-full">
+                        {steerResult && steerResult.DEFAULT_LOGITS_BY_TOKEN ? (
+                          <TokenTooltip logitsByToken={steerResult.DEFAULT_LOGITS_BY_TOKEN} />
+                        ) : (
+                          <div className="mt-0 flex w-full flex-col text-xs text-slate-400">
+                            <div className="flex flex-wrap gap-x-0 gap-y-[0px]">
+                              {selectedMetadataGraph?.promptTokens.map((token, index) => (
+                                <span
+                                  key={`${token}-${index}`}
+                                  className="h-[29px] min-h-[29px] cursor-default font-mono text-[12px] leading-[29px] text-slate-800"
+                                >
+                                  {token
+                                    .toString()
+                                    .replaceAll(' ', '\u00A0')
+                                    .replaceAll('\n', '↵')
+                                    .replaceAll('<bos>', '')}
+                                </span>
+                              ))}
+                            </div>
+                            {isSteering ? (
+                              <div className="mt-1 h-10">
+                                <LoadingSquare className="h-5 w-5" />
+                              </div>
+                            ) : (
+                              <div className="mt-2 w-full text-center text-sm text-slate-400" />
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex-1">
-                      <div className="mb-1.5 mt-3 text-xs font-bold uppercase text-slate-400">Default</div>
-                      {steerResult ? (
-                        <TokenTooltip logitsByToken={steerResult.DEFAULT_LOGITS_BY_TOKEN} />
-                      ) : isSteering ? (
-                        <div className="h-10">
-                          <LoadingSquare className="h-5 w-5" />
-                        </div>
-                      ) : (
-                        <div className="mt-3 w-full text-xs text-slate-400">
-                          Click Steer to generate the default completion.
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="mb-1.5 mt-3 text-xs font-bold uppercase text-slate-400">Steered</div>
-                      {steerResult ? (
-                        <TokenTooltip logitsByToken={steerResult.STEERED_LOGITS_BY_TOKEN} />
-                      ) : isSteering ? (
-                        <div className="h-10">
-                          <LoadingSquare className="h-5 w-5" />
-                        </div>
-                      ) : (
-                        <div className="mt-3 w-full text-xs text-slate-400">
-                          Click Steer to generate the steered completion.
-                        </div>
-                      )}
+                      <div className="mb-1.5 mt-3 text-center text-sm font-bold text-slate-700">Steered Output</div>
+                      <div className="w-full">
+                        {steerResult && steerResult.STEERED_LOGITS_BY_TOKEN.length > 0 ? (
+                          <TokenTooltip logitsByToken={steerResult.STEERED_LOGITS_BY_TOKEN} />
+                        ) : (
+                          <div className="mt-0 flex w-full flex-col text-xs text-slate-400">
+                            <div className="flex flex-wrap gap-x-0 gap-y-[0px]">
+                              {selectedMetadataGraph?.promptTokens.map((token, index) => (
+                                <span
+                                  key={`${token}-${index}`}
+                                  className="h-[29px] min-h-[29px] cursor-default font-mono text-[12px] leading-[29px] text-slate-800"
+                                >
+                                  {token
+                                    .toString()
+                                    .replaceAll(' ', '\u00A0')
+                                    .replaceAll('\n', '↵')
+                                    .replaceAll('<bos>', '')}
+                                </span>
+                              ))}
+                            </div>
+                            {isSteering ? (
+                              <div className="mt-1 h-10">
+                                <LoadingSquare className="h-5 w-5" />
+                              </div>
+                            ) : (
+                              <div className="mt-1 w-full text-xs text-slate-400" />
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

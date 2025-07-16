@@ -104,7 +104,14 @@ curl -X POST http://localhost:5004/generate-graph \
 
 ### Example Request - Steering (Interventions) With Top Logits
 
-The following ablates a French feature and increases a Spanish feature by 150. It uses the activations from the specified prompt.
+The following ablates a French feature and increases a Spanish feature by 350. It uses the activations from the specified prompt.
+
+We steer this on three features/positions:
+
+1. Layer 20, 1454 (French feature) - We ablate this. We tell the steering server that this feature is active on `token_active_position` 6 and we want to ablate it at `steer_position` 7.
+2. Layer 20, 341 (Spanish feature) - We add 350 to the activations for this feature at the last token (position 7). We tell the steering server that this feature is active at position 7.
+3. Layer 20, 341 (Same Spanish feature) - We add 350 to the activations for this feature. We set `steer_generated_tokens` to true so that it will steer all tokens that are generated. You cannot specify both a `steer_position` and a `steer_generated_tokens` in the same feature - hence why we split it into 2 features in the input body.
+
 It returns the top logits at each position for both the steered and default completions.
 The `top_k` field is the number of top logits to return per completion token.
 
@@ -121,14 +128,23 @@ curl -X POST http://localhost:5004/steer \
         {
           "layer": 20,
           "index": 1454,
-          "start_position": -1,
+          "token_active_position": 6,
+          "steer_position": 6,
           "ablate": true
         },
         {
           "layer": 20,
           "index": 341,
-          "start_position": -1,
-          "delta": 150
+          "token_active_position": 7,
+          "steer_position": 7,
+          "delta": 350
+        },
+        {
+          "layer": 20,
+          "index": 341,
+          "token_active_position": 7,
+          "steer_generated_tokens": true,
+          "delta": 350
         }
     ],
     "n_tokens": 10,

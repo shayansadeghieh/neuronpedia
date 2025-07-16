@@ -36,6 +36,7 @@ export default function NodeToSteer({
   findSteeredPositionSteerGeneratedTokens,
   setSteeredPositionDeltaSteerGeneratedTokens,
   setAllTokensDelta,
+  isSteering,
 }: {
   node: CLTGraphNode;
   sourceId: string;
@@ -61,6 +62,7 @@ export default function NodeToSteer({
   ) => SteerLogitFeature | undefined;
   setSteeredPositionDeltaSteerGeneratedTokens: (nodeSteerIdentifier: SteeredPositionIdentifier, delta: number) => void;
   setAllTokensDelta: (nodeSteerIdentifier: SteeredPositionIdentifier, delta: number) => void;
+  isSteering: boolean;
 }) {
   const scrollIntoViewRef = useRef<HTMLDivElement>(null);
 
@@ -92,9 +94,12 @@ export default function NodeToSteer({
 
   return (
     <div key={node.nodeId} className="relative flex w-full flex-col gap-y-1 rounded-md pl-6 pt-0.5">
-      {isInSupernode && <div className="absolute left-3 top-4 z-0 h-[1px] w-[12px] bg-sky-700" />}
+      {isInSupernode && (
+        <div className={`absolute left-3 top-4 z-0 h-[1px] w-[12px] bg-sky-700 ${isSteering ? 'opacity-50' : ''}`} />
+      )}
       <div className="flex flex-row items-center gap-x-3 text-[10px]">
         <Button
+          disabled={isSteering}
           onClick={() => {
             if (isSteered(nodeSteerIdentifier)) {
               removeSteeredPosition(nodeSteerIdentifier);
@@ -165,13 +170,14 @@ export default function NodeToSteer({
                       ? 'opacity-50 hover:opacity-70'
                       : 'cursor-pointer'
                   }`}
+                  disabled={isSteering}
                 >
                   <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
                     <Slider.Range className="absolute h-full rounded-full" />
                   </Slider.Track>
                   <Slider.Thumb
                     onClick={() => {
-                      if (!allTokensHaveSameDelta(nodeSteerIdentifier)) {
+                      if (!isSteering && !allTokensHaveSameDelta(nodeSteerIdentifier)) {
                         setAllTokensDelta(nodeSteerIdentifier, 0);
                       }
                     }}
@@ -223,13 +229,14 @@ export default function NodeToSteer({
                           ? 'opacity-50 hover:opacity-70'
                           : 'cursor-pointer'
                       }`}
+                      disabled={isSteering}
                     >
                       <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
                         <Slider.Range className="absolute h-full rounded-full" />
                       </Slider.Track>
                       <Slider.Thumb
                         onClick={() => {
-                          if (!findSteeredPositionByPosition(nodeSteerIdentifier, i)) {
+                          if (!isSteering && !findSteeredPositionByPosition(nodeSteerIdentifier, i)) {
                             setSteeredPositionDeltaByPosition(nodeSteerIdentifier, i, 0);
                           }
                         }}
@@ -256,7 +263,7 @@ export default function NodeToSteer({
                           ? 'text-red-700 hover:bg-red-100'
                           : 'text-slate-400'
                       }`}
-                      disabled={!findSteeredPositionByPosition(nodeSteerIdentifier, i)}
+                      disabled={isSteering || !findSteeredPositionByPosition(nodeSteerIdentifier, i)}
                       onClick={() =>
                         setSteeredPositions(
                           steeredPositions.filter(
@@ -298,13 +305,14 @@ export default function NodeToSteer({
                       ? 'opacity-50 hover:opacity-70'
                       : 'cursor-pointer'
                   }`}
+                  disabled={isSteering}
                 >
                   <Slider.Track className="relative h-full w-[4px] grow cursor-pointer rounded-full border border-sky-600 bg-sky-600 disabled:border-slate-300 disabled:bg-slate-100 group-hover:bg-sky-700">
                     <Slider.Range className="absolute h-full rounded-full" />
                   </Slider.Track>
                   <Slider.Thumb
                     onClick={() => {
-                      if (!findSteeredPositionSteerGeneratedTokens(nodeSteerIdentifier)) {
+                      if (!isSteering && !findSteeredPositionSteerGeneratedTokens(nodeSteerIdentifier)) {
                         setSteeredPositionDeltaSteerGeneratedTokens(nodeSteerIdentifier, 0);
                       }
                     }}
@@ -332,7 +340,7 @@ export default function NodeToSteer({
                       ? 'text-red-700 hover:bg-red-100'
                       : 'text-slate-400'
                   }`}
-                  disabled={!findSteeredPositionSteerGeneratedTokens(nodeSteerIdentifier)}
+                  disabled={isSteering || !findSteeredPositionSteerGeneratedTokens(nodeSteerIdentifier)}
                   onClick={() =>
                     setSteeredPositions(
                       steeredPositions.filter(

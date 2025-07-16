@@ -81,8 +81,10 @@ class ForwardPassRequest(BaseModel):
 
 class SteerFeature(BaseModel):
     layer: int
-    start_position: int
     index: int
+    token_active_position: int
+    steer_position: int | None = None
+    steer_generated_tokens: bool = False
     delta: float | None = None
     ablate: bool = False
 
@@ -233,9 +235,7 @@ def steer_handler(event):
         return {"error": str(e)}
 
     try:
-        # we always set the feature's position itself to the last token
-        FEATURE_ORIG_POSITION = -1
-        # but for each feature we take in a start_position which we'll use for the open_ended_slice
+        sequence_length = len(model.tokenizer(req_data.prompt).input_ids)
 
         # Validate that if ablate is True, delta must be None
         for feature in req_data.features:
@@ -243,28 +243,56 @@ def steer_handler(event):
                 return {"error": "When ablate is True, delta must be None"}
             if not feature.ablate and feature.delta is None:
                 return {"error": "When ablate is False, delta must be provided"}
+            if feature.steer_generated_tokens and feature.steer_position is not None:
+                return {
+                    "error": "When steer_generated_tokens is True, position must be None"
+                }
+            # Validate that if steer_generated_tokens is False, position must be provided
+            if not feature.steer_generated_tokens and feature.steer_position is None:
+                return {
+                    "error": "When steer_generated_tokens is False, position must be provided"
+                }
+            # Validate that if position is provided, it's not out of bounds
+            if feature.steer_position is not None and (
+                feature.steer_position < 0 or feature.steer_position >= sequence_length
+            ):
+                return {"error": "Position is out of bounds"}
 
         print(f"Received steer request: {req_data}")
 
         _, activations = model.get_activations(req_data.prompt, sparse=True)
 
-        sequence_length = len(model.tokenizer(req_data.prompt).input_ids)
-
-        open_ended_intervention_tuples = [
-            (
-                f.layer,
-                slice(f.start_position, None, None),
-                f.index,
-                0
-                if f.ablate
-                else activations[(f.layer, FEATURE_ORIG_POSITION, f.index)] + f.delta,
-            )
-            for f in req_data.features
-        ]
+        intervention_tuples = []
+        for f in req_data.features:
+            if f.steer_generated_tokens:
+                intervention_tuples.append(
+                    (
+                        f.layer,
+                        # TODO: double check this
+                        slice(sequence_length, None, None),
+                        f.index,
+                        0
+                        if f.ablate
+                        else activations[(f.layer, f.token_active_position, f.index)]
+                        + f.delta,
+                    )
+                )
+            else:
+                intervention_tuples.append(
+                    (
+                        f.layer,
+                        f.steer_position,
+                        f.index,
+                        0
+                        if f.ablate
+                        else activations[(f.layer, f.token_active_position, f.index)]
+                        + f.delta,
+                    )
+                )
 
         hooks, steered_logits, _ = model._get_feature_intervention_hooks(
             req_data.prompt,
-            open_ended_intervention_tuples,
+            intervention_tuples,
             freeze_attention=req_data.freeze_attention,
         )
 

@@ -58,17 +58,17 @@
 
 .forceShowScrollBarHorizontal::-webkit-scrollbar {
   display: block !important;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .forceShowScrollBarHorizontal::-webkit-scrollbar-track:horizontal {
   background-color: rgba(57, 57, 57, 0);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .forceShowScrollBarHorizontal::-webkit-scrollbar-thumb:horizontal {
-  border-radius: 8px;
+  border-radius: 6px;
   background-color: rgba(203, 213, 225, 1);
 }
 
