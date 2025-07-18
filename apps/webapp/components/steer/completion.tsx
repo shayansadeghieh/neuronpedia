@@ -265,7 +265,7 @@ export default function SteerCompletion({
                   stopSteering();
                 }
               }}
-              className={`flex h-full cursor-pointer items-center justify-center`}
+              className="flex h-full cursor-pointer items-center justify-center"
             >
               {!isSteering ? (
                 <ArrowUp className="h-8 w-8 rounded-full bg-gBlue p-1.5 text-white hover:bg-gBlue/80" />

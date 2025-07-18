@@ -1254,7 +1254,7 @@ export default function EvalsTable({
                   }
                   if (key === 'modelId') {
                     return (
-                      <div className={`px-0 py-0 text-center text-[11px]`}>
+                      <div className="px-0 py-0 text-center text-[11px]">
                         <a
                           href={`/${data.modelId}`}
                           target="_blank"

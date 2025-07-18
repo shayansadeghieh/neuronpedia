@@ -768,7 +768,7 @@ export default function Umap({ modelId, sourceSet, layers }: { modelId: string; 
             </div>
           </div>
         </div>
-        <div className={`flex w-full flex-row gap-x-2 px-2.5`}>
+        <div className="flex w-full flex-row gap-x-2 px-2.5">
           <div className={`z-10 flex h-[${UMAP_HEIGHT}px] w-full flex-1 flex-col border-t border-t-slate-300`}>
             {umapExplanations.length === 0 && (
               <div

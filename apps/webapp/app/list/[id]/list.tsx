@@ -250,7 +250,7 @@ export default function List({ listId }: { listId: string }) {
                       setFieldValue('defaultTestText', list.defaultTestText);
                       setShowEdit(false);
                     }}
-                    className={`mb-0 mt-0 flex w-full flex-1 items-center justify-center overflow-hidden rounded bg-slate-700 py-1.5 font-sans text-xs font-medium text-white transition-all hover:bg-slate-400 hover:text-slate-700 focus:ring-0 disabled:bg-slate-300 disabled:text-slate-400`}
+                    className="mb-0 mt-0 flex w-full flex-1 items-center justify-center overflow-hidden rounded bg-slate-700 py-1.5 font-sans text-xs font-medium text-white transition-all hover:bg-slate-400 hover:text-slate-700 focus:ring-0 disabled:bg-slate-300 disabled:text-slate-400"
                   >
                     Cancel
                   </button>

@@ -287,7 +287,7 @@ export default function SteerCompletionChat({
         </div>
       </div>
       <div className="-mt-32 flex w-full flex-col items-center justify-center pb-8 sm:-mt-28 sm:pb-4">
-        <div className={`relative mb-2 mt-2.5 flex flex-row items-center justify-center gap-x-1.5 sm:mt-0 sm:gap-x-3`}>
+        <div className="relative mb-2 mt-2.5 flex flex-row items-center justify-center gap-x-1.5 sm:mt-0 sm:gap-x-3">
           <div className="my-0 flex flex-row gap-x-2 sm:my-0">
             <button
               type="button"
@@ -351,7 +351,7 @@ export default function SteerCompletionChat({
                 stopSteering();
               }
             }}
-            className={`absolute right-2 flex h-full cursor-pointer items-center justify-center`}
+            className="absolute right-2 flex h-full cursor-pointer items-center justify-center"
           >
             {!isSteering ? (
               <ArrowUp className="h-8 w-8 rounded-full bg-gBlue p-1.5 text-white hover:bg-gBlue/80" />

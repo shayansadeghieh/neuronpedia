@@ -766,7 +766,7 @@ export default forwardRef<EvalsPlotMethods, EvalsPlotProps>(
                 return '';
               })}
           </div>
-          <div className={`mb-2 mt-0 text-xs font-medium text-slate-500`}>
+          <div className="mb-2 mt-0 text-xs font-medium text-slate-500">
             {metricColumnX ? getMetricTooltip(metricColumnX) : ''}
             {' vs '}
             {metricColumnY ? getMetricTooltip(metricColumnY) : ''}

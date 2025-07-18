@@ -142,7 +142,7 @@ export default function NewVectorForm({ defaultModel, callback }: { defaultModel
                     name="modelId"
                     readOnly
                     value={model?.id}
-                    className={`mt-1 h-[40px] w-28 max-w-28 select-none rounded-md border border-slate-300 px-2 text-center text-[11px] text-slate-600`}
+                    className="mt-1 h-[40px] w-28 max-w-28 select-none rounded-md border border-slate-300 px-2 text-center text-[11px] text-slate-600"
                   />
                 ) : (
                   <div className="mt-1 h-[40px] w-36 min-w-36 select-none text-center">
