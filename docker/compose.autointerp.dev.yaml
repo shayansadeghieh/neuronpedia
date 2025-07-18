@@ -1,7 +1,7 @@
 services:
     autointerp:
       volumes:
-        - ./apps/autointerp:/app/apps/autointerp
+        - ../apps/autointerp:/app/apps/autointerp
       environment:
         - RELOAD=${RELOAD:-0}
       command: >
