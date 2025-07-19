@@ -395,7 +395,7 @@ def make_steer_completion_chat_response(
 
 def apply_generic_chat_template(messages: List[Dict[str, str]], add_generation_prompt: bool = True) -> str:
     """
-    Applies openAI's Chat Markup Language (chatML) to the text in case the model's tokenizer does not come with a chat template.
+    In case the model's tokenizer does not come with a chat template, we apply a generic chatML template.    
     
     Args:
         messages: List of message dictionaries with 'role' and 'content' keys
