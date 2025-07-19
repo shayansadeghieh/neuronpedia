@@ -10,16 +10,21 @@ from neuronpedia_inference_client.models.steer_completion_request import (
     SteerCompletionRequest,
 )
 
-from tests.conftest import MODEL_ID, SAE_SELECTED_SOURCES, TEST_PROMPT, X_SECRET_KEY
+from tests.conftest import (
+    FREQ_PENALTY,
+    MODEL_ID,
+    N_COMPLETION_TOKENS,
+    SAE_SELECTED_SOURCES,
+    SEED,
+    STEER_FEATURE_INDEX,
+    STRENGTH,
+    STRENGTH_MULTIPLIER,
+    TEMPERATURE,
+    TEST_PROMPT,
+    X_SECRET_KEY,
+)
 
 ENDPOINT = "/v1/steer/completion"
-N_COMPLETION_TOKENS = 10
-TEMPERATURE = 0
-STRENGTH = 10.0  # Steering mechanism (feature or vector) specific strength
-STRENGTH_MULTIPLIER = 10.0  # Multiplier across all steering mechanisms
-STEER_FEATURE_INDEX = 5
-SEED = 42
-FREQ_PENALTY = 0.0
 
 
 def test_completion_steered_with_features_additive(client: TestClient):
