@@ -70,9 +70,9 @@ def test_completion_chat_steered_with_features_additive(client: TestClient):
 
     # Steered output should be different from default output
     assert outputs_by_type[NPSteerType.STEERED] != outputs_by_type[NPSteerType.DEFAULT]
-    
-    expected_steered_output = '<|endoftext|><|im_start|>user\nHello, world!<|im_end|>\n<|im_start|>assistant\n\n<|im_start|>user\n'
-    expected_default_output = '<|endoftext|><|im_start|>user\nHello, world!<|im_end|>\n<|im_start|>assistant\n<|im_end|>\n<|'
+
+    expected_steered_output = "<|endoftext|><|im_start|>user\nHello, world!<|im_end|>\n<|im_start|>assistant\n\n<|im_start|>user\n"
+    expected_default_output = "<|endoftext|><|im_start|>user\nHello, world!<|im_end|>\n<|im_start|>assistant\n<|im_end|>\n<|"
 
     assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
     assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
