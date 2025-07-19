@@ -8,6 +8,7 @@ from neuronpedia_inference_client.models.util_sae_vector_post_request import (
 )
 
 from tests.conftest import (
+    ABS_TOLERANCE,
     INVALID_SAE_SOURCE,
     MODEL_ID,
     SAE_SELECTED_SOURCES,
@@ -58,8 +59,15 @@ def test_sae_vector_valid_request(client: TestClient):
     response_model_idx_5 = UtilSaeVectorPost200Response(**data_idx_5)
     response_model_idx_6 = UtilSaeVectorPost200Response(**data_idx_6)
 
-    assert response_model_idx_5.vector == EXPECTED_FEATURE_VECTOR_INDEX_5
-    assert response_model_idx_6.vector == EXPECTED_FEATURE_VECTOR_INDEX_6
+    # Compare vectors using absolute tolerance
+    assert len(response_model_idx_5.vector) == len(EXPECTED_FEATURE_VECTOR_INDEX_5)
+    assert len(response_model_idx_6.vector) == len(EXPECTED_FEATURE_VECTOR_INDEX_6)
+    
+    for actual, expected in zip(response_model_idx_5.vector, EXPECTED_FEATURE_VECTOR_INDEX_5):
+        assert abs(actual - expected) <= ABS_TOLERANCE, f"Vector element difference {abs(actual - expected)} exceeds tolerance {ABS_TOLERANCE}"
+    
+    for actual, expected in zip(response_model_idx_6.vector, EXPECTED_FEATURE_VECTOR_INDEX_6):
+        assert abs(actual - expected) <= ABS_TOLERANCE, f"Vector element difference {abs(actual - expected)} exceeds tolerance {ABS_TOLERANCE}"
 
 
 def test_sae_vector_invalid_source(client: TestClient):

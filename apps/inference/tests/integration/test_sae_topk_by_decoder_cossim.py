@@ -118,7 +118,7 @@ def test_sae_topk_by_decoder_cossim_with_vector(client: TestClient):
 
 def test_sae_topk_by_decoder_cossim_input_validation_errors(client: TestClient):
     """
-    Test input validation: both feature and vector, or neither provided.
+    Test input validation where both feature and vector are provided.
     """
     test_vector = [1.0] * 768
 
