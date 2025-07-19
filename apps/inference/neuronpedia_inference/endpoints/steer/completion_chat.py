@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Dict, List
 
 import torch
 from fastapi import APIRouter
@@ -83,9 +83,19 @@ async def completion_chat(request: SteerCompletionChatPostRequest):
     # tokenize = True adds a BOS
     if model.tokenizer is None:
         raise ValueError("Tokenizer is not initialized")
-    promptTokenized = model.tokenizer.apply_chat_template(
-        promptChatFormatted, tokenize=True, add_generation_prompt=True
-    )
+    
+    if not hasattr(model.tokenizer, 'chat_template') or model.tokenizer.chat_template is None:
+        logger.warning("Tokenizer does not support chat templates, using general chat template which may impact performance.")   
+
+    # If the tokenizer does not support chat templates, we need to apply a generic chat template        
+    if not hasattr(model.tokenizer, 'chat_template') or model.tokenizer.chat_template is None:
+        logger.warning("Model's tokenizer does not support chat templates. Using general chat template which may impact performance.")   
+        template_applied_prompt = apply_generic_chat_template(promptChatFormatted, add_generation_prompt=True)        
+        promptTokenized = model.to_tokens(template_applied_prompt)[0]        
+    else:
+        promptTokenized = model.tokenizer.apply_chat_template(
+            promptChatFormatted, tokenize=True, add_generation_prompt=True
+        )
     promptTokenized = torch.tensor(promptTokenized)
 
     # logger.info("promptTokenized: %s", promptTokenized)
@@ -385,3 +395,26 @@ def make_steer_completion_chat_response(
             chat_template=promptChat,
         ),
     )
+
+def apply_generic_chat_template(messages: List[Dict[str, str]], add_generation_prompt: bool = True) -> str:
+    """
+    Applies openAI's Chat Markup Language (chatML) to the text in case the model's tokenizer does not come with a chat template.
+    
+    Args:
+        messages: List of message dictionaries with 'role' and 'content' keys
+        add_generation_prompt: Whether to add the assistant generation prompt
+        
+    Returns:
+        str: Formatted chat string ready for tokenization
+    """
+    formatted_text = ""
+    
+    for message in messages:
+        role = message["role"]
+        content = message["content"]
+        formatted_text += f"<|im_start|>{role}\n{content}<|im_end|>\n"
+    
+    if add_generation_prompt:
+        formatted_text += "<|im_start|>assistant\n"
+    
+    return formatted_text
