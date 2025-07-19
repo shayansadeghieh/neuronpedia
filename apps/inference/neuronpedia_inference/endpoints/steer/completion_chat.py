@@ -82,10 +82,7 @@ async def completion_chat(request: SteerCompletionChatPostRequest):
 
     # tokenize = True adds a BOS
     if model.tokenizer is None:
-        raise ValueError("Tokenizer is not initialized")
-    
-    if not hasattr(model.tokenizer, 'chat_template') or model.tokenizer.chat_template is None:
-        logger.warning("Tokenizer does not support chat templates, using general chat template which may impact performance.")   
+        raise ValueError("Tokenizer is not initialized")        
 
     # If the tokenizer does not support chat templates, we need to apply a generic chat template        
     if not hasattr(model.tokenizer, 'chat_template') or model.tokenizer.chat_template is None:
