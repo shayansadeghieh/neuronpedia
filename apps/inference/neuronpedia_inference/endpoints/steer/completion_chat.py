@@ -21,6 +21,7 @@ from transformer_lens import HookedTransformer
 from neuronpedia_inference.config import Config
 from neuronpedia_inference.inference_utils.steering import (
     OrthogonalProjector,
+    apply_generic_chat_template,
     convert_to_chat_array,
     format_sse_message,
     process_features_vectorized,
@@ -399,29 +400,3 @@ def make_steer_completion_chat_response(
             chat_template=promptChat,
         ),
     )
-
-
-def apply_generic_chat_template(
-    messages: list[dict[str, str]], add_generation_prompt: bool = True
-) -> str:
-    """
-    In case the model's tokenizer does not come with a chat template, we apply a generic chatML template.
-
-    Args:
-        messages: List of message dictionaries with 'role' and 'content' keys
-        add_generation_prompt: Whether to add the assistant generation prompt
-
-    Returns:
-        str: Formatted chat string ready for tokenization
-    """
-    formatted_text = ""
-
-    for message in messages:
-        role = message["role"]
-        content = message["content"]
-        formatted_text += f"<|im_start|>{role}\n{content}<|im_end|>\n"
-
-    if add_generation_prompt:
-        formatted_text += "<|im_start|>assistant\n"
-
-    return formatted_text
