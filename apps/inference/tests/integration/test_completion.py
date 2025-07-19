@@ -290,3 +290,68 @@ def test_completion_steered_with_vectors_orthogonal(client: TestClient):
 
     assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
     assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
+
+
+def test_completion_invalid_request_no_features_or_vectors(client: TestClient):
+    """
+    Test error handling when neither features nor vectors are provided.
+    """
+    request = SteerCompletionRequest(
+        prompt=TEST_PROMPT,
+        model=MODEL_ID,
+        steer_method=NPSteerMethod.SIMPLE_ADDITIVE,
+        normalize_steering=False,
+        types=[NPSteerType.STEERED],
+        n_completion_tokens=N_COMPLETION_TOKENS,
+        temperature=TEMPERATURE,
+        strength_multiplier=STRENGTH_MULTIPLIER,
+        freq_penalty=FREQ_PENALTY,
+        seed=SEED,
+    )
+
+    response = client.post(
+        ENDPOINT, json=request.model_dump(), headers={"X-SECRET-KEY": X_SECRET_KEY}
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "exactly one of features or vectors must be provided" in data["error"]
+
+
+def test_completion_invalid_request_both_features_and_vectors(client: TestClient):
+    """
+    Test error handling when both features and vectors are provided.
+    """
+    request = SteerCompletionRequest(
+        prompt=TEST_PROMPT,
+        model=MODEL_ID,
+        steer_method=NPSteerMethod.SIMPLE_ADDITIVE,
+        normalize_steering=False,
+        types=[NPSteerType.STEERED],
+        features=[
+            NPSteerFeature(
+                model=MODEL_ID,
+                source=SAE_SELECTED_SOURCES[0],
+                index=STEER_FEATURE_INDEX,
+                strength=STRENGTH,
+            )
+        ],
+        vectors=[
+            NPSteerVector(
+                steering_vector=[1.0] * 768,
+                strength=STRENGTH,
+                hook="blocks.7.hook_resid_post",
+            )
+        ],
+        n_completion_tokens=N_COMPLETION_TOKENS,
+        temperature=TEMPERATURE,
+        strength_multiplier=STRENGTH_MULTIPLIER,
+        freq_penalty=FREQ_PENALTY,
+        seed=SEED,
+    )
+
+    response = client.post(
+        ENDPOINT, json=request.model_dump(), headers={"X-SECRET-KEY": X_SECRET_KEY}
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "exactly one of features or vectors must be provided" in data["error"]
