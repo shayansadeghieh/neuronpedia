@@ -86,7 +86,7 @@ async def completion_chat(request: SteerCompletionChatPostRequest):
 
     # If the tokenizer does not support chat templates, we need to apply a generic chat template        
     if not hasattr(model.tokenizer, 'chat_template') or model.tokenizer.chat_template is None:
-        logger.warning("Model's tokenizer does not support chat templates. Using general chat template which may impact performance.")   
+        logger.warning("Model's tokenizer does not support chat templates. Utilizing general chat template.")   
         template_applied_prompt = apply_generic_chat_template(promptChatFormatted, add_generation_prompt=True)        
         promptTokenized = model.to_tokens(template_applied_prompt)[0]        
     else:
