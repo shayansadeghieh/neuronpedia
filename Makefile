@@ -223,3 +223,11 @@ reset-docker-data: ## Reset Docker Data - this deletes your local database!
 	@echo "Resetting Docker data..."
 	docker compose -f docker/compose.yaml down -v
 
+graph-localhost-build: ## Graph: Localhost Environment - Build
+	@echo "Building the graph server for the localhost environment..."
+	ENV_FILE=.env.localhost \
+		BUILD_TYPE=$(BUILD_TYPE) \
+		docker compose \
+		-f docker/compose.yaml \
+		$(if $(USE_LOCAL_HF_CACHE),-f docker-compose.hf-cache.yaml,) \
+		build graph
