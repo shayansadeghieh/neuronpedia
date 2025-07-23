@@ -129,7 +129,7 @@ export default function GraphControls({
           </CustomTooltip>
         </div>
       )}
-      {selectedGraph?.metadata.scan && graphModelHasNpDashboards(selectedGraph) && !isEmbed && (
+      {selectedGraph?.metadata.scan && graphModelHasNpDashboards(selectedGraph) && (
         <div className="hidden flex-row items-center rounded bg-slate-200 px-2 py-0.5 sm:flex">
           <div className="flex flex-row items-center">
             <Label htmlFor="densityThreshold" className="mr-1 text-center text-[9px] leading-[10px] text-slate-600">
