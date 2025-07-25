@@ -115,7 +115,8 @@ export default function LinkGraph() {
   const middleRef = useRef<SVGSVGElement>(null);
   const bottomRef = useRef<SVGSVGElement>(null);
   const canvasRefs = useRef<Array<HTMLCanvasElement | null>>([null, null, null, null, null]);
-  const { visState, selectedGraph, updateVisStateField, isEditingLabel, makeTooltipText } = useGraphContext();
+  const { visState, selectedGraph, updateVisStateField, togglePin, isEditingLabel, makeTooltipText } =
+    useGraphContext();
   const {
     hoveredIdRef,
     updateHoverState,
@@ -1098,16 +1099,7 @@ export default function LinkGraph() {
           // eslint-disable-next-line
           if (event.metaKey || event.ctrlKey) {
             // Toggle pinned state with meta/ctrl key
-            const pinnedIndex = visState.pinnedIds.indexOf(closestNode.nodeId || '');
-            const newPinnedIds = [...visState.pinnedIds];
-
-            if (pinnedIndex === -1 && closestNode.nodeId) {
-              newPinnedIds.push(closestNode.nodeId);
-            } else if (pinnedIndex !== -1) {
-              newPinnedIds.splice(pinnedIndex, 1);
-            }
-
-            updateVisStateField('pinnedIds', newPinnedIds);
+            const newPinnedIds = togglePin(closestNode.nodeId || '');
 
             // Update pinned visualization
             nodeSel.classed('pinned', (d) => Boolean(d.nodeId && newPinnedIds.includes(d.nodeId)));

@@ -81,6 +81,7 @@ export default function Subgraph() {
     visState,
     selectedGraph,
     updateVisStateField,
+    togglePin,
     isEditingLabel,
     getOverrideClerpForNode,
     makeTooltipText,
@@ -120,19 +121,19 @@ export default function Subgraph() {
   const [currentHoveredId, setCurrentHoveredId] = useState<string | null>(null);
   const [currentClickedId, setCurrentClickedId] = useState<string | null>(null);
 
-  function togglePinNode(nodeId: string) {
-    // Toggle pinned state
-    const newPinnedIds = [...visState.pinnedIds];
-    const pinnedIndex = newPinnedIds.indexOf(nodeId || '');
+  // function togglePinNode(nodeId: string) {
+  //   // Toggle pinned state
+  //   const newPinnedIds = [...visState.pinnedIds];
+  //   const pinnedIndex = newPinnedIds.indexOf(nodeId || '');
 
-    if (pinnedIndex === -1 && nodeId) {
-      newPinnedIds.push(nodeId);
-    } else if (pinnedIndex !== -1) {
-      newPinnedIds.splice(pinnedIndex, 1);
-    }
+  //   if (pinnedIndex === -1 && nodeId) {
+  //     newPinnedIds.push(nodeId);
+  //   } else if (pinnedIndex !== -1) {
+  //     newPinnedIds.splice(pinnedIndex, 1);
+  //   }
 
-    updateVisStateField('pinnedIds', newPinnedIds);
-  }
+  //   updateVisStateField('pinnedIds', newPinnedIds);
+  // }
 
   // Register callbacks to be notified when hover/click state changes
   useEffect(() => {
@@ -750,7 +751,7 @@ export default function Subgraph() {
 
         if (ev.metaKey || ev.ctrlKey) {
           if (d.node.nodeId) {
-            togglePinNode(d.node.nodeId);
+            togglePin(d.node.nodeId);
           }
         } else {
           // Set as clicked node
@@ -810,7 +811,7 @@ export default function Subgraph() {
         if (ev.metaKey || ev.ctrlKey) {
           // Toggle pinned state
           if (d.nodeId) {
-            togglePinNode(d.nodeId);
+            togglePin(d.nodeId);
           }
         } else {
           // Set as clicked node
@@ -1175,9 +1176,9 @@ export default function Subgraph() {
             <div className="pt-2.5 text-center text-[12px]">Grouping Mode</div>
             <div className="px-2 pb-1.5 pt-0.5 text-center">
               {visState.subgraph.activeGrouping.selectedNodeIds.size === 0 ? (
-                <div className="flex flex-col gap-y-0.5 pt-1.5 text-[9.5px] font-medium">
+                <div className="flex flex-col gap-y-0 pt-1 text-[9.5px] font-medium">
                   <div>Click subgraph nodes to select.</div>
-                  <div>{visState.subgraph.supernodes.length > 0 ? ' Click ✕ to ungroup.' : ''}</div>
+                  <div className="pt-1">{visState.subgraph.supernodes.length > 0 ? ' Click ✕ to ungroup.' : ' '}</div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-y-0 pt-1 text-[9.5px] font-medium">
@@ -1282,7 +1283,7 @@ export default function Subgraph() {
               size="sm"
               onClick={() => {
                 if (clickedIdRef.current) {
-                  togglePinNode(clickedIdRef.current);
+                  togglePin(clickedIdRef.current);
                 }
               }}
               className="hidden h-11 w-[86px] flex-col items-center justify-center gap-y-[4px] whitespace-nowrap border border-sky-600 bg-sky-100 px-0 text-[9.5px] font-semibold leading-none text-sky-700 shadow transition-all hover:bg-sky-200 hover:text-sky-700 sm:flex"
