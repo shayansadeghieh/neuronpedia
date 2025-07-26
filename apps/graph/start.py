@@ -38,10 +38,9 @@ def parse_args():
     
     # Model configuration
     parser.add_argument(
-        "--model_id",
-        required=True,
+        "--model_id",        
         choices=["google/gemma-2-2b", "meta-llama/Llama-3.2-1B"],
-        help="The ID of the transformerlens model to use",
+        help="The ID of the transformerlens model to use. Will default to google/gemma-2-2b if not specified.",
     )
     
     # Circuit tracer specific settings
