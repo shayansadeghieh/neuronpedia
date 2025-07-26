@@ -240,6 +240,7 @@ graph-localhost-dev: ## Graph: Localhost Environment - Run (Development Build). 
 	RELOAD=$$([ "$(AUTORELOAD)" = "1" ] && echo "1" || echo "0") \
 	ENV_FILE=.env.localhost \
 		docker compose \
+		--project-directory . \
 		-f docker/compose.yaml \
 		-f docker/compose.graph.dev.yaml \
 		$(if $(ENABLE_GPU),-f docker/compose.graph.gpu.yaml,) \

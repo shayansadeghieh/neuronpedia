@@ -107,6 +107,11 @@ services:
         UBUNTU_VERSION: "22.04"
     ports:
       - "5004:5004"
+    env_file:
+      - ${ENV_FILE:-.env}
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - SECRET=${GRAPH_SERVER_SECRET}      
 
 volumes:
   postgres_data:
