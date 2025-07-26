@@ -63,6 +63,9 @@ COPY apps/graph /app/apps/graph/
 # Expose the graph server port
 EXPOSE 5004
 
+# We default to gemma-2-2b for the graph model, but this can be overridden by setting the MODEL_ID environment variable.
+ENV MODEL_ID=google/gemma-2-2b
+
 # The server requires a model argument, defaulting to gemma-2-2b
 # This can be overridden when running the container
-CMD ["python", "neuronpedia_graph/server.py", "google/gemma-2-2b"] 
+CMD ["python", "start.py"] 

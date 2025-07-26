@@ -32,11 +32,10 @@ from transformers import AutoTokenizer
 
 load_dotenv()
 
-# TODO: make these env variables and/or command line arguments
-LIMIT_TOKENS = 64
-DEFAULT_MAX_FEATURE_NODES = 10000
+LIMIT_TOKENS = int(os.getenv("TOKEN_LIMIT", 64))
+DEFAULT_MAX_FEATURE_NODES = int(os.getenv("MAX_FEATURE_NODES", 10000))
 OFFLOAD = None
-UPDATE_INTERVAL = 1000
+UPDATE_INTERVAL = int(os.getenv("UPDATE_INTERVAL", 1000))
 
 SECRET_KEY = os.getenv("SECRET")
 if not SECRET_KEY:
@@ -69,11 +68,8 @@ NP_MODEL_ID_TO_TLENS_MODEL_ID = {
     "llama3.1-8b": "meta-llama/Llama-3.2-1B",
 }
 
-# on initial load we take the transformerlens model id
-if len(sys.argv) > 1:
-    loaded_model_arg = sys.argv[1]
-    print(f"Using transformerlens model specified via command line: {loaded_model_arg}")
-else:
+loaded_model_arg = os.getenv("MODEL_ID")
+if not loaded_model_arg:
     raise ValueError(
         "TransformerLens model name is required. Please specify a model as a command line argument. Valid models: "
         + ", ".join(TLENS_MODEL_ID_TO_SCAN.keys())
@@ -769,12 +765,3 @@ async def generate_graph(req: Request):
             print(
                 f"Thread {threading.get_ident()}: Lock was not held by current path in finally block (already released or never acquired)."
             )
-
-
-if __name__ == "__main__":
-    if loaded_model_arg is None:
-        print(
-            "Error: Model could not be loaded. Please check command line arguments and model configuration."
-        )
-        sys.exit(1)
-    uvicorn.run(app, host="0.0.0.0", port=5004)
