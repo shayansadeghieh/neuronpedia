@@ -86,7 +86,20 @@ else:
         + ", ".join(TLENS_MODEL_ID_TO_SCAN.keys())
     )
 
-model = ReplacementModel.from_pretrained(loaded_model_arg, transcoder_name)
+if not os.environ.get("DEVICE"):
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+else:
+    device = torch.device(os.environ["DEVICE"])
+
+start_time = time.time()
+print(f"Loading model: {loaded_model_arg} started at {start_time}") 
+model = ReplacementModel.from_pretrained(loaded_model_arg, transcoder_name, device=device)
+print(f"Model loaded: {model}. It took {time.time() - start_time} seconds")
 
 loaded_scan = TLENS_MODEL_ID_TO_SCAN.get(loaded_model_arg)
 if loaded_scan is None:
