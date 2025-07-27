@@ -39,9 +39,13 @@ def parse_args():
     # Model configuration
     parser.add_argument(
         "--model_id",   
-        required=True,     
+        # required=True,     
         choices=["google/gemma-2-2b", "meta-llama/Llama-3.2-1B"],
         help="The ID of the transformerlens model to use.",
+    )
+    parser.add_argument(
+        "--device",
+        help="Device to run the model(s) on",
     )
     
     # Circuit tracer specific settings
@@ -93,6 +97,9 @@ def main():
         
     if "UPDATE_INTERVAL" not in os.environ:
         os.environ["UPDATE_INTERVAL"] = str(args.update_interval)
+    
+    if "DEVICE" not in os.environ and args.device is not None:
+        os.environ["DEVICE"] = args.device
     
     # Build uvicorn command
     uvicorn_args = [
