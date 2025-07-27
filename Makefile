@@ -245,7 +245,7 @@ graph-localhost-dev: ## Graph: Localhost Environment - Run (Development Build). 
 		-f docker/compose.graph.dev.yaml \
 		$(if $(ENABLE_GPU),-f docker/compose.graph.gpu.yaml,) \
 		$(if $(USE_LOCAL_HF_CACHE),-f docker/compose.hf-cache.yaml,) \
-		--env-file .env.localhost \		
+		--env-file .env.localhost \
 		--env-file apps/graph/.env \
 		up graph
 

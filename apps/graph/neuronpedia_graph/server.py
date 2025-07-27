@@ -13,7 +13,6 @@ from typing import Any
 import psutil
 import requests
 import torch
-import uvicorn
 from circuit_tracer.attribution import attribute, compute_salient_logits
 from circuit_tracer.graph import prune_graph
 from circuit_tracer.replacement_model import ReplacementModel
