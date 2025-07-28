@@ -48,6 +48,36 @@ if not HF_TOKEN:
         "HF_TOKEN environment variable not set. Please create a .env file with HF_TOKEN=<your_huggingface_token>"
     )
 
+
+def get_device() -> torch.device:
+    """Determine the appropriate device for model loading."""
+    device_env = os.environ.get("DEVICE")
+    if device_env:
+        return torch.device(device_env)
+    
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        return torch.device("mps")
+    else:
+        return torch.device("cpu")
+
+
+def get_model_dtype() -> torch.dtype | None:
+    """Parse MODEL_DTYPE environment variable into torch dtype."""
+    model_dtype_env = os.environ.get("MODEL_DTYPE")
+    if not model_dtype_env:
+        return None
+    
+    dtype_mapping = {
+        "bfloat16": torch.bfloat16,
+        "float16": torch.float16,
+        "float32": torch.float32,
+    }
+    
+    return dtype_mapping.get(model_dtype_env)
+
+
 app = FastAPI()
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
@@ -86,27 +116,10 @@ else:
         + ", ".join(TLENS_MODEL_ID_TO_SCAN.keys())
     )
 
-if not os.environ.get("DEVICE"):
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    elif torch.backends.mps.is_available():
-        device = torch.device("mps")
-    else:
-        device = torch.device("cpu")
-else:
-    device = torch.device(os.environ["DEVICE"])
+device = get_device()
+model_dtype = get_model_dtype()
 
-start_time = time.time()
-print(f"Loading model: {loaded_model_arg} started at {start_time}") 
-model_dtype = os.environ.get("MODEL_DTYPE")
-if model_dtype == "bfloat16":
-    model_dtype = torch.bfloat16
-elif model_dtype == "float16":
-    model_dtype = torch.float16
-elif model_dtype == "float32":
-    model_dtype = torch.float32
 model = ReplacementModel.from_pretrained(loaded_model_arg, transcoder_name, device=device, dtype=model_dtype)
-print(f"Model loaded: {model}. It took {(time.time() - start_time) / 60:.2f} minutes")
 
 loaded_scan = TLENS_MODEL_ID_TO_SCAN.get(loaded_model_arg)
 if loaded_scan is None:

@@ -39,19 +39,19 @@ def parse_args():
     # Model configuration
     parser.add_argument(
         "--model_id",   
-        # required=True,     
+        default="google/gemma-2-2b",     
         choices=["google/gemma-2-2b", "meta-llama/Llama-3.2-1B"],
-        help="The ID of the transformerlens model to use.",
+        help="The ID of the transformerlens model to use. Default is google/gemma-2-2b.",
     )
     parser.add_argument(
         "--model_dtype",           
         default="float32",
         choices=["bfloat16", "float16", "float32"],
-        help="The dtype of the transformerlens model to use.",
+        help="The dtype of the transformerlens model to use. Default is float32.",
     )
     parser.add_argument(
         "--device",
-        help="Device to run the model(s) on",
+        help="Device to run the model(s) on.",
     )
     
     # Circuit tracer specific settings
