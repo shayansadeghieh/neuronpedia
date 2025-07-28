@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument(
         "--port",
         type=int,
-        default=5003,
+        default=5004,
         help="Port number for the server to listen on",
     )
     parser.add_argument(
@@ -42,6 +42,12 @@ def parse_args():
         # required=True,     
         choices=["google/gemma-2-2b", "meta-llama/Llama-3.2-1B"],
         help="The ID of the transformerlens model to use.",
+    )
+    parser.add_argument(
+        "--model_dtype",           
+        default="float32",
+        choices=["bfloat16", "float16", "float32"],
+        help="The dtype of the transformerlens model to use.",
     )
     parser.add_argument(
         "--device",
@@ -100,6 +106,9 @@ def main():
     
     if "DEVICE" not in os.environ and args.device is not None:
         os.environ["DEVICE"] = args.device
+    
+    if "MODEL_DTYPE" not in os.environ:
+        os.environ["MODEL_DTYPE"] = args.model_dtype
     
     # Build uvicorn command
     uvicorn_args = [

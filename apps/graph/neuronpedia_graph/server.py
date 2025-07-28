@@ -98,8 +98,15 @@ else:
 
 start_time = time.time()
 print(f"Loading model: {loaded_model_arg} started at {start_time}") 
-model = ReplacementModel.from_pretrained(loaded_model_arg, transcoder_name, device=device)
-print(f"Model loaded: {model}. It took {time.time() - start_time} seconds")
+model_dtype = os.environ.get("MODEL_DTYPE")
+if model_dtype == "bfloat16":
+    model_dtype = torch.bfloat16
+elif model_dtype == "float16":
+    model_dtype = torch.float16
+elif model_dtype == "float32":
+    model_dtype = torch.float32
+model = ReplacementModel.from_pretrained(loaded_model_arg, transcoder_name, device=device, dtype=model_dtype)
+print(f"Model loaded: {model}. It took {(time.time() - start_time) / 60:.2f} minutes")
 
 loaded_scan = TLENS_MODEL_ID_TO_SCAN.get(loaded_model_arg)
 if loaded_scan is None:
@@ -283,7 +290,7 @@ async def steer_handler(req: Request):
                     )
                 )
 
-        hooks, steered_logits, _ = model._get_feature_intervention_hooks(
+        hooks, steered_logits = model._get_feature_intervention_hooks(
             req_data.prompt,
             intervention_tuples,
             freeze_attention=req_data.freeze_attention,
