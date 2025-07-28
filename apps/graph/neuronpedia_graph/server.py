@@ -303,7 +303,7 @@ async def steer_handler(req: Request):
                     )
                 )
 
-        hooks, steered_logits = model._get_feature_intervention_hooks(
+        hooks, steered_logits, _ = model._get_feature_intervention_hooks(
             req_data.prompt,
             intervention_tuples,
             freeze_attention=req_data.freeze_attention,
