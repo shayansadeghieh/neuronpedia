@@ -138,7 +138,7 @@ export default function GraphNodeConnections() {
   const {
     visState,
     selectedGraph,
-    updateVisStateField,
+    togglePin,
     isEditingLabel,
     getNodeSupernodeAndOverrideLabel,
     setFullNPFeatureDetail,
@@ -190,7 +190,8 @@ export default function GraphNodeConnections() {
   const handleClickNode = (node: CLTGraphNode, addToPinned: boolean) => {
     if (addToPinned && node.nodeId) {
       // If control or command key is pressed, add to pinnedIds
-      updateVisStateField('pinnedIds', [...(visState.pinnedIds || []), node.nodeId]);
+      // if pinned, remove it
+      togglePin(node.nodeId);
     } else if (node.nodeId) {
       updateClickedState(node);
     }

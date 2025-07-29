@@ -436,12 +436,17 @@ export default function SteerModal() {
   };
 
   const lastSupernodeIsSteered = (supernode: string[]) => {
-    const lastNode = supernode[supernode.length - 1];
-    const node = getFeatureNodeForNodeId(lastNode);
-    if (!node) {
+    // Filter to nodes that have feature details
+    const nodesWithFeatures = supernode
+      .map((nodeId) => getFeatureNodeForNodeId(nodeId))
+      .filter((node) => node !== null);
+
+    if (nodesWithFeatures.length === 0) {
       return false;
     }
-    return isSteered(makeNodeSteerIdentifier(node));
+
+    const lastNode = nodesWithFeatures[nodesWithFeatures.length - 1];
+    return isSteered(makeNodeSteerIdentifier(lastNode));
   };
 
   const resetSteerSettings = () => {
@@ -1016,7 +1021,7 @@ export default function SteerModal() {
                             </div>
                             {isAtLeastOneNodeInSupernodeSteered(supernode) && lastSupernodeIsSteered(supernode) ? (
                               <div
-                                className={`absolute left-7 top-[62px] z-0 h-[calc(100%_-_264px)] w-[1px] bg-sky-700 ${
+                                className={`absolute left-7 top-[62px] z-0 h-[calc(100%_-_263px)] w-[1px] bg-sky-700 ${
                                   isSteering ? 'opacity-50' : ''
                                 }`}
                               />

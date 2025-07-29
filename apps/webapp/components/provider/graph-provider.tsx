@@ -72,6 +72,7 @@ type GraphContextType = {
   visState: CltVisState;
   setVisState: (newState: Partial<CltVisState>) => void;
   updateVisStateField: <K extends keyof CltVisState>(key: K, value: CltVisState[K]) => void;
+  togglePin: (nodeId: string) => string[];
 
   // logitDiff
   logitDiff: string | null;
@@ -469,6 +470,47 @@ export function GraphProvider({
   // Function to update the entire visState
   const setVisState = (newState: Partial<CltVisState>) => {
     setVisStateInternal((prevState) => ({ ...prevState, ...newState }));
+  };
+
+  // Pin/Unpin the nodeId and return the new PinnedIds array
+  // If it's in a supernode, we need to remove it from the supernode
+  const togglePin = (nodeId: string): string[] => {
+    const currentPinnedIds = visState.pinnedIds || [];
+    const newPinnedIds = currentPinnedIds.includes(nodeId)
+      ? currentPinnedIds.filter((id) => id !== nodeId)
+      : [...currentPinnedIds, nodeId];
+
+    setVisStateInternal((prevState) => ({
+      ...prevState,
+      pinnedIds: newPinnedIds,
+    }));
+
+    // if we are REMOVING the pin, and the nodeId is in a supernode, we need to remove it from the supernode
+    if (!newPinnedIds.includes(nodeId) && visState.subgraph?.supernodes.some((sn) => sn.includes(nodeId))) {
+      setVisStateInternal((prevState) => ({
+        ...prevState,
+        ...(prevState.subgraph && {
+          subgraph: {
+            ...prevState.subgraph,
+            supernodes: prevState.subgraph.supernodes
+              .map((sn) => {
+                // If this supernode contains the nodeId, remove it
+                if (sn.includes(nodeId)) {
+                  return sn.filter((id) => id !== nodeId);
+                }
+                return sn;
+              })
+              .filter((sn) => sn.length > 2), // Remove supernodes with 2 or fewer items (first is label, second is a node. if there's only 2, then it's a single node)
+            activeGrouping: {
+              isActive: false,
+              selectedNodeIds: new Set(),
+            },
+          },
+        }),
+      }));
+    }
+
+    return newPinnedIds;
   };
 
   // Function to update a single field of visState
@@ -988,6 +1030,7 @@ export function GraphProvider({
       visState,
       setVisState,
       updateVisStateField,
+      togglePin,
       logitDiff,
       setLogitDiff,
       isLoadingGraphData,
@@ -1017,6 +1060,7 @@ export function GraphProvider({
       visState,
       logitDiff,
       updateVisStateField,
+      togglePin,
       isLoadingGraphData,
       setIsLoadingGraphData,
       resetSelectedGraphToDefaultVisState,
