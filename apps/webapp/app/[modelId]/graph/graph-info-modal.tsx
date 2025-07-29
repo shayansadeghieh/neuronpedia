@@ -1,5 +1,6 @@
 'use client';
 
+import { useGraphContext } from '@/components/provider/graph-provider';
 import { Button } from '@/components/shadcn/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
 import { DownloadIcon, Info } from 'lucide-react';
@@ -11,21 +12,37 @@ interface GraphInfoModalProps {
 }
 
 export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: GraphInfoModalProps) {
+  const { getOverrideClerpForNode, selectedGraph } = useGraphContext();
+
   const handleDownload = async () => {
-    if (selectedMetadataGraph) {
+    if (selectedMetadataGraph && selectedGraph) {
       try {
+        // download a fresh copy of the graph
         const response = await fetch(selectedMetadataGraph.url);
-        const data = await response.blob();
-        const url = window.URL.createObjectURL(data);
+        const data = (await response.json()) as CLTGraph;
+
+        // add our custom labels to it
+        data.nodes.forEach((node) => {
+          // find the node in the original selectedGraph
+          const originalNode = selectedGraph.nodes.find((n) => n.node_id === node.node_id);
+          if (originalNode) {
+            // eslint-disable-next-line no-param-reassign
+            node.clerp = getOverrideClerpForNode(originalNode) || '';
+          }
+        });
+
+        // download it
+        const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${selectedMetadataGraph.slug}.json`;
+        a.download = `${selectedMetadataGraph.slug}_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
       } catch (error) {
-        console.error('Failed to download graph:', error);
+        console.error('Failed to download graph, no custom labels will be added', error);
         // Fallback to opening in new tab
         window.open(selectedMetadataGraph.url, '_blank');
       }
