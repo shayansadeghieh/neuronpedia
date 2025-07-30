@@ -64,10 +64,11 @@ def get_device() -> torch.device:
 
 
 def get_model_dtype() -> torch.dtype | None:
-    """Parse MODEL_DTYPE environment variable into torch dtype."""
-    model_dtype_env = os.environ.get("MODEL_DTYPE")
-    if not model_dtype_env:
-        return None
+    """
+    Parse MODEL_DTYPE environment variable into torch dtype.
+    Default is float32.
+    """
+    model_dtype_env = os.environ.get("MODEL_DTYPE", "float32")    
     
     dtype_mapping = {
         "bfloat16": torch.bfloat16,

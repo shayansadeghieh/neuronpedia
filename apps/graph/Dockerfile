@@ -47,7 +47,6 @@ RUN apt-get update && apt-get install -y \
 RUN pip install poetry
 
 ENV POETRY_VIRTUALENVS_CREATE=false
-RUN poetry config virtualenvs.create false
 
 COPY apps/graph/pyproject.toml apps/graph/poetry.lock* apps/graph/
 WORKDIR /app/apps/graph
