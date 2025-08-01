@@ -309,7 +309,7 @@ export default function GenerateGraphModal() {
       <DialogContent className="z-[10001] cursor-default select-none bg-white text-slate-700 sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Generate New Graph</DialogTitle>
-          <DialogDescription className="text-sm text-slate-600">
+          <DialogDescription className="text-xs text-slate-600">
             Generate a new attribution graph for a custom prompt. Powered by{' '}
             <a
               href="https://github.com/safety-research/circuit-tracer"
@@ -324,7 +324,7 @@ export default function GenerateGraphModal() {
         </DialogHeader>
 
         {!session?.data?.user && (
-          <p className="mt-1 rounded-md bg-amber-100 p-3 text-xs text-amber-700">
+          <p className="mt-1 rounded-md bg-amber-100 p-3 py-2 text-xs text-amber-700">
             {`You aren't signed in, so you'll need to manually keep track of any graphs you generate. To automatically save graphs to your account, `}
             <Button
               variant="link"
@@ -369,6 +369,7 @@ export default function GenerateGraphModal() {
                       id="prompt"
                       name="prompt"
                       minRows={2}
+                      maxRows={6}
                       value={values.prompt}
                       onChange={handleChange}
                       onBlur={handleBlur}
@@ -377,7 +378,7 @@ export default function GenerateGraphModal() {
                       }}
                       disabled={isGenerating}
                       placeholder="Enter the prompt to visualize..."
-                      className="mt-1 w-full resize-none rounded-md border border-slate-300 p-2 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500"
+                      className="mt-1 w-full resize-none rounded-md border border-slate-300 p-2 text-xs leading-normal text-slate-700 shadow-sm focus:border-sky-500 focus:ring-sky-500"
                       maxLength={GRAPH_MAX_PROMPT_LENGTH_CHARS}
                     />
                     {isTokenizing ? (
@@ -387,13 +388,13 @@ export default function GenerateGraphModal() {
                       </div>
                     ) : graphTokenizeResponse ? (
                       <div className="flex flex-col">
-                        <div className="mx-0 mt-1 flex-1 pb-2 text-xs text-slate-500">
+                        <div className="forceShowScrollBar mx-0 mb-1 mt-1 h-9 max-h-9 flex-1 overflow-y-scroll rounded-md bg-slate-100 px-1.5 py-1.5 text-xs text-slate-500">
                           {/* <div className="mb-1">{graphTokenizeResponse.input_tokens.length} Tokens</div> */}
                           <div className="flex flex-wrap gap-x-1 gap-y-[3px]">
                             {graphTokenizeResponse.input_tokens.map((t, idx) => (
                               <span
                                 key={`${t}-${idx}`}
-                                className="mx-0 rounded bg-slate-200 px-[3px] py-[1px] font-mono text-[10px] text-slate-700"
+                                className="mx-0 rounded bg-slate-300 px-[3px] py-[1px] font-mono text-[10px] text-slate-700"
                               >
                                 {t.toString().replaceAll(' ', '\u00A0').replaceAll('\n', '↵')}
                                 {/* {t.replaceAll(' ', '\u00A0').replaceAll('\n', '↵')}} */}
@@ -439,8 +440,8 @@ export default function GenerateGraphModal() {
                             </div>
                           ) : isBoringToken(graphTokenizeResponse.salient_logits[0].token) ? (
                             <div className="mb-1.5 mt-0 text-xs text-amber-600">
-                              Warning: The next most likely token is a markdown/HTML/symbol. Double check that this is
-                              the reasoning &apos;conclusion&apos; that you expect to see.
+                              Warning: The next most likely token is a special token, markdown, or HTML/symbol. Double
+                              check that this is the reasoning &apos;conclusion&apos; that you expect to see.
                             </div>
                           ) : (
                             <div className="mb-1.5 mt-0 text-xs text-slate-500">
@@ -488,12 +489,12 @@ export default function GenerateGraphModal() {
                     {errors.slug && touched.slug && <p className="mt-1 text-xs text-red-500">{errors.slug}</p>}
                   </div>
 
-                  <div className="hidden items-center pt-1 sm:flex">
+                  <div className="hidden items-center pt-0 sm:flex">
                     <div className="mr-3 flex-1 border-t border-slate-200" />
                     <span className="text-[11px] text-slate-500">Advanced Settings</span>
                     <div className="ml-3 flex-1 border-t border-slate-200" />
                   </div>
-                  <div className="hidden flex-row gap-x-3 pt-2 sm:flex">
+                  <div className="hidden flex-row gap-x-3 pt-1 sm:flex">
                     <div className="flex-1">
                       <Label
                         htmlFor="modelId"
