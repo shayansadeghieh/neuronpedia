@@ -19,7 +19,7 @@ import {
   showTooltip,
 } from './utils';
 
-const PERCENT_INCREASE_PER_ADDITIONAL_TOKEN = 0.02;
+const PERCENT_INCREASE_PER_ADDITIONAL_TOKEN = 0.03;
 const X_LABEL_ROTATION_DEGREES = 30;
 const X_LABEL_OFFSET = '-12,8';
 
