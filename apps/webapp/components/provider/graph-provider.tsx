@@ -12,9 +12,9 @@ import {
   MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR,
   ModelToGraphMetadatasMap,
   cltModelToNumLayers,
-  convertAnthropicFeatureIdToNeuronpediaSourceSet,
+  convertAnthropicFeatureToNeuronpediaSourceSet,
   formatCLTGraphData,
-  getIndexFromAnthropicFeatureId,
+  getIndexFromAnthropicFeature,
   isHideLayer,
   modelIdToModelDisplayName,
   nodeTypeHasFeatureDetail,
@@ -733,11 +733,11 @@ export function GraphProvider({
         .filter((d) => nodeTypeHasFeatureDetail(d))
         .map((d) => ({
           modelId: model,
-          layer: convertAnthropicFeatureIdToNeuronpediaSourceSet(
+          layer: convertAnthropicFeatureToNeuronpediaSourceSet(
             selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-            d.feature,
+            d,
           ),
-          index: getIndexFromAnthropicFeatureId(selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, d.feature),
+          index: getIndexFromAnthropicFeature(selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, d),
           maxActsToReturn: GRAPH_PREFETCH_ACTIVATIONS_COUNT,
         }));
 
@@ -780,15 +780,15 @@ export function GraphProvider({
               f &&
               'index' in f &&
               f.index ===
-                getIndexFromAnthropicFeatureId(
+                getIndexFromAnthropicFeature(
                   selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-                  d.feature,
+                  d,
                 ).toString() &&
               'layer' in f &&
               f.layer ===
-                convertAnthropicFeatureIdToNeuronpediaSourceSet(
+                convertAnthropicFeatureToNeuronpediaSourceSet(
                   selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-                  d.feature,
+                  d,
                 ),
           );
           if (feature) {
@@ -807,6 +807,27 @@ export function GraphProvider({
               'llama-3-131k-relu',
               d.feature,
               'https://d1fk9w8oratjix.cloudfront.net',
+              signal,
+            );
+          }
+          return Promise.resolve(null);
+        },
+        ANTHROPIC_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE,
+        abortSignal,
+      );
+
+      formattedData.nodes.forEach((d, i) => {
+        // eslint-disable-next-line no-param-reassign
+        d.featureDetail = featureDetails[i] as AnthropicFeatureDetail;
+      });
+    } else if (selectedModelId === 'qwen3-4b') {
+      const featureDetails = await fetchInBatches(
+        formattedData.nodes,
+        (d: CLTGraphNode, signal?: AbortSignal) => {
+          if (nodeTypeHasFeatureDetail(d)) {
+            return fetchFeatureDetailFromBaseURL(
+              `https://d1fk9w8oratjix.cloudfront.net/features/Qwen3-4B/qwen3-4b-${d.layer}`,
+              d.feature.toString(),
               signal,
             );
           }

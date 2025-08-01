@@ -1,9 +1,36 @@
 import ATTRIBUTION_GRAPH_SCHEMA from '@/app/api/graph/graph-schema.json';
-import { DEFAULT_CREATOR_USER_ID, NEXT_PUBLIC_URL } from '@/lib/env';
+import {
+  DEFAULT_CREATOR_USER_ID,
+  GRAPH_RUNPOD_SERVER,
+  GRAPH_RUNPOD_SERVER_QWEN3_4B,
+  GRAPH_SERVER,
+  GRAPH_SERVER_QWEN3_4B,
+  NEXT_PUBLIC_URL,
+} from '@/lib/env';
 import { GraphMetadata, GraphMetadataWithPartialRelations, NeuronWithPartialRelations } from '@/prisma/generated/zod';
 import cuid from 'cuid';
 import { z } from 'zod';
 import d3 from './d3-jetpack';
+
+export function getGraphServerUrlForModel(modelId: string) {
+  if (modelId === 'qwen3-4b') {
+    return GRAPH_SERVER_QWEN3_4B;
+  }
+  if (modelId === 'gemma-2-2b') {
+    return GRAPH_SERVER;
+  }
+  throw new Error(`No graph server url found for model ${modelId}`);
+}
+
+export function getGraphRunpodServerUrlForModel(modelId: string) {
+  if (modelId === 'qwen3-4b') {
+    return GRAPH_RUNPOD_SERVER_QWEN3_4B;
+  }
+  if (modelId === 'gemma-2-2b') {
+    return GRAPH_RUNPOD_SERVER;
+  }
+  throw new Error(`No graph runpod server url found for model ${modelId}`);
+}
 
 // TODO: make this an env variable
 export const NP_GRAPH_BUCKET = 'neuronpedia-attrib';
@@ -33,6 +60,7 @@ export const MODEL_HAS_S3_DASHBOARDS = new Set([
 ]);
 
 export const ANT_MODELS_TO_LOAD = new Set(['jackl-circuits-runs-1-4-sofa-v3_0']);
+export const ADDITIONAL_MODELS_TO_LOAD = new Set(['qwen3-4b']);
 
 // if neither, then no dashboards yet for them
 
@@ -43,11 +71,13 @@ export const MODEL_DO_NOT_FILTER_NODES = new Set(['gelu-4l-x128k64-v0']);
 export const MODEL_DIGITS_IN_FEATURE_ID = {
   'gemma-2-2b': Number(16384).toString().length,
   'llama-3-131k-relu': Number(131072).toString().length,
+  'qwen3-4b': Number(131072).toString().length,
 };
 
 export const MODEL_TO_SOURCESET_ID = {
   'gemma-2-2b': 'gemmascope-transcoder-16k',
   'llama-3-131k-relu': 'skip-transcoder-mntss',
+  'qwen3-4b': 'TODO_SOURCESET_ID',
 };
 
 export const ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID = {
@@ -55,13 +85,21 @@ export const ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID = {
   'llama-3-131k-relu': 'llama-3.2-1b',
 };
 
+export const MODEL_FEATURE_ID_IS_ONLY_INDEX = new Set(['qwen3-4b']);
+
 export const ERROR_MODEL_DOES_NOT_EXIST = 'ERR_MODEL_DOES_NOT_EXIST';
 
 // ============ End of Neuronpedia Specific =============
 
-export function getLayerFromAnthropicFeatureId(modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID, featureId: number) {
+export function getLayerFromAnthropicFeature(
+  modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
+  featureNode: CLTGraphNode,
+) {
+  if (MODEL_FEATURE_ID_IS_ONLY_INDEX.has(modelId)) {
+    return parseInt(featureNode.layer, 10);
+  }
   // remove dash and everything after it
-  const layer = featureId.toString().replace(/-.*$/, '');
+  const layer = featureNode.feature.toString().replace(/-.*$/, '');
   // the layer is the number before the last digitsInNumFeatures digits
   const layerStr = layer.slice(0, -MODEL_DIGITS_IN_FEATURE_ID[modelId]);
   if (layerStr.length === 0) {
@@ -70,9 +108,15 @@ export function getLayerFromAnthropicFeatureId(modelId: keyof typeof MODEL_DIGIT
   return parseInt(layerStr, 10);
 }
 
-export function getIndexFromAnthropicFeatureId(modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID, featureId: number) {
+export function getIndexFromAnthropicFeature(
+  modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
+  featureNode: CLTGraphNode,
+) {
+  if (MODEL_FEATURE_ID_IS_ONLY_INDEX.has(modelId)) {
+    return featureNode.feature;
+  }
   // remove dash and everything before it
-  const index = featureId.toString().replace(/-.*$/, '');
+  const index = featureNode.feature.toString().replace(/-.*$/, '');
   // the index is the last digitsInNumFeatures digits
   const indexStr = index.slice(-MODEL_DIGITS_IN_FEATURE_ID[modelId]);
   if (indexStr.length === 0) {
@@ -93,11 +137,11 @@ export function getAnthropicFeatureIdFromLayerAndIndex(
   return parseInt(`${layer}${paddedIndex}`, 10);
 }
 
-export function convertAnthropicFeatureIdToNeuronpediaSourceSet(
+export function convertAnthropicFeatureToNeuronpediaSourceSet(
   modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-  featureId: number,
+  featureNode: CLTGraphNode,
 ) {
-  return `${getLayerFromAnthropicFeatureId(modelId, featureId)}-${MODEL_TO_SOURCESET_ID[modelId]}`;
+  return `${getLayerFromAnthropicFeature(modelId, featureNode)}-${MODEL_TO_SOURCESET_ID[modelId]}`;
 }
 
 export const GRAPH_BASE_URL_TO_NAME = {

@@ -176,6 +176,7 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
         validatedData.prompt,
         validatedData.maxNLogits,
         validatedData.desiredLogitProb,
+        validatedData.modelId,
       );
       if (tokenized.input_tokens.length > GRAPH_MAX_TOKENS) {
         return NextResponse.json(
@@ -200,7 +201,7 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
       );
     }
 
-    // check if the modelId/slug exist in the database already
+    // check if the modelId + slug exists in the database already
     const existingGraphMetadata = await prisma.graphMetadata.findUnique({
       where: { modelId_slug: { modelId: validatedData.modelId, slug: validatedData.slug } },
     });

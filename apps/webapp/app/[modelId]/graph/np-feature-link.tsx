@@ -5,8 +5,8 @@ import {
   ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
   CLTGraph,
   CLTGraphNode,
-  getIndexFromAnthropicFeatureId,
-  getLayerFromAnthropicFeatureId,
+  getIndexFromAnthropicFeature,
+  getLayerFromAnthropicFeature,
   graphModelHasNpDashboards,
 } from './utils';
 
@@ -36,18 +36,18 @@ export default function GraphFeatureLink({
         <div className="flex flex-col gap-y-[3px] font-mono font-medium">
           <div className="">
             LAYER{' '}
-            {getLayerFromAnthropicFeatureId(
+            {getLayerFromAnthropicFeature(
               // @ts-ignore
               ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[selectedGraph?.metadata.scan],
-              node.feature,
+              node,
             )}
           </div>
           <div className="">
             INDEX{' '}
-            {getIndexFromAnthropicFeatureId(
+            {getIndexFromAnthropicFeature(
               // @ts-ignore
               ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[selectedGraph?.metadata.scan],
-              node.feature,
+              node,
             )}
           </div>
         </div>

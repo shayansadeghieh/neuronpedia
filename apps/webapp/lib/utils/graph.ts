@@ -1,8 +1,11 @@
-import { ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID } from '@/app/[modelId]/graph/utils';
+import {
+  ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
+  getGraphRunpodServerUrlForModel,
+  getGraphServerUrlForModel,
+} from '@/app/[modelId]/graph/utils';
 import {
   GRAPH_RUNPOD_SECRET,
   GRAPH_RUNPOD_SERVER,
-  GRAPH_SERVER,
   GRAPH_SERVER_SECRET,
   USE_LOCALHOST_GRAPH,
   USE_RUNPOD_GRAPH,
@@ -30,8 +33,8 @@ export const GRAPH_BATCH_SIZE = 48;
 // this time estimate comes from testing different prompt lengths with batch size 48, and is only valid for gemma-2-2b, for a40
 export const getEstimatedTimeFromNumTokens = (numTokens: number) => 11.2 * Math.log2(Math.max(numTokens, 4)) - 7; // add a few seconds buffer
 export const GRAPH_MAX_TOKENS = 64;
-export const GRAPH_GENERATION_ENABLED_MODELS = ['gemma-2-2b'];
-export const GRAPH_MODEL_MAP = { 'gemma-2-2b': 'google/gemma-2-2b' };
+export const GRAPH_GENERATION_ENABLED_MODELS = ['gemma-2-2b', 'qwen3-4b'];
+export const GRAPH_MODEL_MAP = { 'gemma-2-2b': 'google/gemma-2-2b', 'qwen3-4b': 'Qwen/Qwen3-4B' };
 
 export const GRAPH_S3_USER_GRAPHS_DIR = 'user-graphs';
 
@@ -142,6 +145,7 @@ export const getGraphTokenize = async (
   prompt: string,
   maxNLogits: number,
   desiredLogitProb: number,
+  modelId: string,
 ): Promise<GraphTokenizeResponse> => {
   let response;
   const body = {
@@ -151,7 +155,7 @@ export const getGraphTokenize = async (
     request_type: 'forward_pass',
   };
   if (USE_RUNPOD_GRAPH) {
-    response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {
+    response = await fetch(`${getGraphRunpodServerUrlForModel(modelId)}/runsync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -162,14 +166,17 @@ export const getGraphTokenize = async (
       }),
     });
   } else {
-    response = await fetch(`${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : GRAPH_SERVER}/forward-pass`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-secret-key': GRAPH_SERVER_SECRET,
+    response = await fetch(
+      `${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : getGraphServerUrlForModel(modelId)}/forward-pass`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-secret-key': GRAPH_SERVER_SECRET,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    });
+    );
   }
 
   let json = await response.json();
@@ -228,7 +235,7 @@ export const generateGraphAndUploadToS3 = async (
     user_id: userId,
   };
   if (USE_RUNPOD_GRAPH) {
-    response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {
+    response = await fetch(`${getGraphRunpodServerUrlForModel(modelId)}/runsync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -239,14 +246,18 @@ export const generateGraphAndUploadToS3 = async (
       }),
     });
   } else {
-    response = await fetch(`${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : GRAPH_SERVER}/generate-graph`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-secret-key': GRAPH_SERVER_SECRET,
+    console.log('body', body);
+    response = await fetch(
+      `${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : getGraphServerUrlForModel(modelId)}/generate-graph`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-secret-key': GRAPH_SERVER_SECRET,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    });
+    );
   }
   const json = await response.json();
   console.log('server json response', json);
@@ -360,7 +371,7 @@ export const steerLogits = async (
     steered_output_only: steeredOutputOnly,
   };
   if (USE_RUNPOD_GRAPH) {
-    response = await fetch(`${GRAPH_RUNPOD_SERVER}/runsync`, {
+    response = await fetch(`${getGraphRunpodServerUrlForModel(modelId)}/runsync`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -371,14 +382,17 @@ export const steerLogits = async (
       }),
     });
   } else {
-    response = await fetch(`${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : GRAPH_SERVER}/steer`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-secret-key': GRAPH_SERVER_SECRET,
+    response = await fetch(
+      `${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : getGraphServerUrlForModel(modelId)}/steer`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-secret-key': GRAPH_SERVER_SECRET,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    });
+    );
   }
 
   let json = await response.json();

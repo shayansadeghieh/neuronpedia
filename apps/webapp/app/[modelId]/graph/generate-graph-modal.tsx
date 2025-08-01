@@ -2,6 +2,7 @@
 
 import { useGlobalContext } from '@/components/provider/global-provider';
 import { useGraphModalContext } from '@/components/provider/graph-modal-provider';
+import { useGraphContext } from '@/components/provider/graph-provider';
 import { Button } from '@/components/shadcn/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/shadcn/dialog';
 import { Input } from '@/components/shadcn/input';
@@ -40,7 +41,7 @@ import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactTextareaAutosize from 'react-textarea-autosize';
 
-const BORING_TOKENS = ['<strong>', '<em>', '<code>', '<b>', '<i>'];
+const BORING_TOKENS = ['<strong>', '<em>', '<code>', '<b>', '<i>', '<think>', '</think>', '<|im_start|>', '<|im_end|>'];
 const BORING_SYMBOLS = ['*', '**', '`', '```', '-', '–', '—', '_', '__', '~', '='];
 
 const isBoringToken = (token: string) => {
@@ -102,6 +103,7 @@ const formatCountdown = (totalSeconds: number): string => {
 
 export default function GenerateGraphModal() {
   const { isGenerateGraphModalOpen, setIsGenerateGraphModalOpen } = useGraphModalContext();
+  const { selectedModelId } = useGraphContext();
   const [generationResult, setGenerationResult] = useState<GenerateGraphResponse | null>(null);
   const [graphTokenizeResponse, setGraphTokenizeResponse] = useState<GraphTokenizeResponse | null>(null);
   const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
@@ -117,7 +119,7 @@ export default function GenerateGraphModal() {
 
   const initialValues: FormValues = {
     prompt: '',
-    modelId: GRAPH_GENERATION_ENABLED_MODELS[0] || '',
+    modelId: selectedModelId || '',
     maxNLogits: GRAPH_MAXNLOGITS_DEFAULT,
     desiredLogitProb: GRAPH_DESIREDLOGITPROB_DEFAULT,
     nodeThreshold: GRAPH_NODETHRESHOLD_DEFAULT,
@@ -138,6 +140,7 @@ export default function GenerateGraphModal() {
       try {
         setIsTokenizing(true);
         console.log(`tokenizing: ${prompt}`);
+        console.log(`model: ${modelId}`);
         const response = await fetch('/api/graph/tokenize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -220,7 +223,9 @@ export default function GenerateGraphModal() {
       const response = await fetch('/api/graph/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+        }),
       });
 
       const responseData = await response.json();
@@ -503,7 +508,7 @@ export default function GenerateGraphModal() {
                       >
                         <RadixSelect.Trigger
                           id="modelId"
-                          className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 bg-slate-200 px-3 py-2 text-xs text-slate-500 placeholder-slate-400 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="mt-1 flex w-full items-center justify-between rounded-md border border-slate-300 px-3 py-2 text-xs text-slate-500 placeholder-slate-400 shadow-sm focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <RadixSelect.Value placeholder="Select a model" />
                           <RadixSelect.Icon className="text-slate-500">
@@ -511,7 +516,7 @@ export default function GenerateGraphModal() {
                           </RadixSelect.Icon>
                         </RadixSelect.Trigger>
                         <RadixSelect.Portal>
-                          <RadixSelect.Content className="z-50 min-w-[8rem] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-900 shadow-md">
+                          <RadixSelect.Content className="z-[20000] min-w-[8rem] overflow-hidden rounded-md border border-slate-200 bg-white text-slate-900 shadow-md">
                             <RadixSelect.ScrollUpButton className="flex items-center justify-center py-1">
                               <ChevronUpIcon className="h-4 w-4" />
                             </RadixSelect.ScrollUpButton>
@@ -520,7 +525,7 @@ export default function GenerateGraphModal() {
                                 <RadixSelect.Item
                                   key={model}
                                   value={model}
-                                  className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-4 pr-2 text-sm outline-none focus:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                                  className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-4 pr-2 text-sm text-slate-600 outline-none hover:bg-sky-100 focus:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                                 >
                                   <RadixSelect.ItemText>{model}</RadixSelect.ItemText>
                                 </RadixSelect.Item>

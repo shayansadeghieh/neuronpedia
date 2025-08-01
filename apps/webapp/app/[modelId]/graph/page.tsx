@@ -7,6 +7,7 @@ import { Metadata } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { notFound } from 'next/navigation';
 import {
+  ADDITIONAL_MODELS_TO_LOAD,
   ANT_BUCKET_URL,
   ANT_MODELS_TO_LOAD,
   getGraphMetadatasFromBucket,
@@ -240,7 +241,7 @@ export default async function Page({
         console.error('Error parsing params clerps:', error);
       }
     }
-  } else if (ANT_MODELS_TO_LOAD.has(modelId)) {
+  } else if (ANT_MODELS_TO_LOAD.has(modelId) || ADDITIONAL_MODELS_TO_LOAD.has(modelId)) {
     // no default slug and it's a haiku model, just pick the first one
     // pick the first graph in the map
     [metadataGraph] = modelIdToGraphMetadatasMap[modelId];
