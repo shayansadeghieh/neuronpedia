@@ -581,7 +581,7 @@ div[data-virtuoso-scroller='true'] table {
   canvas {
     pointer-events: none;
   }
-  overflow: visible;
+  /* overflow: visible; */
   .node {
     cursor: pointer;
   }
