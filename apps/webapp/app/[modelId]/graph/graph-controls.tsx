@@ -6,8 +6,9 @@ import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import * as RadixSlider from '@radix-ui/react-slider';
 import { debounce } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
-import { MIN_TOKENS_TO_ALLOW_HORIZONTAL_SCROLL } from './link-graph';
 import { clientCheckIsEmbed, CLTGraphExtended, CltVisState, graphModelHasNpDashboards } from './utils';
+
+export const MIN_TOKENS_TO_ALLOW_HORIZONTAL_SCROLL = 16;
 
 export default function GraphControls({
   selectedGraph,

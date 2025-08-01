@@ -5,7 +5,7 @@ import { useGraphStateContext } from '@/components/provider/graph-state-provider
 import { useScreenSize } from '@/lib/hooks/use-screen-size';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import d3 from './d3-jetpack';
-import GraphControls from './graph-controls';
+import GraphControls, { MIN_TOKENS_TO_ALLOW_HORIZONTAL_SCROLL } from './graph-controls';
 import {
   clientCheckClaudeMode,
   CLTGraphExtended,
@@ -19,7 +19,6 @@ import {
   showTooltip,
 } from './utils';
 
-export const MIN_TOKENS_TO_ALLOW_HORIZONTAL_SCROLL = 16;
 const PERCENT_INCREASE_PER_ADDITIONAL_TOKEN = 0.02;
 const X_LABEL_ROTATION_DEGREES = 30;
 const X_LABEL_OFFSET = '-12,8';
