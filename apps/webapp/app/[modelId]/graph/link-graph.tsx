@@ -1233,7 +1233,7 @@ export default function LinkGraph() {
 
   return (
     <div
-      className={`link-graph relative -mr-4 flex-1 select-none sm:mr-0 ${shouldDoHorizontalScroll ? 'forceShowScrollBarHorizontal mt-1 max-w-full overflow-y-hidden overflow-x-scroll' : 'mt-1 w-full'}`}
+      className={`link-graph relative -mr-4 flex-1 select-none overscroll-none sm:mr-0 ${shouldDoHorizontalScroll ? 'forceShowScrollBarHorizontal mt-1 max-w-full overflow-y-hidden overflow-x-scroll' : 'mt-1 w-full'}`}
       style={{
         ...(shouldDoHorizontalScroll && {
           WebkitMask: 'linear-gradient(to right, black calc(100% - 25px), transparent 100%)',
