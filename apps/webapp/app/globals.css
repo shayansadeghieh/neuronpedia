@@ -317,6 +317,8 @@ div[data-virtuoso-scroller='true'] table {
   width: 100%;
 }
 
+/* SAEBENCH MARKDOWN */
+
 #saebench-markdown h1 {
   font-size: 1.5rem;
   line-height: 2.25rem;
@@ -406,30 +408,9 @@ div[data-virtuoso-scroller='true'] table {
   text-decoration: underline;
 }
 
-#sparse-probing::before {
-  content: '';
-  display: block;
-  height: 75px;
-  margin-top: -75px;
-  visibility: hidden;
-}
-
 #saebench-markdown a:not(.ignore-saebench):hover {
   color: #0ea5e9;
   text-decoration: underline;
-}
-
-.iframe-container {
-  position: relative;
-}
-
-.scroll-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 1;
 }
 
 #saebench-markdown iframe {
@@ -462,6 +443,159 @@ div[data-virtuoso-scroller='true'] table {
 }
 
 #saebench-markdown code {
+  font-size: 0.8rem;
+  background-color: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+#sparse-probing::before {
+  content: '';
+  display: block;
+  height: 75px;
+  margin-top: -75px;
+  visibility: hidden;
+}
+
+.iframe-container {
+  position: relative;
+}
+
+.scroll-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* GROUP POST MARKDOWN - Slightly modified SAEBENCH MARKDOWN */
+
+#group-post-markdown h1 {
+  font-size: 1.5rem;
+  line-height: 2.25rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+}
+
+#group-post-markdown h2 {
+  font-size: 1.4rem;
+  line-height: 2rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  color: #1e293b;
+}
+
+#group-post-markdown h3 {
+  font-size: 1.2rem;
+  line-height: 1.75rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: #1e293b;
+}
+
+#group-post-markdown h4 {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.25rem;
+  color: #1e293b;
+}
+
+#group-post-markdown p {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+#group-post-markdown ul {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  list-style-type: disc;
+  list-style-position: outside;
+  padding-left: 1.5rem;
+}
+
+#group-post-markdown ol {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  list-style-type: decimal;
+  list-style-position: outside;
+  padding-left: 1.5rem;
+}
+
+#group-post-markdown tr li {
+  font-size: 0.85rem;
+}
+
+#group-post-markdown th {
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+#group-post-markdown td {
+  font-size: 0.85rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+#group-post-markdown li {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+#group-post-markdown a:not(.ignore-group-post) {
+  color: #0284c7;
+  text-decoration: underline;
+}
+
+#group-post-markdown a:not(.ignore-group-post):hover {
+  color: #0ea5e9;
+  text-decoration: underline;
+}
+
+#group-post-markdown iframe {
+  background-color: #f1f5f9;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#group-post-markdown details {
+  margin-top: 0rem;
+  margin-bottom: 0.2rem;
+  padding-left: 1.5rem;
+}
+
+#group-post-markdown summary:hover {
+  color: #0ea5e9;
+  text-decoration: underline;
+}
+
+#group-post-markdown details summary {
+  color: #0284c7;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#group-post-markdown tr td:first-child {
+  font-weight: 500;
+  min-width: 200px;
+  text-align: center;
+}
+
+#group-post-markdown code {
   font-size: 0.8rem;
   background-color: #f1f5f9;
   padding: 0.25rem 0.5rem;

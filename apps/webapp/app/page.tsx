@@ -73,7 +73,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function Page() {
   return (
-    <div className="flex w-full cursor-default select-none flex-col items-center justify-center bg-slate-100 px-0 pt-8 sm:mt-0 sm:px-0">
+    <div className="flex w-full select-none flex-col items-center justify-center bg-slate-100 px-0 pt-8 sm:mt-0 sm:px-0">
       {IS_LOCALHOST && !DEMO_MODE && (
         <div className="mb-4 flex w-full max-w-screen-sm flex-col items-center justify-center gap-2 rounded-lg border bg-white px-8 py-4 shadow-sm">
           <div className="text-xs font-bold text-slate-400">You are running a local instance of Neuronpedia.</div>
@@ -291,6 +291,18 @@ export default function Page() {
           />
         </a>
         <a
+          href="https://www.anthropic.com/research/open-source-circuit-tracing"
+          target="_blank"
+          className="flex flex-row items-center justify-center"
+          rel="noreferrer"
+        >
+          <img
+            src="/usedby/anthropic.png"
+            className="h-[17px] opacity-55 grayscale hover:opacity-100 hover:grayscale-0"
+            alt="Anthropic"
+          />
+        </a>
+        <a
           href={`${NEXT_PUBLIC_URL}/gemma-scope`}
           target="_blank"
           className="flex flex-row items-center justify-center"
@@ -326,13 +338,13 @@ export default function Page() {
             alt="Apollo Research"
           />
         </a>
-        <a href="#mats" className="flex flex-row items-center justify-center" rel="noreferrer" aria-label="MATS">
+        {/* <a href="#mats" className="flex flex-row items-center justify-center" rel="noreferrer" aria-label="MATS">
           <img
             src="/usedby/mats.png"
             className="h-[35px] opacity-60 grayscale hover:opacity-100 hover:grayscale-0"
             alt="MATS"
           />
-        </a>
+        </a> */}
         <a
           href={`${NEXT_PUBLIC_URL}/llama3.1-8b-eleuther_gp`}
           target="_blank"
