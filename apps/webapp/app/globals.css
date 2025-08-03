@@ -1089,7 +1089,7 @@ foreignObject canvas {
 }
 
 .glass-button:hover {
-  transform: scale(1.05);
+  transform: scale(1.1);
   --bg-color: rgba(255, 255, 255, 0.35);
   --highlight: rgba(255, 255, 255, 0.95);
 }
@@ -1097,14 +1097,13 @@ foreignObject canvas {
 .glass-button:active {
   transform: scale(0.95);
 }
-
-/* Dark mode styles */
+/* 
 @media (prefers-color-scheme: dark) {
   .glass-button {
     --bg-color: rgba(0, 0, 0, 0.25);
     --highlight: rgba(255, 255, 255, 0.15);
   }
-}
+} */
 
 /* Glass Card Container */
 .glass-card {
@@ -1193,10 +1192,9 @@ foreignObject canvas {
   opacity: 0.8;
 }
 
-/* Dark mode styles */
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   .glass-card {
     --bg-color: rgba(0, 0, 0, 0.25);
     --highlight: rgba(255, 255, 255, 0.15);
   }
-}
+} */

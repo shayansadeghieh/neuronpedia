@@ -100,7 +100,7 @@ export default function Page() {
           style={{ backgroundImage: `url('/usedby/landscape-bg.jpg')` }}
           className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-3xl bg-cover bg-center opacity-100 saturate-[2] sm:mx-0 sm:px-0"
         />
-        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[20px] bg-slate-600 opacity-40 mix-blend-darken sm:mx-0 sm:px-0" />
+        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[20px] bg-slate-600 opacity-30 mix-blend-darken sm:mx-0 sm:px-0" />
 
         <div className="glass-card relative z-0 mb-0 flex h-full w-full min-w-full max-w-screen-sm flex-1 flex-col items-center justify-center gap-x-8 gap-y-1 rounded-lg px-2 py-16 shadow-sm sm:gap-y-0 sm:px-5 sm:py-7">
           <div className="glass-filter" />
