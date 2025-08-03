@@ -117,7 +117,7 @@ export default function GraphToolbar() {
           className="relative hidden h-12 items-center justify-center whitespace-nowrap border-sky-500 bg-sky-50 text-xs font-medium leading-none text-sky-600 hover:bg-sky-100 hover:text-sky-700 sm:flex"
           onClick={() => setIsWelcomeModalOpen(true)}
         >
-          <BookOpenIcon className="mr-1.5 h-4 w-4" /> User Guide
+          <BookOpenIcon className="mr-1.5 h-4 w-4" /> Guide
           {(() => {
             try {
               const hasVisited = localStorage.getItem('circuit-tracer-visited');
