@@ -1107,7 +1107,7 @@ foreignObject canvas {
 
 /* Glass Card Container */
 .glass-card {
-  --bg-color: rgba(255, 255, 255, 0.15);
+  --bg-color: rgba(160, 160, 160, 0.15);
   --highlight: rgba(255, 255, 255, 0.75);
   --text: #ffffff;
 
@@ -1116,7 +1116,7 @@ foreignObject canvas {
   height: 200px;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
 
 .glass-filter,
@@ -1129,7 +1129,7 @@ foreignObject canvas {
 
 .glass-filter {
   z-index: 1;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(5px);
   filter: url(#glass-distortion) saturate(120%) brightness(1.15);
 }
 

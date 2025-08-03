@@ -100,7 +100,7 @@ export function GraphInfoContent({ title, randomizedOrgs }: { title: string; ran
             >
               {title}
             </button>
-            <div className="mb-1 mt-1.5 flex h-[6px] max-h-[6px] min-h-[6px] flex-row items-center justify-center whitespace-nowrap px-3 text-[10px] font-medium text-slate-500 sm:mb-0 sm:text-[12px]">
+            <div className="mb-1 mt-1.5 flex h-[6px] max-h-[6px] min-h-[6px] flex-row items-end justify-center whitespace-nowrap px-3 text-[9px] font-medium text-slate-500 sm:mb-0 sm:text-[11px]">
               {randomizedOrgs.length > 0 && randomizedOrgs}
               <div className="ml-1 hidden sm:block"> · August 2025</div>
             </div>

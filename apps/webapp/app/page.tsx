@@ -95,12 +95,12 @@ export default function Page() {
         </filter>
       </svg>
 
-      <div className="relative z-0 mb-3 mt-3 flex min-h-[350px] w-full flex-col items-center justify-center rounded-lg px-3 sm:mx-0 sm:mb-8 sm:min-h-[224px] sm:w-[640px] sm:min-w-[640px] sm:px-0">
+      <div className="relative z-0 mb-3 mt-3 flex min-h-[350px] w-full flex-col items-center justify-center rounded-lg px-3 sm:mx-0 sm:mb-8 sm:min-h-[230px] sm:w-[640px] sm:min-w-[640px] sm:px-0">
         <div
           style={{ backgroundImage: `url('/usedby/landscape-bg.jpg')` }}
-          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-3xl bg-cover bg-center opacity-100 saturate-[2] sm:mx-0 sm:px-0"
+          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-3xl bg-cover bg-top opacity-100 -hue-rotate-[4deg] saturate-[1.7] sm:mx-0 sm:px-0"
         />
-        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[20px] bg-slate-600 opacity-30 mix-blend-darken sm:mx-0 sm:px-0" />
+        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[20px] bg-black opacity-15 mix-blend-darken sm:mx-0 sm:px-0" />
 
         <div className="glass-card relative z-0 mb-0 flex h-full w-full min-w-full max-w-screen-sm flex-1 flex-col items-center justify-center gap-x-8 gap-y-1 rounded-lg px-2 py-16 shadow-sm sm:gap-y-0 sm:px-5 sm:py-7">
           <div className="glass-filter" />
@@ -119,13 +119,13 @@ export default function Page() {
             </div>
             <div
               className="mt-1.5 text-base font-bold sm:text-[22px]"
-              style={{ textShadow: '0 2px 3px rgba(0, 0, 0, 0.2)' }}
+              style={{ textShadow: '0 2px 3px rgba(0, 0, 0, 0.25)' }}
             >
               The Circuit Analysis Research Landscape
             </div>
             <div
               className="mt-1.5 text-sm font-medium sm:text-[13px]"
-              style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}
+              style={{ textShadow: '0 2px 3px rgba(0, 0, 0, 0.25)' }}
             >
               A collaboration by Anthropic, EleutherAI, Goodfire AI, Google DeepMind, and Decode.
             </div>
@@ -141,7 +141,7 @@ export default function Page() {
                       <Newspaper className="mr-2 h-5 w-5" />
                       <div
                         className="text-[14px] font-bold text-white"
-                        style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}
+                        style={{ textShadow: '0 2px 3px rgba(0, 0, 0, 0.3)' }}
                       >
                         Read the Post
                       </div>
@@ -207,14 +207,6 @@ export default function Page() {
           A collaboration by Anthropic, EleutherAI, Goodfire AI, Google DeepMind, and Decode.
         </div>
         <div className="mb-2 mt-4 flex flex-col items-center justify-center gap-x-2.5 gap-y-2 sm:flex-row">
-          {/* <Link
-            href="/gemma-2-2b/graph"
-            className="flex w-[165px] max-w-[165px] flex-row items-center justify-center gap-x-2 rounded-md bg-emerald-600 px-0 py-2.5 text-sm font-medium text-white shadow transition-all hover:scale-105 hover:bg-emerald-700"
-          >
-            <RocketIcon className="h-5 w-5" />
-            <span>Launch</span>
-          </Link> */}
-
           <Link href="/blog/circuit-tracer" target="_blank" rel="noreferrer">
             <Button
               variant="default"
@@ -225,27 +217,6 @@ export default function Page() {
               <span>Read the Post</span>
             </Button>
           </Link>
-          {/* <Link href="https://www.anthropic.com/research/open-source-circuit-tracing" target="_blank" rel="noreferrer">
-            <Button
-              variant="default"
-              size="lg"
-              className="w-[165px] max-w-[165px] gap-x-2 bg-[#cc785c] text-[#191919] transition-all hover:scale-105 hover:bg-[#d4a27f]"
-            >
-              <svg
-                fill="#000000"
-                fill-rule="evenodd"
-                height="1.2em"
-                style={{ flex: 'none', lineHeight: '1' }}
-                viewBox="0 0 24 24"
-                width="1.2em"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <title>Anthropic</title>
-                <path d="M13.827 3.52h3.603L24 20h-3.603l-6.57-16.48zm-7.258 0h3.767L16.906 20h-3.674l-1.343-3.461H5.017l-1.344 3.46H0L6.57 3.522zm4.132 9.959L8.453 7.687 6.205 13.48H10.7z" />
-              </svg>{' '}
-              <span>Press Release</span>
-            </Button>
-          </Link> */}
         </div>
       </div>
 
