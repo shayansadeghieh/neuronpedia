@@ -20,6 +20,7 @@ import {
   Computer,
   Github,
   Microscope,
+  Newspaper,
   PictureInPicture,
   RocketIcon,
   School,
@@ -94,12 +95,12 @@ export default function Page() {
         </filter>
       </svg>
 
-      <div className="relative z-0 mb-3 mt-3 flex min-h-[240px] w-full flex-col items-center justify-center rounded-lg px-3 sm:mx-0 sm:mb-8 sm:w-[640px] sm:min-w-[640px] sm:px-0">
+      <div className="relative z-0 mb-3 mt-3 flex min-h-[350px] w-full flex-col items-center justify-center rounded-lg px-3 sm:mx-0 sm:mb-8 sm:min-h-[224px] sm:w-[640px] sm:min-w-[640px] sm:px-0">
         <div
           style={{ backgroundImage: `url('/usedby/landscape-bg.jpg')` }}
-          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-3xl bg-cover bg-center opacity-100 saturate-[2.5] sm:mx-0 sm:px-0"
+          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-3xl bg-cover bg-center opacity-100 saturate-[2] sm:mx-0 sm:px-0"
         />
-        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[20px] bg-slate-600 opacity-35 mix-blend-darken sm:mx-0 sm:px-0" />
+        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[20px] bg-slate-600 opacity-40 mix-blend-darken sm:mx-0 sm:px-0" />
 
         <div className="glass-card relative z-0 mb-0 flex h-full w-full min-w-full max-w-screen-sm flex-1 flex-col items-center justify-center gap-x-8 gap-y-1 rounded-lg px-2 py-16 shadow-sm sm:gap-y-0 sm:px-5 sm:py-7">
           <div className="glass-filter" />
@@ -117,27 +118,33 @@ export default function Page() {
               New: August 2025
             </div>
             <div
-              className="mt-1 text-base font-bold sm:text-[22px]"
+              className="mt-1.5 text-base font-bold sm:text-[22px]"
               style={{ textShadow: '0 2px 3px rgba(0, 0, 0, 0.2)' }}
             >
               The Circuit Analysis Research Landscape
             </div>
             <div
-              className="mt-1 text-sm font-medium sm:text-[13px]"
+              className="mt-1.5 text-sm font-medium sm:text-[13px]"
               style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}
             >
               A collaboration by Anthropic, EleutherAI, Goodfire AI, Google DeepMind, and Decode.
             </div>
 
-            <div className="mt-5 flex flex-row gap-x-2.5">
+            <div className="mt-6 flex flex-col gap-y-2 sm:flex-row sm:gap-x-3">
               <Link href="/graph/info" className="text-white">
                 <button type="button" className="glass-button h-12 min-h-12">
                   <div className="glass-filter" />
                   <div className="glass-overlay" />
                   <div className="glass-specular" />
                   <div className="glass-content flex flex-row items-center justify-center py-0 font-bold leading-none">
-                    <div className="px-3 font-bold text-white" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}>
-                      Read the Post
+                    <div className="flex flex-row items-center justify-center px-1">
+                      <Newspaper className="mr-2 h-5 w-5" />
+                      <div
+                        className="text-[14px] font-bold text-white"
+                        style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}
+                      >
+                        Read the Post
+                      </div>
                     </div>
                   </div>
                 </button>

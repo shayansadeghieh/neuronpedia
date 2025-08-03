@@ -17,28 +17,28 @@ _Researchers from [Anthropic](https://www.anthropic.com/research#interpretabilit
 <div className="flex flex-col sm:flex-row gap-x-2 gap-y-2 justify-start mt-2 mb-6">
 
 
-<a href="#the-landscape-of-interpretability-methods" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-md bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
+<a href="#the-landscape-of-interpretability-methods" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-lg bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
     <div className="flex text-xs leading-snug gap-y-1.5 flex-col items-center justify-center">
         <div className="text-xs h-8 flex flex-row flex-1 items-center justify-center gap-x-1 text-left w-full"><div className="text-2xl text-center">🗺️</div><div className="text-center font-semibold flex-1">The Landscape of Interpretability Methods</div></div>
         <div className="text-sky-700/90 text-[11px] text-left">A high-level overview of AI interpretability tools, when they can be applied, and where attribution graphs fit into the mix.</div>
     </div>
 </a>
 
-<a href="#section-attribution-graphs-for-studying-model-biology" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-md bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
+<a href="#section-attribution-graphs-for-studying-model-biology" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-lg bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
     <div className="flex text-xs leading-snug gap-y-1.5 flex-col items-center justify-center">
         <div className="text-xs h-8 flex flex-row flex-1 items-center justify-center gap-x-1 text-left w-full"><div className="text-2xl text-center">📈</div><div className="text-center font-semibold flex-1">Attribution Graphs for Studying Model Biology</div></div>
         <div className="text-sky-700/90 text-[11px] text-left">Updates on reproductions and applications of attribution graphs, including replications of findings in the original work, and limitations.</div>
     </div>
 </a>
 
-<a href="#section-transcoder-architecture-and-implementation" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-md bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
+<a href="#section-transcoder-architecture-and-implementation" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-lg bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
     <div className="flex text-xs leading-snug gap-y-1.5 flex-col items-center justify-center">
         <div className="text-xs h-8 flex flex-row flex-1 items-center justify-center gap-x-1 text-left w-full"><div className="text-2xl text-center">🤖</div><div className="text-center font-semibold flex-1">Transcoder Architecture and Implementation</div></div>
         <div className="text-sky-700/90 text-[11px] text-left">Research updates on potential improvements to the transcoder architecture underlying the circuit tracing methodology.</div>
     </div>
 </a>
 
-<a href="#section-directions-for-future-work" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-md bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
+<a href="#section-directions-for-future-work" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-lg bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
     <div className="flex text-xs leading-snug gap-y-1.5 flex-col items-start justify-start">
         <div className="text-xs h-8 flex flex-row flex-1 items-center justify-start gap-x-1 text-left w-full"><div className="text-2xl text-center">💡</div><div className="text-center font-semibold flex-1">Directions<br className="hidden sm:block" /> for Future Work</div></div>
         <div className="text-sky-700/90 text-[11px] text-left">Unresolved problems and project ideas, improvements to transcoders and attributiongraphs, and open LLM “biology” questions.</div>
@@ -50,13 +50,13 @@ _Researchers from [Anthropic](https://www.anthropic.com/research#interpretabilit
 #### Attribution Graphs for Dummies: A Two-Part YouTube Series
 
 <div className="flex flex-col sm:flex-row gap-x-2 gap-y-2 justify-start mt-2 mb-6">
-<a href="https://youtu.be/ruLcDtr_cGo" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-1.5 flex flex-row items-center justify-center rounded-md bg-red-50 border-red-600 border px-4 py-2.5 text-xs font-medium cursor-pointer text-red-600 hover:bg-red-200 flex-1 text-center">
+<a href="https://youtu.be/ruLcDtr_cGo" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-1.5 flex flex-row items-center justify-center rounded-lg bg-red-50 border-red-600 border px-4 py-2.5 text-xs font-medium cursor-pointer text-red-600 hover:bg-red-200 flex-1 text-center">
      <svg className="inline h-7 w-7" viewBox="0 0 36 36" fill="currentColor">
 <path d="M12.932 20.459v-8.917l7.839 4.459zM30.368 8.735c-0.354-1.301-1.354-2.307-2.625-2.663l-0.027-0.006c-3.193-0.406-6.886-0.638-10.634-0.638-0.381 0-0.761 0.002-1.14 0.007l0.058-0.001c-0.322-0.004-0.701-0.007-1.082-0.007-3.748 0-7.443 0.232-11.070 0.681l0.434-0.044c-1.297 0.363-2.297 1.368-2.644 2.643l-0.006 0.026c-0.4 2.109-0.628 4.536-0.628 7.016 0 0.088 0 0.176 0.001 0.263l-0-0.014c-0 0.074-0.001 0.162-0.001 0.25 0 2.48 0.229 4.906 0.666 7.259l-0.038-0.244c0.354 1.301 1.354 2.307 2.625 2.663l0.027 0.006c3.193 0.406 6.886 0.638 10.634 0.638 0.38 0 0.76-0.002 1.14-0.007l-0.058 0.001c0.322 0.004 0.702 0.007 1.082 0.007 3.749 0 7.443-0.232 11.070-0.681l-0.434 0.044c1.298-0.362 2.298-1.368 2.646-2.643l0.006-0.026c0.399-2.109 0.627-4.536 0.627-7.015 0-0.088-0-0.176-0.001-0.263l0 0.013c0-0.074 0.001-0.162 0.001-0.25 0-2.48-0.229-4.906-0.666-7.259l0.038 0.244z"></path>
 </svg> Part 1: What are Attribution Graphs?
 </a>
 
-<a href="https://youtu.be/hdi1a9MjwDs" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-1.5 flex flex-row items-center justify-center rounded-md bg-red-50 border-red-600 border px-4 py-2.5 text-xs font-medium cursor-pointer text-red-600 hover:bg-red-200 flex-1 text-center">
+<a href="https://youtu.be/hdi1a9MjwDs" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-1.5 flex flex-row items-center justify-center rounded-lg bg-red-50 border-red-600 border px-4 py-2.5 text-xs font-medium cursor-pointer text-red-600 hover:bg-red-200 flex-1 text-center">
      <svg className="inline h-7 w-7" viewBox="0 0 36 36" fill="currentColor">
 <path d="M12.932 20.459v-8.917l7.839 4.459zM30.368 8.735c-0.354-1.301-1.354-2.307-2.625-2.663l-0.027-0.006c-3.193-0.406-6.886-0.638-10.634-0.638-0.381 0-0.761 0.002-1.14 0.007l0.058-0.001c-0.322-0.004-0.701-0.007-1.082-0.007-3.748 0-7.443 0.232-11.070 0.681l0.434-0.044c-1.297 0.363-2.297 1.368-2.644 2.643l-0.006 0.026c-0.4 2.109-0.628 4.536-0.628 7.016 0 0.088 0 0.176 0.001 0.263l-0-0.014c-0 0.074-0.001 0.162-0.001 0.25 0 2.48 0.229 4.906 0.666 7.259l-0.038-0.244c0.354 1.301 1.354 2.307 2.625 2.663l0.027 0.006c3.193 0.406 6.886 0.638 10.634 0.638 0.38 0 0.76-0.002 1.14-0.007l-0.058 0.001c0.322 0.004 0.702 0.007 1.082 0.007 3.749 0 7.443-0.232 11.070-0.681l-0.434 0.044c1.298-0.362 2.298-1.368 2.646-2.643l0.006-0.026c0.399-2.109 0.627-4.536 0.627-7.015 0-0.088-0-0.176-0.001-0.263l0 0.013c0-0.074 0.001-0.162 0.001-0.25 0-2.48-0.229-4.906-0.666-7.259l0.038 0.244z"></path>
 </svg> Part 2: Building and Testing a Circuit
@@ -67,7 +67,7 @@ _Researchers from [Anthropic](https://www.anthropic.com/research#interpretabilit
 
 <div className="flex flex-col sm:flex-row gap-x-2 gap-y-2 justify-start mt-2 mb-12">
 
-<a href="https://www.neuronpedia.org/graph" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-2.5 flex flex-row items-center justify-center rounded-md bg-emerald-50 border-emerald-600 border px-4 py-2.5 text-xs font-medium cursor-pointer text-emerald-700 hover:bg-emerald-200 flex-1 text-center">
+<a href="https://www.neuronpedia.org/graph" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-2.5 flex flex-row items-center justify-center rounded-lg bg-emerald-50 border-emerald-600 border px-4 py-2.5 text-xs font-medium cursor-pointer text-emerald-700 hover:bg-emerald-200 flex-1 text-center">
     <div className="text-base">🚀</div>
     <div className="flex text-[10px] leading-snug flex-col items-center justify-center">
         <div className="text-xs">Generate Graphs</div>
@@ -75,7 +75,7 @@ _Researchers from [Anthropic](https://www.anthropic.com/research#interpretabilit
     </div>
 </a>
 
-<a href="https://github.com/safety-research/circuit-tracer" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-2.5 flex flex-row items-center justify-center rounded-md bg-slate-100 border-slate-600 border px-4 py-2.5 text-xs font-medium cursor-pointer text-slate-700 hover:bg-slate-200 flex-1 text-center">
+<a href="https://github.com/safety-research/circuit-tracer" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-2.5 flex flex-row items-center justify-center rounded-lg bg-slate-100 border-slate-600 border px-4 py-2.5 text-xs font-medium cursor-pointer text-slate-700 hover:bg-slate-200 flex-1 text-center">
     <div><svg className="inline h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></div>
     <div className="flex text-[10px] leading-snug flex-col items-center justify-center">
         <div className="text-xs">circuit-tracer</div>
@@ -83,7 +83,7 @@ _Researchers from [Anthropic](https://www.anthropic.com/research#interpretabilit
     </div>
 </a>
 
-<a href="https://huggingface.co/collections/mntss/cross-layer-transcoders-688c39eaa8d5562e9c864055" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-2.5 flex flex-row items-center justify-center rounded-md bg-amber-50 border-amber-600 border px-4 py-2.5 text-base font-medium cursor-pointer text-amber-700 hover:bg-amber-200 flex-1 text-center">
+<a href="https://huggingface.co/collections/mntss/cross-layer-transcoders-688c39eaa8d5562e9c864055" target="_blank" rel="noopener noreferrer" className="ignore-group-post gap-x-2.5 flex flex-row items-center justify-center rounded-lg bg-amber-50 border-amber-600 border px-4 py-2.5 text-base font-medium cursor-pointer text-amber-700 hover:bg-amber-200 flex-1 text-center">
     <div className="text-base">🤗</div>
     <div className="flex text-[10px] leading-snug flex-col items-center justify-center">
         <div className="text-xs">Open Source CLTs</div>
