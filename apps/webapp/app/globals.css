@@ -1129,7 +1129,7 @@ foreignObject canvas {
 
 .glass-filter {
   z-index: 1;
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(4px);
   filter: url(#glass-distortion) saturate(120%) brightness(1.15);
 }
 

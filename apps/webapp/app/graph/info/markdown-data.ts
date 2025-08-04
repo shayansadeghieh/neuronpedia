@@ -99,7 +99,7 @@ _Researchers from [Anthropic](https://www.anthropic.com/research#interpretabilit
 
 _Jack Lindsey, Neel Nanda, Tom McGrath_
 
-It may be helpful to draw an analogy between understanding AI models and biology. AI models, like living organisms, are complex systems whose mechanisms emerge without being intentionally programmed. Understanding how they work thus more closely resembles a natural science, like biology, than it does engineering or computer science. In biology, scientific understanding has many important applications. It allows us to make _predictions_ (e.g. about the progression of disease) – and to design _interventions_ – (e.g. developing medicines). Biologists have developed models at many different levels of abstraction – molecular biology, systems biology, ecology, etc. – which are useful for different applications.
+It's helpful to draw an analogy between understanding AI models and biology. AI models, like living organisms, are complex systems whose mechanisms emerge without being intentionally programmed. Understanding how they work thus more closely resembles a natural science, like biology, than it does engineering or computer science. In biology, scientific understanding has many important applications. It allows us to make _predictions_ (e.g. about the progression of disease) – and to design _interventions_ – (e.g. developing medicines). Biologists have developed models at many different levels of abstraction – molecular biology, systems biology, ecology, etc. – which are useful for different applications.
 
 Our situation in interpretability research is similar. We want to make predictions about unexpected behaviors or new capabilities that might surface in deployment. And we would like to “debug” known issues with models, such that we can address them with appropriate interventions (e.g. updates to training data or algorithms). Achieving these goals, we expect, will involve a patchwork of conceptual models and tools operating at different levels, as in biology. We review some of the available options below.
 
@@ -216,7 +216,7 @@ We find that:
 
 The replacement scores and estimated L0 values in the chart above use unpruned circuit graphs. Typically, attribution graphs are pruned prior to analyzing them (see the pruning algorithm described by [Ameisen et al.](https://transformer-circuits.pub/2025/attribution-graphs/methods.html#appendix-graph-pruning)). Both training-time sparsity penalization and graph pruning are ways of achieving graph sparsity. To shed light on the different effects of these two ways of achieving sparsity, we took transcoders with the same architecture and varying unpruned sparsity levels, and pruned them with varying graph pruning thresholds. The following is for ReLU CLTs - see [Appendix A](#appendix-a) for other architectures.
 
-<img className="w-full sm:mx-auto sm:w-2/3" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-relu-clt.png">
+<img className="w-full sm:mx-auto sm:w-2/3" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-relu-clt.svg">
 
 It can be seen that in order to target a final level of graph sparsity, using unpruned graphs is suboptimal, as is using too much pruning. Thus, practitioners should aim for transcoders to be less sparse than is ultimately desired, and achieve the rest of the sparsification via graph pruning. We estimate that to be roughly optimal, the training-time L0 should be chosen to “overshoot” the desired post-pruning sparsity by about 5–10×.
 
@@ -430,18 +430,18 @@ Models that use inference-time computation are increasingly important, but we un
 #### Post-pruning Replacement Scores for All Sparsity Sweeps
 
 <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-4">
-  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-jumprelu-plt.png">
-  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-jumprelu-clt.png">
-  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-relu-clt.png">
-  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-topk-plt-eai-noskip.png">
+  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-jumprelu-plt.svg">
+  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-jumprelu-clt.svg">
+  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-relu-clt.svg">
+  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/prune-topk-plt-eai-noskip.svg">
 </div>
 
 <h3 className="scroll-mt-44" id="appendix-b">B. Llama 3.2 1B Results</h3>
 
-<div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-2 mb-2">
-  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/llama-rep-vs-mse.png">
-  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/llama-mse-vs-l0.png">
-  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/llama-rep-vs-l0.png">
+<div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-3 mb-3">
+  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/llama-rep-vs-mse.svg">
+  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/llama-mse-vs-l0.svg">
+  <img width="100%" src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/graph/post/llama-rep-vs-l0.svg">
 </div>
 
 We can see that the relationships between MSE, L0 and Replacement Score are similar between Llama 3.2 1B and GPT2:

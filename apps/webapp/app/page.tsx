@@ -95,12 +95,12 @@ export default function Page() {
         </filter>
       </svg>
 
-      <div className="relative z-0 mb-3 mt-3 flex min-h-[350px] w-full flex-col items-center justify-center rounded-lg px-3 sm:mx-0 sm:mb-8 sm:min-h-[230px] sm:w-[640px] sm:min-w-[640px] sm:px-0">
+      <div className="relative z-0 mb-3 mt-3 flex min-h-[350px] w-full flex-col items-center justify-center rounded-lg px-3 sm:mx-0 sm:mb-8 sm:min-h-[280px] sm:w-[680px] sm:min-w-[680px] sm:px-0">
         <div
-          style={{ backgroundImage: `url('/usedby/landscape-bg.jpg')` }}
-          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-3xl bg-cover bg-top opacity-100 -hue-rotate-[4deg] saturate-[1.7] sm:mx-0 sm:px-0"
+          style={{ backgroundImage: `url('/usedby/landscapebg.jpg')` }}
+          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-3xl bg-cover bg-top opacity-100 -hue-rotate-[8deg] saturate-[1.6] sm:mx-0 sm:px-0"
         />
-        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[20px] bg-black opacity-15 mix-blend-darken sm:mx-0 sm:px-0" />
+        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[20px] bg-black opacity-[0.25] mix-blend-darken sm:mx-0 sm:px-0" />
 
         <div className="glass-card relative z-0 mb-0 flex h-full w-full min-w-full max-w-screen-sm flex-1 flex-col items-center justify-center gap-x-8 gap-y-1 rounded-lg px-2 py-16 shadow-sm sm:gap-y-0 sm:px-5 sm:py-7">
           <div className="glass-filter" />
@@ -115,11 +115,11 @@ export default function Page() {
             </svg>
 
             <div className="text-xs font-medium" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)' }}>
-              New: August 2025
+              August 2025
             </div>
             <div
               className="mt-1.5 text-base font-bold sm:text-[22px]"
-              style={{ textShadow: '0 2px 3px rgba(0, 0, 0, 0.25)' }}
+              style={{ textShadow: '0 2px 3px rgba(0, 0, 0, 0.3)' }}
             >
               The Circuit Analysis Research Landscape
             </div>
@@ -130,7 +130,7 @@ export default function Page() {
               A collaboration by Anthropic, EleutherAI, Goodfire AI, Google DeepMind, and Decode.
             </div>
 
-            <div className="mt-6 flex flex-col gap-y-2 sm:flex-row sm:gap-x-3">
+            <div className="mt-7 flex flex-col gap-y-2 sm:flex-row sm:gap-x-4">
               <Link href="/graph/info" className="text-white">
                 <button type="button" className="glass-button h-12 min-h-12">
                   <div className="glass-filter" />
@@ -141,7 +141,7 @@ export default function Page() {
                       <Newspaper className="mr-2 h-5 w-5" />
                       <div
                         className="text-[14px] font-bold text-white"
-                        style={{ textShadow: '0 2px 3px rgba(0, 0, 0, 0.3)' }}
+                        style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)' }}
                       >
                         Read the Post
                       </div>
@@ -191,32 +191,6 @@ export default function Page() {
               </a>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="relative z-0 my-3 mb-0 hidden min-h-[180px] max-w-screen-sm flex-1 flex-col items-center justify-center gap-x-8 gap-y-1 overflow-hidden rounded-lg border bg-blue-600 px-2 py-16 shadow-sm sm:mb-8 sm:mt-4 sm:gap-y-0 sm:px-12 sm:py-7">
-        <div
-          style={{ backgroundImage: `url('/usedby/mini-landscape.png')` }}
-          className="absolute inset-5 -z-10 bg-cover bg-top opacity-60 blur-[6px]"
-        />
-        <div className="px-20 py-1 text-xs font-bold text-sky-600 sm:absolute sm:-left-20 sm:top-4 sm:rotate-[-36deg] sm:bg-yellow-400 sm:text-[9px] sm:text-slate-700">
-          New: Aug 2025
-        </div>
-
-        <div className="mt-1 text-sm font-normal text-slate-800 sm:text-[13px]">
-          A collaboration by Anthropic, EleutherAI, Goodfire AI, Google DeepMind, and Decode.
-        </div>
-        <div className="mb-2 mt-4 flex flex-col items-center justify-center gap-x-2.5 gap-y-2 sm:flex-row">
-          <Link href="/blog/circuit-tracer" target="_blank" rel="noreferrer">
-            <Button
-              variant="default"
-              size="lg"
-              className="h-12 w-[200px] max-w-[200px] gap-x-2 border-2 border-[#cc785c] bg-white text-xs uppercase text-[#191919] transition-all hover:bg-[#d4a27f]"
-            >
-              📖
-              <span>Read the Post</span>
-            </Button>
-          </Link>
         </div>
       </div>
 
