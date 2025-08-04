@@ -3,6 +3,7 @@ import { GraphProvider } from '@/components/provider/graph-provider';
 import { GraphStateProvider } from '@/components/provider/graph-state-provider';
 import { prisma } from '@/lib/db';
 import { getModelById } from '@/lib/db/model';
+import { ASSET_BASE_URL } from '@/lib/env';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { notFound } from 'next/navigation';
@@ -31,8 +32,8 @@ export async function generateMetadata({
   // use modelIdToModelDisplayName to get the model name if it's there. othewise use it directly
   const modelName = modelIdToModelDisplayName.get(modelId) || modelId;
 
-  const title = `${slug ? `${slug} - ` : ''}${modelName} Attribution Graph`;
-  const description = ``;
+  const title = `${slug ? `${slug} - ` : ''}${modelName} Graph | Neuronpedia`;
+  const description = `Attribution Graph for ${modelName}`;
   let url = `/${modelId}/graph`;
 
   if (slug) {
@@ -45,6 +46,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
+      images: [ASSET_BASE_URL + '/graph-preview.jpg'],
       url,
     },
   };
