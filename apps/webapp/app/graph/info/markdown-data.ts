@@ -579,7 +579,7 @@ We want to note that the strategy used by EleutherAI is not the most memory- or 
 
 <div className="bg-slate-50 mb-8 px-6 py-0 pb-5 rounded-lg text-xs text-slate-700 leading-relaxed font-mono whitespace-pre-wrap">
 @article{lindsey2025landscape,
-   author={Lindsey, Jack and Ameisen, Emmanuel and Nanda, Neel and Shabalin, Stepan and Piotrowski, Mateusz and McGrath, Tom and Hanna, Michael and Lewis, Owen and Tigges, Curt and Paulo, Gonçalo and Batson, Joshua and Merullo, Jack and Loeffler, Max and Watts, Connor and McDougall, Callum and Lin, Johnny},
+   author={Lindsey, Jack and Ameisen, Emmanuel and Nanda, Neel and Shabalin, Stepan and Piotrowski, Mateusz and McGrath, Tom and Hanna, Michael and Lewis, Owen and Tigges, Curt and Merullo, Jack and Watts, Connor and Paulo, Gonçalo and Batson, Joshua and Gorton, Liv and Simon, Elana and Loeffler, Max and McDougall, Callum and Lin, Johnny},
    title={The Circuits Research Landscape: Results and Perspectives},
    journal={Neuronpedia},
    year={2025},

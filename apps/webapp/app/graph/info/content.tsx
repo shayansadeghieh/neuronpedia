@@ -196,8 +196,8 @@ export function GraphInfoContent({ title, randomizedOrgs }: { title: string; ran
                 <div className="mb-0.5 mt-0 text-[11px] leading-relaxed text-slate-500 sm:mb-0.5 sm:text-[12px]">
                   Jack&nbsp;Lindsey*, Emmanuel&nbsp;Ameisen*, Neel&nbsp;Nanda*, Stepan&nbsp;Shabalin*,
                   Mateusz&nbsp;Piotrowski*, Tom&nbsp;McGrath*, Michael&nbsp;Hanna*, Owen&nbsp;Lewis*, Curt&nbsp;Tigges*,
-                  Gonçalo&nbsp;Paulo, Joshua&nbsp;Batson, Jack&nbsp;Merullo, Max&nbsp;Loeffler, Connor&nbsp;Watts,
-                  Callum&nbsp;McDougall, Johnny&nbsp;Lin
+                  Jack&nbsp;Merullo*, Connor&nbsp;Watts*, Gonçalo&nbsp;Paulo, Joshua&nbsp;Batson, Liv&nbsp;Gorton,
+                  Elana&nbsp;Simon, Max&nbsp;Loeffler, Callum&nbsp;McDougall, Johnny&nbsp;Lin
                 </div>
                 <div className="mb-0 text-[9px] italic text-slate-400 sm:text-[10px]"> *Core Contributor</div>
               </div>
