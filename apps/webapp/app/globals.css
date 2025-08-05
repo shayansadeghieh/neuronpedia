@@ -1130,10 +1130,10 @@ foreignObject canvas {
 .glass-filter {
   z-index: 1;
   backdrop-filter: blur(4px);
-  filter: url(#glass-distortion) saturate(120%) brightness(1.15);
+  /* filter: url(#glass-distortion) saturate(120%) brightness(1.15); */
 }
 
-.glass-distortion-overlay {
+/* .glass-distortion-overlay {
   position: absolute;
   inset: 0;
   background:
@@ -1144,9 +1144,9 @@ foreignObject canvas {
   mix-blend-mode: overlay;
   z-index: 2;
   pointer-events: none;
-}
+} */
 
-@keyframes floatDistort {
+/* @keyframes floatDistort {
   0% {
     background-position: 0% 0%;
   }
@@ -1156,7 +1156,7 @@ foreignObject canvas {
   100% {
     background-position: 0% 0%;
   }
-}
+} */
 
 .glass-overlay {
   z-index: 2;

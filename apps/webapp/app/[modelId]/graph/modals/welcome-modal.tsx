@@ -74,9 +74,8 @@ export default function WelcomeModal({ hasSlug }: { hasSlug: boolean }) {
             Generate New Graph
           </Button>
           <p className="mt-2">
-            Want to see some examples first? Here are graphs that we&apos;ve &quot;solved&quot;, meaning we&apos;ve
-            identified an annotated subgraph that explains key internal reasoning steps. Share your solutions for
-            unsolved graphs!
+            After generating a graph, your objective is to create a <b>subgraph solution</b>. To do this, you pin and
+            group nodes to create a subgraph that explains key internal reasoning steps. Examples:
           </p>
           <div className="pt-2 text-left text-[11px] font-medium uppercase leading-none text-slate-400">
             Solved Graphs
