@@ -98,7 +98,7 @@ export default function Page() {
       <div className="relative z-0 mb-3 mt-3 flex min-h-[350px] w-full flex-col items-center justify-center rounded-lg px-3 sm:mx-0 sm:mb-8 sm:min-h-[280px] sm:w-[680px] sm:min-w-[680px] sm:px-0">
         <div
           style={{ backgroundImage: `url('/usedby/landscapebg.jpg')` }}
-          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-[20px] bg-cover bg-top opacity-100 brightness-75 -hue-rotate-[6deg] saturate-[1.6] sm:mx-0 sm:px-0"
+          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-[20px] bg-cover bg-top opacity-100 brightness-75 -hue-rotate-[5deg] saturate-[2.0] sm:mx-0 sm:px-0"
         />
         {/* <div className="absolute inset-[0px] -z-10 mx-3 rounded-[22px] bg-black opacity-[0.13] mix-blend-darken sm:mx-0 sm:px-0" /> */}
 
@@ -169,7 +169,12 @@ export default function Page() {
                   </div>
                 </button>
               </a>
-              <a href="https://youtu.be/ruLcDtr_cGo" target="_blank" rel="noopener noreferrer" className="text-white">
+              <a
+                href="https://www.youtube.com/playlist?list=PL05yUGfKO5wP6S5_12z7LG30LZigRYx1e"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white"
+              >
                 <button type="button" className="glass-button h-12 min-h-12">
                   <div className="glass-filter" />
                   <div className="glass-overlay" />
