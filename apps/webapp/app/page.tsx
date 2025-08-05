@@ -98,9 +98,9 @@ export default function Page() {
       <div className="relative z-0 mb-3 mt-3 flex min-h-[350px] w-full flex-col items-center justify-center rounded-lg px-3 sm:mx-0 sm:mb-8 sm:min-h-[280px] sm:w-[680px] sm:min-w-[680px] sm:px-0">
         <div
           style={{ backgroundImage: `url('/usedby/landscapebg.jpg')` }}
-          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-[20px] bg-cover bg-top opacity-100 -hue-rotate-[4deg] saturate-[1.6] sm:mx-0 sm:px-0"
+          className="bg-size-[100%] absolute inset-[1px] -z-10 mx-3 rounded-[20px] bg-cover bg-top opacity-100 brightness-75 -hue-rotate-[6deg] saturate-[1.6] sm:mx-0 sm:px-0"
         />
-        <div className="absolute inset-[0px] -z-10 mx-3 rounded-[22px] bg-black opacity-[0.13] mix-blend-darken sm:mx-0 sm:px-0" />
+        {/* <div className="absolute inset-[0px] -z-10 mx-3 rounded-[22px] bg-black opacity-[0.13] mix-blend-darken sm:mx-0 sm:px-0" /> */}
 
         <div className="glass-card relative z-0 mb-0 flex h-full w-full min-w-full max-w-screen-sm flex-1 flex-col items-center justify-center gap-x-8 gap-y-1 rounded-lg px-2 py-16 shadow-sm sm:gap-y-0 sm:px-5 sm:py-7">
           <div className="glass-filter" />
