@@ -46,7 +46,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      images: [ASSET_BASE_URL + '/graph-preview.jpg'],
+      images: [`${ASSET_BASE_URL}/graph-preview.jpg`],
       url,
     },
   };
