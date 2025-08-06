@@ -698,7 +698,7 @@ div[data-virtuoso-scroller='true'] table {
     content: none;
   }
 
-  :where(code):not(:where([class~='not-prose'], [class~='not-prose'] *)) {
+  :where(code):not(:where([class~='not-prose'], [class~='not-prose'] *)):not(pre > code) {
     background-color: #f1f5f9;
     padding: 0.1rem 0.35rem;
     border-radius: 4px;

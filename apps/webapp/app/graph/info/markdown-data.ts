@@ -41,7 +41,7 @@ _Researchers from [Anthropic](https://www.anthropic.com/research#interpretabilit
 <a href="#section-directions-for-future-work" className="ignore-group-post gap-x-2.5 flex flex-col items-center justify-center rounded-lg bg-sky-50 border-sky-600 border px-4 py-3 text-xs font-medium cursor-pointer text-sky-800 hover:bg-sky-100 flex-1 text-center">
     <div className="flex text-xs leading-snug gap-y-1.5 flex-col items-start justify-start">
         <div className="text-xs h-8 flex flex-row flex-1 items-center justify-start gap-x-1 text-left w-full"><div className="text-2xl text-center">💡</div><div className="text-center font-semibold flex-1">Directions<br className="hidden sm:block" /> for Future Work</div></div>
-        <div className="text-sky-700/90 text-[11px] text-left">Unresolved problems and project ideas, improvements to transcoders and attributiongraphs, and open LLM “biology” questions.</div>
+        <div className="text-sky-700/90 text-[11px] text-left">Unresolved problems and project ideas, improvements to transcoders & attribution graphs, and open LLM “biology” questions.</div>
     </div>
 </a>
 
