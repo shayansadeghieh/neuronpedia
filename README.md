@@ -304,6 +304,46 @@ Look at the `.env.inference.deepseek-r1-distill-llama-8b.llamascope-slimpj-res-3
        AUTORELOAD=1
   ```
 
+## 'I Want to Run/Develop Graph Server Locally'
+
+#### What This Does + What You'll Get
+
+The graph server powers the attribution graph generation functionality, built on top of [circuit-tracer](https://github.com/safety-research/circuit-tracer) by Piotrowski & Hanna. This service handles the backend processing when you create new graphs through the [Neuronpedia Circuit Tracer](https://www.neuronpedia.org/gemma-2-2b/graph) interface.
+
+#### Steps
+
+1. Ensure you have [installed poetry](https://python-poetry.org/docs/#installation)
+2. Install the graph server's dependencies
+   ```
+   make graph-localhost-install
+   ```
+3. Within the `apps/graph` directory, create a `.env` file with `SECRET` and `HF_TOKEN` (see `apps/graph/.env.example`)
+
+   - `SECRET` is the server secret that needs to be passed in the `x-secret-key` request header (see examples below)
+   - Make sure your `HF_TOKEN` has access to the [Gemma-2-2B model](https://huggingface.co/google/gemma-2-2b) on Huggingface.
+
+4. Build the image, picking the correct command based on if the machine has CUDA or not:
+   ```
+   # CUDA
+   make graph-localhost-build-gpu USE_LOCAL_HF_CACHE=1
+   ```
+   ```
+   # no CUDA
+   make graph-localhost-build USE_LOCAL_HF_CACHE=1
+   ```
+   > ➡️ The [`USE_LOCAL_HF_CACHE=1` flag](https://github.com/hijohnnylin/neuronpedia/pull/89) mounts your local HuggingFace cache at `${HOME}/.cache/huggingface/hub:/root/.cache/huggingface/hub`. If you wish to create a new cache in your container instead, you can omit this flag here and in the next step.
+5. run the graph server:
+   ```
+   # CUDA
+   make graph-localhost-dev-gpu \
+        USE_LOCAL_HF_CACHE=1
+
+   # no CUDA
+   make graph-localhost-dev \
+        USE_LOCAL_HF_CACHE=1
+   ```
+6. Wait for the container to spin up 
+
 ## 'I Want to Run/Develop Autointerp Locally'
 
 #### What This Does + What You'll Get

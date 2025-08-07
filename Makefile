@@ -223,6 +223,12 @@ reset-docker-data: ## Reset Docker Data - this deletes your local database!
 	@echo "Resetting Docker data..."
 	docker compose -f docker/compose.yaml down -v
 
+graph-localhost-install: ## Graph: Localhost Environment - Install Dependencies (Development Build)
+	@echo "Installing the graph server dependencies for development in the localhost environment..."
+	cd apps/graph && \	
+	poetry lock && poetry install
+
+
 graph-localhost-build: ## Graph: Localhost Environment - Build
 	@echo "Building the graph server for the localhost environment..."
 	ENV_FILE=.env.localhost \
