@@ -109,7 +109,12 @@ export default function SteerModal() {
 
   const getTopActivationValue = useCallback((node: CLTGraphNode) => {
     if (node.featureDetailNP && node.featureDetailNP?.activations && node.featureDetailNP.activations.length > 0) {
-      return node.featureDetailNP.activations[0].maxValue || 0;
+      // iterate through the activations and find the one with the highest maxValue - don't trust that the first one is necessarily the highest
+      const maxActivation = node.featureDetailNP.activations.reduce(
+        (max, activation) => Math.max(max, activation.maxValue || 0),
+        0,
+      );
+      return maxActivation;
     }
     if (
       node.featureDetail &&
