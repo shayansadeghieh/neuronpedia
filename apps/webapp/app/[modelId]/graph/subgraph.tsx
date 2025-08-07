@@ -17,6 +17,8 @@ const NODE_HEIGHT = 25;
 const MINIMUM_SUBGRAPH_LINK_STROKE_WIDTH = 1;
 const MAX_SUBGRAPH_LINK_LUMINANCE = 0.9;
 
+const STEER_MODEL_IDS = ['gemma-2-2b'];
+
 // Custom force container function to keep nodes within bounds
 function forceContainer(bbox: [[number, number], [number, number]]) {
   let nodes: any[];
@@ -1347,7 +1349,9 @@ export default function Subgraph() {
               className={`h-11 w-[86px] flex-col items-center justify-center gap-y-[4px] whitespace-nowrap border border-emerald-600 bg-emerald-100 px-0 text-[9.5px] font-semibold leading-none text-emerald-700 shadow transition-all hover:bg-emerald-200 hover:text-emerald-700 ${
                 visState.subgraph?.activeGrouping.isActive ? 'hidden' : 'hidden sm:flex'
               }`}
-              disabled={visState.pinnedIds.length === 0}
+              disabled={
+                visState.pinnedIds.length === 0 || !STEER_MODEL_IDS.includes(selectedGraph?.metadata.scan || '')
+              }
               aria-label="Steer"
             >
               <Joystick className="h-3.5 w-3.5" />
