@@ -344,6 +344,8 @@ The graph server powers the attribution graph generation functionality, built on
    ```
 6. Wait for the container to spin up 
 
+For example requests, see the [Graph Server README](apps/graph/README.md#example-request---output-graph-json-directly).
+
 ## 'I Want to Run/Develop Autointerp Locally'
 
 #### What This Does + What You'll Get
