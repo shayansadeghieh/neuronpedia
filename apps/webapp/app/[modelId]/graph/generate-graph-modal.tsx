@@ -128,6 +128,15 @@ export default function GenerateGraphModal() {
     slug: '',
   };
 
+  const INSTRUCT_MODELS = ['qwen3-4b'];
+
+  const isInstructAndDoesntStartWithSpecialToken = (modelId: string, prompt: string) => {
+    if (!INSTRUCT_MODELS.includes(modelId)) {
+      return false;
+    }
+    return !prompt.startsWith('<|im_start|>');
+  };
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedTokenize = useCallback(
     _.debounce(async (modelId: string, prompt: string, maxNLogits: number, desiredLogitProb: number) => {
@@ -415,6 +424,7 @@ export default function GenerateGraphModal() {
                             </span>
                           ))}
                         </div>
+
                         {endsWithSpace && (
                           <div className="mb-1.5 mt-0 text-xs text-amber-600">
                             Warning: Your prompt ends with a space, which may result in an unexpected output because
@@ -463,6 +473,20 @@ export default function GenerateGraphModal() {
                           Prompt exceeds maximum token limit of {GRAPH_MAX_TOKENS}.
                         </p>
                       )}
+                    {isInstructAndDoesntStartWithSpecialToken(values.modelId, values.prompt) && (
+                      <div className="mb-1.5 mt-0 text-xs text-red-600">
+                        Error: {values.modelId} is an instruct model, but your prompt is not formatted for chat.{' '}
+                        <a
+                          href="https://www.neuronpedia.org/blog/interp-orgs-assemble#generate-graphs-with-qwen3-4b"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sky-600 underline hover:text-sky-800"
+                        >
+                          Click here
+                        </a>{' '}
+                        for an example.
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex-1 pb-4">
