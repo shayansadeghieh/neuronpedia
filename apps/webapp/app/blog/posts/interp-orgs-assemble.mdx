@@ -112,21 +112,6 @@ To use it, simply click "+ New Graph", but be sure to click the dropdown for the
 
 **Important Usage Notes & Limitations**
 
-- **Enter the Chat Template**: Since Qwen3 is an instruct model that also does "thinking", you'll want to use the proper chat template formatting with special tokens, as well as `<think>` tags where appropriate. For example, the prompt for the example graph linked above is:
-
-  ```
-  <|im_start|>user
-  What's your name?<|im_end|>
-  <|im_start|>assistant
-  <think>
-  Okay, I'll answer directly. My name is obvious.
-  </think>
-
-  My name is Q
-  ```
-
-  We expect to update the interface soon so that you don't need to manually type in the chat formatting, but for now you'll have to do this.
-
 - **Limited to 64 Tokens**: We'll soon expand this as soon as we add some memory optimizations (esp from the new circuit-tracer v0.2) and benchmark it, but for now your prompts have a maximum of 64 tokens.
 - **Steering Not Enabled**: Due to some edge cases with the special tokens, we'll enable steering on Qwen3-4B in the near future.
 
