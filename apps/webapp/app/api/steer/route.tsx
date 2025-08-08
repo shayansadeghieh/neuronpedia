@@ -95,6 +95,13 @@ async function* generateResponse(
       }
       // eslint-disable-next-line
       toReturnResult[steerType] = output.output;
+      if (steerType === SteerOutputType.STEERED) {
+        // eslint-disable-next-line
+        toReturnResult.steeredLogProbs = output.logprobs ? JSON.stringify(output.logprobs) : null;
+      } else {
+        // eslint-disable-next-line
+        toReturnResult.defaultLogProbs = output.logprobs ? JSON.stringify(output.logprobs) : null;
+      }
       yield toReturnResult;
     }
   }
@@ -110,6 +117,8 @@ async function* generateResponse(
 export type SteerResult = {
   [SteerOutputType.STEERED]: string | null;
   [SteerOutputType.DEFAULT]: string | null;
+  steeredLogProbs: string | null;
+  defaultLogProbs: string | null;
   id: string | null;
   shareUrl: string | null | undefined;
   limit: string | null;
@@ -170,6 +179,7 @@ async function saveSteerOutput(
         strengthMultiplier: body.strength_multiplier,
         steerMethod: body.steer_method,
         version: STEERING_VERSION,
+        logprobs: type === SteerOutputType.STEERED ? toReturnResult.steeredLogProbs : toReturnResult.defaultLogProbs,
         toNeurons:
           type === SteerOutputType.DEFAULT
             ? {}
@@ -318,6 +328,8 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
     let toReturnResult: SteerResult = {
       [SteerOutputType.STEERED]: null,
       [SteerOutputType.DEFAULT]: null,
+      steeredLogProbs: null,
+      defaultLogProbs: null,
       id: null,
       shareUrl: undefined,
       limit,
@@ -465,10 +477,16 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
     if (!toReturnResult[SteerOutputType.STEERED] && steeredCompletionResult) {
       console.log("didn't have steered, filling it");
       toReturnResult[SteerOutputType.STEERED] = steeredCompletionResult.output;
+      toReturnResult.steeredLogProbs = steeredCompletionResult.logprobs
+        ? JSON.stringify(steeredCompletionResult.logprobs)
+        : null;
     }
     if (!toReturnResult[SteerOutputType.DEFAULT] && defaultCompletionResult) {
       console.log("didn't have default, filling it");
       toReturnResult[SteerOutputType.DEFAULT] = defaultCompletionResult.output;
+      toReturnResult.defaultLogProbs = defaultCompletionResult.logprobs
+        ? JSON.stringify(defaultCompletionResult.logprobs)
+        : null;
     }
 
     toReturnResult = await saveSteerOutput(body, steerTypesToRun, toReturnResult, request.user?.id);
@@ -478,6 +496,7 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
     if (error instanceof ValidationError) {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
+    console.log('unknown error', error);
     return NextResponse.json({ message: 'Unknown Error' }, { status: 500 });
   }
 });
