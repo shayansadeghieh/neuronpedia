@@ -100,11 +100,7 @@ export const graphGenerateSchemaClient = yup.object({
     .max(GRAPH_MAXFEATURENODES_MAX, `Must be at most ${GRAPH_MAXFEATURENODES_MAX}.`)
     .default(GRAPH_MAXFEATURENODES_DEFAULT)
     .required('This field is required.'),
-  slug: yup
-    .string()
-    .min(GRAPH_SLUG_MIN, `Must be at least ${GRAPH_SLUG_MIN} characters.`)
-    .matches(/^[a-z0-9_-]+$/, 'Can only contain lowercase alphanumeric characters, underscores, and hyphens.')
-    .required('Slug is required.'),
+  slug: yup.string(),
 });
 
 export const checkRunpodQueueJobs = async () => {
