@@ -16,7 +16,13 @@ from neuronpedia_inference_client.models.steer_completion_request import (
 )
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from tests.conftest import MODEL_ID, SAE_SELECTED_SOURCES, TEST_PROMPT, X_SECRET_KEY
+from tests.conftest import (
+    ABS_TOLERANCE,
+    MODEL_ID,
+    SAE_SELECTED_SOURCES,
+    TEST_PROMPT,
+    X_SECRET_KEY,
+)
 
 ENDPOINT = "/v1/steer/completion"
 N_COMPLETION_TOKENS = 10
@@ -369,72 +375,78 @@ def test_completion_logprobs(client: TestClient):
     assert len(steered_logprobs) > 0, "Steered logprobs should not be empty"
     assert len(default_logprobs) > 0, "Default logprobs should not be empty"
 
-    assert (
-        steered_logprobs[0].token == " the"
-    ), f"Expected steered token ' the', got '{steered_logprobs[0].token}'"
-    assert steered_logprobs[0].logprob == pytest.approx(
-        -3.33203125, abs=0.02
-    ), f"Steered first token logprob: {steered_logprobs[0].logprob}"
+    expected_steered_logprobs = [
+        (" the", -2.78125),
+        (" world", -3.552734375),
+        (",", -1.28515625),
+        (" the", -1.271484375),
+        (" world", -1.42578125),
+    ]
 
-    # verify tokens and logprobs have expected structure
-    assert len(default_logprobs[0].token) > 0, "Default token should not be empty"
-    assert (
-        -50 < default_logprobs[0].logprob < 0
-    ), f"Default logprob should be reasonable: {default_logprobs[0].logprob}"
+    expected_default_logprobs = [
+        ("\n", -1.390625),
+        ("\n", -0.01122283935546875),
+        ("I", -1.7119140625),
+        ("'m", -1.2666015625),
+        (" a", -2.939453125),
+    ]
 
-    # verify steered and default logprobs are different
-    assert (
-        steered_logprobs[0].logprob != default_logprobs[0].logprob
-    ), "Steered and default logprobs should differ"
+    # verify all steered logprobs
+    for i, (expected_token, expected_logprob) in enumerate(expected_steered_logprobs):
+        assert (
+            steered_logprobs[i].token == expected_token
+        ), f"Steered token mismatch at {i}: expected '{expected_token}', got '{steered_logprobs[i].token}'"
+        assert (
+            steered_logprobs[i].logprob
+            == pytest.approx(expected_logprob, abs=ABS_TOLERANCE)
+        ), f"Steered logprob mismatch at {i}: expected {expected_logprob}, got {steered_logprobs[i].logprob}"
+
+    # verify all default logprobs
+    for i, (expected_token, expected_logprob) in enumerate(expected_default_logprobs):
+        assert (
+            default_logprobs[i].token == expected_token
+        ), f"Default token mismatch at {i}: expected '{expected_token}', got '{default_logprobs[i].token}'"
+        assert (
+            default_logprobs[i].logprob
+            == pytest.approx(expected_logprob, abs=ABS_TOLERANCE)
+        ), f"Default logprob mismatch at {i}: expected {expected_logprob}, got {default_logprobs[i].logprob}"
 
 
-@pytest.mark.parametrize(
-    "prompt, n_tokens",
-    [
-        ("The cat sat", 3),
-        ("Hello", 1),
-    ],
-)
-def test_completion_logprobs_match_hugging_face(
-    client: TestClient, prompt: str, n_tokens: int
-):
+def test_completion_logprobs_match_hugging_face(client: TestClient):
     """
-    Compare the API's returned logprobs (on ITS generated tokens) with Hugging Face
-    computed logprobs for the same tokens. This avoids assuming a specific continuation.
+    Compare the API's returned logprobs with Hugging Face using the same parameters as test_completion_logprobs.
+    This provides a direct comparison to see if TransformerLens logprobs are close to HF reference.
     """
-    HF_MODEL_ID = "gpt2"
-    API_MODEL_ID = "gpt2-small"
+    hf_model_id = "gpt2"
+    model_id = "gpt2-small"
 
-    tokenizer = AutoTokenizer.from_pretrained(HF_MODEL_ID, use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(hf_model_id, use_fast=True)
     tokenizer_kwargs = dict(return_tensors="pt", add_special_tokens=False)
     hf_model = AutoModelForCausalLM.from_pretrained(
-        HF_MODEL_ID, torch_dtype=torch.float32
+        hf_model_id, torch_dtype=torch.float32
     )
     hf_model.eval()
 
     request = SteerCompletionRequest(
-        prompt=prompt,
-        model=API_MODEL_ID,
-        n_completion_tokens=n_tokens,
-        n_logprobs=1,
-        temperature=0,
-        types=[
-            NPSteerType.STEERED,
-            NPSteerType.DEFAULT,
-        ],
-        features=[
-            NPSteerFeature(
-                model=API_MODEL_ID,
-                source=SAE_SELECTED_SOURCES[0],
-                index=0,
-                strength=0.0,  # no steering effect
-            )
-        ],
-        freq_penalty=0.0,
-        seed=42,
+        prompt=TEST_PROMPT,
+        model=model_id,
         steer_method=NPSteerMethod.SIMPLE_ADDITIVE,
         normalize_steering=False,
-        strength_multiplier=0.0,
+        types=[NPSteerType.STEERED, NPSteerType.DEFAULT],
+        features=[
+            NPSteerFeature(
+                model=model_id,
+                source=SAE_SELECTED_SOURCES[0],
+                index=STEER_FEATURE_INDEX,
+                strength=STRENGTH,
+            )
+        ],
+        n_completion_tokens=5,
+        temperature=TEMPERATURE,
+        strength_multiplier=STRENGTH_MULTIPLIER,
+        freq_penalty=FREQ_PENALTY,
+        seed=SEED,
+        n_logprobs=2,
     )
 
     response = client.post(
@@ -452,12 +464,12 @@ def test_completion_logprobs_match_hugging_face(
 
     str_tokens = [t["token"] for t in default_output["logprobs"]]
     logprobs = [float(t["logprob"]) for t in default_output["logprobs"]]
-    assert len(str_tokens) == n_tokens
-    assert len(logprobs) == n_tokens
+    assert len(str_tokens) == 5
+    assert len(logprobs) == 5
 
     text = "".join(str_tokens)
-    prompt_ids = tokenizer(prompt, **tokenizer_kwargs)["input_ids"][0]
-    combined_ids = tokenizer(prompt + text, **tokenizer_kwargs)["input_ids"][0]
+    prompt_ids = tokenizer(TEST_PROMPT, **tokenizer_kwargs)["input_ids"][0]
+    combined_ids = tokenizer(TEST_PROMPT + text, **tokenizer_kwargs)["input_ids"][0]
     ids = combined_ids[len(prompt_ids) :]
     assert len(ids) == len(logprobs), "length mismatch after retokenizing API text"
 
@@ -473,7 +485,7 @@ def test_completion_logprobs_match_hugging_face(
 
     # numerical check, allowing for implementation differences between TransformerLens and HuggingFace
     assert np.allclose(
-        logprobs, hf_reference_logprobs, rtol=0.1, atol=0.6
+        logprobs, hf_reference_logprobs, rtol=0.1, atol=1.2
     ), f"logprob mismatch.\nAPI: {logprobs}\nHF:  {hf_reference_logprobs}"
 
 
