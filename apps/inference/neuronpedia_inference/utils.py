@@ -1,7 +1,6 @@
 import gc
 import logging
 import os
-from typing import Any
 
 import torch
 from neuronpedia_inference_client.models.np_logprob import NPLogprob
@@ -55,74 +54,40 @@ def get_device():
     return device, device_count
 
 
-def get_logprobs(
-    tokens: torch.Tensor,
+def make_logprob_from_logits(
+    result: torch.Tensor,
+    logits: torch.Tensor,
     model: HookedTransformer,
-    n_logprobs: int,
-    hooks: list[Any] | None = None,
-) -> list[NPLogprob]:
-    if n_logprobs == 0:
-        return []
+    n_logprobs: int = 10,
+) -> NPLogprob:
+    # Note: logits from generate_stream with return_logits=True has shape [batch_size, 1, vocab_size]
+    # where the middle dimension is always 1 (only last position logits)
+    log_probs = torch.log_softmax(logits, dim=-1)
 
-    # get pyright checks to pass
-    assert model.tokenizer is not None
+    # Get the token that was generated
+    token_id = result[0][-1].item()
+    token_str = model.tokenizer.decode([token_id])
 
-    with torch.no_grad():
-        if tokens.dim() == 1:
-            tokens = tokens.unsqueeze(0)
+    logprob = log_probs[0, 0, token_id].item()
 
-        # use same hooks as for when we generate completion
-        with model.hooks(fwd_hooks=hooks or []):
-            logits = model.forward(tokens, return_type="logits")
-        # logits shape: [batch, seq_len, vocab_size]
+    # Get top k logprobs from the same position
+    position_logprobs = log_probs[0, 0, :]
+    top_k_logprobs, top_indices = torch.topk(position_logprobs, k=n_logprobs, dim=-1)
 
-        log_probs = torch.log_softmax(logits, dim=-1)
+    top_logprobs = []
+    for k in range(min(n_logprobs, len(top_indices))):
+        current_token_id = top_indices[k].item()
+        current_token_str = model.tokenizer.decode([current_token_id])
+        logprob_val = top_k_logprobs[k].item()
 
-        logprobs = []
-        seq_len = tokens.shape[1]
+        # Replace NaN values with very small log probability
+        if not torch.isfinite(torch.tensor(logprob_val)):
+            logprob_val = -100.0
 
-        if seq_len >= 2:  # need at least 2 tokens for meaningful logprobs
-            pos = seq_len - 1  # get logprobs for last token only
+        top_logprobs.append(NPLogprobTop(token=current_token_str, logprob=logprob_val))
 
-            token_id = tokens[0, pos].item()
-            token_str = model.tokenizer.decode([token_id])
-
-            # logprob for the token at position pos comes from logits at position pos-1
-            logprob = log_probs[0, pos - 1, token_id].item()  # type: ignore
-
-            # get top k logprobs from the same position (position pos-1)
-            prev_position_logprobs = log_probs[
-                0, pos - 1, :
-            ]  # all logprobs at position pos-1
-            top_k_logprobs, top_indices = torch.topk(
-                prev_position_logprobs, k=n_logprobs, dim=-1
-            )
-
-            # replace NaN values with very small log probability
-            if not torch.isfinite(torch.tensor(logprob)):
-                logprob = -100.0
-
-            # get top logprobs list from model predictions
-            top_logprobs = []
-            for k in range(min(n_logprobs, len(top_indices))):
-                current_token_id = top_indices[k].item()
-                current_token_str = model.tokenizer.decode([current_token_id])
-                logprob_val = top_k_logprobs[k].item()
-
-                # replace NaN values with very small log probability
-                if not torch.isfinite(torch.tensor(logprob_val)):
-                    logprob_val = -100.0
-
-                top_logprobs.append(
-                    NPLogprobTop(token=current_token_str, logprob=logprob_val)
-                )
-
-            logprobs.append(
-                NPLogprob(
-                    token=token_str,
-                    logprob=logprob,
-                    top_logprobs=top_logprobs,
-                )
-            )
-
-        return logprobs
+    return NPLogprob(
+        token=token_str,
+        logprob=logprob,
+        top_logprobs=top_logprobs,
+    )

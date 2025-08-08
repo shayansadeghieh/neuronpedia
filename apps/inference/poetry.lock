@@ -4959,7 +4959,7 @@ wandb = ">=0.13.5"
 type = "git"
 url = "https://github.com/hijohnnylin/TransformerLens.git"
 reference = "temp_branch_version"
-resolved_reference = "7846b7ddfe7324f485c966684646dcd3045f5ac3"
+resolved_reference = "45ca3ac84abc96a1e646f3929addacb2d00618e5"
 
 [[package]]
 name = "transformers"

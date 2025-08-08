@@ -29,7 +29,7 @@ from neuronpedia_inference.inference_utils.steering import (
 )
 from neuronpedia_inference.sae_manager import SAEManager
 from neuronpedia_inference.shared import Model, with_request_lock
-from neuronpedia_inference.utils import get_logprobs
+from neuronpedia_inference.utils import make_logprob_from_logits
 
 logger = logging.getLogger(__name__)
 
@@ -204,6 +204,7 @@ async def run_batched_generate(
             default_partial_result = ""
             steered_logprobs = None
             default_logprobs = None
+
             # Generate STEERED and DEFAULT separately
             for flag in [NPSteerType.STEERED, NPSteerType.DEFAULT]:
                 if seed is not None:
@@ -226,39 +227,29 @@ async def run_batched_generate(
                     editing_hooks = []
 
                 logprobs = []
-                accumulated_tokens = tokenized.clone()
 
                 with model.hooks(fwd_hooks=editing_hooks):  # type: ignore
-                    for i, result in enumerate(
+                    for i, (result, logits) in enumerate(
                         model.generate_stream(
                             stop_at_eos=(model.cfg.device != "mps"),
                             input=tokenized.unsqueeze(0),
                             do_sample=True,
                             max_tokens_per_yield=TOKENS_PER_YIELD,
+                            return_logits=True,
                             **kwargs,
                         )
                     ):
                         to_append = ""
                         if i == 0:
                             to_append = model.to_string(result[0][1:])  # type: ignore
-                            # when i is 0, result[0] is the whole sequence
-                            accumulated_tokens = result[0]
                         else:
                             to_append = model.to_string(result[0])  # type: ignore
-                            # when i is greater than 0, result[0] has only new token(s), so concat
-                            accumulated_tokens = torch.cat(
-                                [accumulated_tokens, result[0]],  # type: ignore
-                                dim=0,
-                            )
 
                         if n_logprobs > 0:
-                            current_logprobs = get_logprobs(
-                                accumulated_tokens,  # type: ignore
-                                model,
-                                n_logprobs,
-                                hooks=editing_hooks,
+                            current_logprobs = make_logprob_from_logits(
+                                result, logits, model, n_logprobs
                             )
-                            logprobs.extend(current_logprobs)
+                            logprobs.append(current_logprobs)
 
                         if flag == NPSteerType.STEERED:
                             steered_partial_result += to_append  # type: ignore
@@ -297,37 +288,27 @@ async def run_batched_generate(
             with model.hooks(fwd_hooks=editing_hooks):  # type: ignore
                 partial_result = ""
                 logprobs = []
-                accumulated_tokens = tokenized.clone()
 
-                for i, result in enumerate(
+                for i, (result, logits) in enumerate(
                     model.generate_stream(
                         stop_at_eos=(model.cfg.device != "mps"),
                         input=tokenized.unsqueeze(0),
                         do_sample=True,
                         max_tokens_per_yield=TOKENS_PER_YIELD,
+                        return_logits=True,
                         **kwargs,
                     )
                 ):
                     if i == 0:
                         partial_result = model.to_string(result[0][1:])  # type: ignore
-                        # when i is 0, result[0] is the whole sequence
-                        accumulated_tokens = result[0]
                     else:
                         partial_result += model.to_string(result[0])  # type: ignore
-                        # when i is greater than 0, result[0] has only new token(s), so concat
-                        accumulated_tokens = torch.cat(
-                            [accumulated_tokens, result[0]],  # type: ignore
-                            dim=0,
-                        )
 
                     if n_logprobs > 0:
-                        current_logprobs = get_logprobs(
-                            accumulated_tokens,  # type: ignore
-                            model,
-                            n_logprobs,
-                            hooks=editing_hooks,
+                        current_logprobs = make_logprob_from_logits(
+                            result, logits, model, n_logprobs
                         )
-                        logprobs.extend(current_logprobs)
+                        logprobs.append(current_logprobs)
 
                     to_return = make_steer_completion_response(
                         [steer_type],
