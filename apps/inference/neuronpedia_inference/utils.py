@@ -66,9 +66,9 @@ def make_logprob_from_logits(
 
     # Get the token that was generated
     token_id = result[0][-1].item()
-    token_str = model.tokenizer.decode([token_id])
+    token_str = model.tokenizer.decode([token_id])  # type: ignore
 
-    logprob = log_probs[0, 0, token_id].item()
+    logprob = log_probs[0, 0, token_id].item()  # type: ignore
 
     # Get top k logprobs from the same position
     position_logprobs = log_probs[0, 0, :]
@@ -77,7 +77,7 @@ def make_logprob_from_logits(
     top_logprobs = []
     for k in range(min(n_logprobs, len(top_indices))):
         current_token_id = top_indices[k].item()
-        current_token_str = model.tokenizer.decode([current_token_id])
+        current_token_str = model.tokenizer.decode([current_token_id])  # type: ignore
         logprob_val = top_k_logprobs[k].item()
 
         # Replace NaN values with very small log probability

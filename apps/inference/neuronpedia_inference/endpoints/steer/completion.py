@@ -247,7 +247,7 @@ async def run_batched_generate(
 
                         if n_logprobs > 0:
                             current_logprobs = make_logprob_from_logits(
-                                result, logits, model, n_logprobs
+                                result, logits, model, n_logprobs # type: ignore
                             )
                             logprobs.append(current_logprobs)
 
@@ -306,7 +306,7 @@ async def run_batched_generate(
 
                     if n_logprobs > 0:
                         current_logprobs = make_logprob_from_logits(
-                            result, logits, model, n_logprobs
+                            result, logits, model, n_logprobs  # type: ignore
                         )
                         logprobs.append(current_logprobs)
 
