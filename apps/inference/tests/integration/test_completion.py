@@ -18,6 +18,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from tests.conftest import (
     ABS_TOLERANCE,
+    BOS_TOKEN_STR,
     MODEL_ID,
     SAE_SELECTED_SOURCES,
     TEST_PROMPT,
@@ -468,8 +469,10 @@ def test_completion_logprobs_match_hugging_face(client: TestClient):
     assert len(logprobs) == 5
 
     text = "".join(str_tokens)
-    prompt_ids = tokenizer(TEST_PROMPT, **tokenizer_kwargs)["input_ids"][0]
-    combined_ids = tokenizer(TEST_PROMPT + text, **tokenizer_kwargs)["input_ids"][0]
+    # HF doesn't prepend BOS to gpt2-small by default, so we need to do it manually
+    HF_PROMPT = BOS_TOKEN_STR + TEST_PROMPT
+    prompt_ids = tokenizer(HF_PROMPT, **tokenizer_kwargs)["input_ids"][0]
+    combined_ids = tokenizer(HF_PROMPT + text, **tokenizer_kwargs)["input_ids"][0]
     ids = combined_ids[len(prompt_ids) :]
     assert len(ids) == len(logprobs), "length mismatch after retokenizing API text"
 
@@ -485,7 +488,7 @@ def test_completion_logprobs_match_hugging_face(client: TestClient):
 
     # numerical check, allowing for implementation differences between TransformerLens and HuggingFace
     assert np.allclose(
-        logprobs, hf_reference_logprobs, rtol=0.1, atol=1.2
+        logprobs, hf_reference_logprobs, rtol=0.01, atol=0.03
     ), f"logprob mismatch.\nAPI: {logprobs}\nHF:  {hf_reference_logprobs}"
 
 
