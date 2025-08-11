@@ -61,12 +61,17 @@ request_lock = threading.Lock()
 TLENS_MODEL_ID_TO_SCAN = {
     "google/gemma-2-2b": "gemma-2-2b",
     "meta-llama/Llama-3.2-1B": "llama-3-131k-relu",
+    "Qwen/Qwen3-4B": 'qwen3-4b', # TODO: check if this is ok?
 }
 
 # this is what neuronpedia will send in the request
 NP_MODEL_ID_TO_TLENS_MODEL_ID = {
     "gemma-2-2b": "google/gemma-2-2b",
     "llama3.1-8b": "meta-llama/Llama-3.2-1B",
+}
+
+CUSTOM_TRANSCODER_YAML = {
+    "Qwen/Qwen3-4B": "./qwen3-4b.yaml",
 }
 
 # on initial load we take the transformerlens model id
@@ -85,13 +90,18 @@ if loaded_model_arg == "google/gemma-2-2b":
     transcoder_name = "gemma"
 elif loaded_model_arg == "meta-llama/Llama-3.2-1B":
     transcoder_name = "llama"
+elif loaded_model_arg == "Qwen/Qwen3-4B":
+    transcoder_name = "qwen3-4b"
 else:
     raise ValueError(
         f"Could not find transcoder name for transformerlens model: {loaded_model_arg}. Valid models: "
         + ", ".join(TLENS_MODEL_ID_TO_SCAN.keys())
     )
 
-model = ReplacementModel.from_pretrained(loaded_model_arg, transcoder_name)
+if loaded_model_arg in CUSTOM_TRANSCODER_YAML:
+    model = ReplacementModel.from_pretrained(loaded_model_arg, CUSTOM_TRANSCODER_YAML[loaded_model_arg], dtype=torch.bfloat16)
+else:
+    model = ReplacementModel.from_pretrained(loaded_model_arg, transcoder_name)
 
 loaded_scan = TLENS_MODEL_ID_TO_SCAN.get(loaded_model_arg)
 if loaded_scan is None:
@@ -615,7 +625,7 @@ async def generate_graph(req: Request):
             tokenizer = AutoTokenizer.from_pretrained(model.cfg.tokenizer_name)
 
             _nodes = create_nodes(
-                _graph, _node_mask, tokenizer, _cumulative_scores, current_scan
+                _graph, _node_mask, tokenizer, _cumulative_scores, current_scan if loaded_model_arg not in CUSTOM_TRANSCODER_YAML else None
             )
             print("nodes created")
             _used_nodes, _used_edges = create_used_nodes_and_edges(
