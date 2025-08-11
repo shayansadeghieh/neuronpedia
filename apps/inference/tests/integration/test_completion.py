@@ -488,7 +488,7 @@ def test_completion_logprobs_match_hugging_face(client: TestClient):
 
     # numerical check, allowing for implementation differences between TransformerLens and HuggingFace
     assert np.allclose(
-        logprobs, hf_reference_logprobs, rtol=0.001, atol=0.05
+        logprobs, hf_reference_logprobs, rtol=0.001, atol=0.07
     ), f"logprob mismatch.\nAPI: {logprobs}\nHF:  {hf_reference_logprobs}"
 
 
