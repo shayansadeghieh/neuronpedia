@@ -29,7 +29,7 @@ import {
 import { NeuronWithPartialRelations } from '@/prisma/generated/zod';
 import { Model, Visibility } from '@prisma/client';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { NPSteerMethod , NPLogprob } from 'neuronpedia-inference-client';
+import { NPLogprob, NPSteerMethod } from 'neuronpedia-inference-client';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SteerAdvancedSettings from './advanced-settings';
@@ -215,6 +215,8 @@ export default function Steerer({
         if (!globalModels[modelId].instruct) {
           setDefaultCompletionText(resp.DEFAULT?.raw || '');
           setSteeredCompletionText(resp.STEERED?.raw || '');
+          setDefaultCompletionLogProbs(resp.DEFAULT?.logprobs || null);
+          setSteeredCompletionLogProbs(resp.STEERED?.logprobs || null);
           setTypedInText(resp.inputText || '');
         } else {
           // if chat template is null, we need to convert it (it's an older form of steering)

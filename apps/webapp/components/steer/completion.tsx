@@ -205,25 +205,38 @@ export default function SteerCompletion({
     const logprobSpans =
       logprobs && logprobs.length > 0
         ? logprobs.map((logprob, index) => (
-            <CustomTooltip
-              key={index}
-              side="top"
-              trigger={<span className="cursor-pointer rounded hover:bg-slate-300/70">{logprob.token || ''}</span>}
-            >
-              {logprob.topLogprobs ? (
-                <div className="flex flex-col items-center justify-center">
-                  <div className="mb-1 text-[10px] font-medium uppercase text-slate-400">Top Logprobs</div>
-                  {logprob.topLogprobs.map((topLogprob, i) => (
-                    <div key={topLogprob.token + i} className="flex flex-row items-center justify-between gap-x-5">
-                      <div className="font-mono">{topLogprob.token}</div>
-                      <div className="font-mono">{topLogprob.logprob.toFixed(2)}</div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                ''
-              )}
-            </CustomTooltip>
+            <>
+              <CustomTooltip
+                key={index}
+                side="top"
+                trigger={
+                  <span className="cursor-pointer whitespace-pre rounded hover:bg-slate-300/70">
+                    {logprob.token.replaceAll('\n', '⏎')}
+                  </span>
+                }
+              >
+                {logprob.topLogprobs ? (
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="mb-1 text-[10px] font-medium uppercase text-slate-400">Top Logprobs</div>
+                    {logprob.topLogprobs.map((topLogprob, i) => (
+                      <div
+                        key={topLogprob.token + i}
+                        className="flex w-full flex-row items-center justify-between gap-x-5"
+                      >
+                        <div className="whitespace-pre rounded-md bg-slate-200 px-1 py-0.5 font-mono">
+                          {topLogprob.token.replaceAll('\n', '⏎')}
+                        </div>
+                        <div className="font-mono">{topLogprob.logprob.toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  ''
+                )}
+              </CustomTooltip>
+
+              {logprob.token.includes('\n') ? <br /> : ''}
+            </>
           ))
         : null;
     return (
