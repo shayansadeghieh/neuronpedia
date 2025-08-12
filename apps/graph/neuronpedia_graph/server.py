@@ -68,7 +68,7 @@ def get_model_dtype() -> torch.dtype | None:
     Parse MODEL_DTYPE environment variable into torch dtype.
     Default is float32.
     """
-    model_dtype_env = os.environ.get("MODEL_DTYPE", "float32")    
+    model_dtype_env = os.environ.get("MODEL_DTYPE", "bfloat16")    
     
     dtype_mapping = {
         "bfloat16": torch.bfloat16,
