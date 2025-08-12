@@ -29,6 +29,7 @@ FREQ_PENALTY = 0.0
 SEED = 42
 STEER_SPECIAL_TOKENS = False
 STEER_FEATURE_INDEX = 5
+INVALID_SAE_SOURCE = "fake-source"
 
 
 @pytest.fixture(scope="session")

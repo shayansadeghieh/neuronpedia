@@ -12,9 +12,9 @@ import {
   MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR,
   ModelToGraphMetadatasMap,
   cltModelToNumLayers,
-  convertAnthropicFeatureIdToNeuronpediaSourceSet,
+  convertAnthropicFeatureToNeuronpediaSourceSet,
   formatCLTGraphData,
-  getIndexFromAnthropicFeatureId,
+  getIndexFromAnthropicFeature,
   isHideLayer,
   modelIdToModelDisplayName,
   nodeTypeHasFeatureDetail,
@@ -72,6 +72,7 @@ type GraphContextType = {
   visState: CltVisState;
   setVisState: (newState: Partial<CltVisState>) => void;
   updateVisStateField: <K extends keyof CltVisState>(key: K, value: CltVisState[K]) => void;
+  togglePin: (nodeId: string) => string[];
 
   // logitDiff
   logitDiff: string | null;
@@ -471,6 +472,47 @@ export function GraphProvider({
     setVisStateInternal((prevState) => ({ ...prevState, ...newState }));
   };
 
+  // Pin/Unpin the nodeId and return the new PinnedIds array
+  // If it's in a supernode, we need to remove it from the supernode
+  const togglePin = (nodeId: string): string[] => {
+    const currentPinnedIds = visState.pinnedIds || [];
+    const newPinnedIds = currentPinnedIds.includes(nodeId)
+      ? currentPinnedIds.filter((id) => id !== nodeId)
+      : [...currentPinnedIds, nodeId];
+
+    setVisStateInternal((prevState) => ({
+      ...prevState,
+      pinnedIds: newPinnedIds,
+    }));
+
+    // if we are REMOVING the pin, and the nodeId is in a supernode, we need to remove it from the supernode
+    if (!newPinnedIds.includes(nodeId) && visState.subgraph?.supernodes.some((sn) => sn.includes(nodeId))) {
+      setVisStateInternal((prevState) => ({
+        ...prevState,
+        ...(prevState.subgraph && {
+          subgraph: {
+            ...prevState.subgraph,
+            supernodes: prevState.subgraph.supernodes
+              .map((sn) => {
+                // If this supernode contains the nodeId, remove it
+                if (sn.includes(nodeId)) {
+                  return sn.filter((id) => id !== nodeId);
+                }
+                return sn;
+              })
+              .filter((sn) => sn.length > 2), // Remove supernodes with 2 or fewer items (first is label, second is a node. if there's only 2, then it's a single node)
+            activeGrouping: {
+              isActive: false,
+              selectedNodeIds: new Set(),
+            },
+          },
+        }),
+      }));
+    }
+
+    return newPinnedIds;
+  };
+
   // Function to update a single field of visState
   const updateVisStateField = useCallback(<K extends keyof CltVisState>(key: K, value: CltVisState[K]) => {
     setVisStateInternal((prevState) => ({ ...prevState, [key]: value }));
@@ -691,11 +733,11 @@ export function GraphProvider({
         .filter((d) => nodeTypeHasFeatureDetail(d))
         .map((d) => ({
           modelId: model,
-          layer: convertAnthropicFeatureIdToNeuronpediaSourceSet(
+          layer: convertAnthropicFeatureToNeuronpediaSourceSet(
             selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-            d.feature,
+            d,
           ),
-          index: getIndexFromAnthropicFeatureId(selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, d.feature),
+          index: getIndexFromAnthropicFeature(selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, d),
           maxActsToReturn: GRAPH_PREFETCH_ACTIVATIONS_COUNT,
         }));
 
@@ -738,15 +780,15 @@ export function GraphProvider({
               f &&
               'index' in f &&
               f.index ===
-                getIndexFromAnthropicFeatureId(
+                getIndexFromAnthropicFeature(
                   selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-                  d.feature,
+                  d,
                 ).toString() &&
               'layer' in f &&
               f.layer ===
-                convertAnthropicFeatureIdToNeuronpediaSourceSet(
+                convertAnthropicFeatureToNeuronpediaSourceSet(
                   selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-                  d.feature,
+                  d,
                 ),
           );
           if (feature) {
@@ -765,6 +807,27 @@ export function GraphProvider({
               'llama-3-131k-relu',
               d.feature,
               'https://d1fk9w8oratjix.cloudfront.net',
+              signal,
+            );
+          }
+          return Promise.resolve(null);
+        },
+        ANTHROPIC_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE,
+        abortSignal,
+      );
+
+      formattedData.nodes.forEach((d, i) => {
+        // eslint-disable-next-line no-param-reassign
+        d.featureDetail = featureDetails[i] as AnthropicFeatureDetail;
+      });
+    } else if (selectedModelId === 'qwen3-4b') {
+      const featureDetails = await fetchInBatches(
+        formattedData.nodes,
+        (d: CLTGraphNode, signal?: AbortSignal) => {
+          if (nodeTypeHasFeatureDetail(d)) {
+            return fetchFeatureDetailFromBaseURL(
+              `https://d1fk9w8oratjix.cloudfront.net/features/Qwen3-4B/qwen3-4b-${d.layer}`,
+              d.feature.toString(),
               signal,
             );
           }
@@ -988,6 +1051,7 @@ export function GraphProvider({
       visState,
       setVisState,
       updateVisStateField,
+      togglePin,
       logitDiff,
       setLogitDiff,
       isLoadingGraphData,
@@ -1017,6 +1081,7 @@ export function GraphProvider({
       visState,
       logitDiff,
       updateVisStateField,
+      togglePin,
       isLoadingGraphData,
       setIsLoadingGraphData,
       resetSelectedGraphToDefaultVisState,

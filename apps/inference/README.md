@@ -12,6 +12,7 @@
   - [get activations for a single feature and prompt](#get-activations-for-a-single-feature-and-prompt)
   - [get cosine similarities](#get-cosine-similarities)
   - [steering example gpt2-small res-jb](#steering-example-gpt2-small-res-jb)
+- [Testing, Linting, and Formatting](#testing-linting-and-formatting)
 
 ## what this is
 
@@ -121,12 +122,14 @@ docker run \
 # tag + push cpu
 
 docker tag neuronpedia-inference:cpu gcr.io/$(gcloud config get-value project)/neuronpedia-inference:cpu
-   docker push gcr.io/$(gcloud config get-value project)/neuronpedia-inference:cpu
+
+docker push gcr.io/$(gcloud config get-value project)/neuronpedia-inference:cpu
 
 # tag + push gpu
 
 docker tag neuronpedia-inference:gpu gcr.io/$(gcloud config get-value project)/neuronpedia-inference:gpu
-   docker push gcr.io/$(gcloud config get-value project)/neuronpedia-inference:gpu
+
+docker push gcr.io/$(gcloud config get-value project)/neuronpedia-inference:gpu
 
 ```
 

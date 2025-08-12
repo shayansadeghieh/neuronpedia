@@ -14,6 +14,8 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 // // https://github.com/plotly/react-plotly.js/issues/273
 import dynamic from 'next/dynamic';
 
+const MISSING_LOGIT_VALUE = -10000;
+
 const Plot = dynamic(
   () => Promise.resolve(import('plotly.js-dist-min').then((Plotly) => createPlotlyComponent(Plotly))),
   {
@@ -283,7 +285,7 @@ export default function FeatureStats({
                       >
                         {replaceHtmlAnomalies(s)}
                       </pre>
-                      <div>{currentNeuron?.neg_values[i].toFixed(2)}</div>
+                      <div>{currentNeuron?.neg_values[i] === MISSING_LOGIT_VALUE ? 'N/A' : currentNeuron?.neg_values[i].toFixed(2)}</div>
                     </div>
                   ))}
                 </div>
@@ -339,7 +341,7 @@ export default function FeatureStats({
                       >
                         {replaceHtmlAnomalies(s)}
                       </pre>
-                      <div>{currentNeuron?.pos_values[i].toFixed(2)}</div>
+                      <div>{currentNeuron?.pos_values[i] === MISSING_LOGIT_VALUE ? 'N/A' : currentNeuron?.pos_values[i].toFixed(2)}</div>
                     </div>
                   ))}
                 </div>
