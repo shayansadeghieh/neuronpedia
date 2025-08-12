@@ -507,12 +507,36 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
     if (!toReturnResult[SteerOutputType.STEERED] && steeredCompletionResult) {
       console.log("didn't have steered, filling it");
       toReturnResult[SteerOutputType.STEERED] = steeredCompletionResult.output;
-      toReturnResult.steeredLogProbs = steeredCompletionResult.logprobs ? steeredCompletionResult.logprobs : null;
+      // unfortunately we aren't using the typescript client, so we have to do this manually
+      const logprobs =
+        steeredCompletionResult.logprobs?.map((logprob: any) => ({
+          token: logprob.token,
+          logprob: logprob.logprob,
+          topLogprobs: logprob.top_logprobs
+            ? logprob.top_logprobs.map((topLogprob: any) => ({
+                token: topLogprob.token,
+                logprob: topLogprob.logprob,
+              }))
+            : null,
+        })) || null;
+      toReturnResult.steeredLogProbs = logprobs;
     }
     if (!toReturnResult[SteerOutputType.DEFAULT] && defaultCompletionResult) {
       console.log("didn't have default, filling it");
       toReturnResult[SteerOutputType.DEFAULT] = defaultCompletionResult.output;
-      toReturnResult.defaultLogProbs = defaultCompletionResult.logprobs ? defaultCompletionResult.logprobs : null;
+      // unfortunately we aren't using the typescript client, so we have to do this manually
+      const logprobs =
+        defaultCompletionResult.logprobs?.map((logprob: any) => ({
+          token: logprob.token,
+          logprob: logprob.logprob,
+          topLogprobs: logprob.top_logprobs
+            ? logprob.top_logprobs.map((topLogprob: any) => ({
+                token: topLogprob.token,
+                logprob: topLogprob.logprob,
+              }))
+            : null,
+        })) || null;
+      toReturnResult.defaultLogProbs = logprobs;
     }
 
     toReturnResult = await saveSteerOutput(body, steerTypesToRun, toReturnResult, request.user?.id);
