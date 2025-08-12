@@ -402,8 +402,8 @@ transformers = ">=4.50.0"
 [package.source]
 type = "git"
 url = "https://github.com/safety-research/circuit-tracer.git"
-reference = "main"
-resolved_reference = "efa1ee8cf4bc875d0116d8b047b2fa89810a3593"
+reference = "ca8b011"
+resolved_reference = "ca8b0117e24e4f9595e7726719c08c9e36724dc5"
 
 [[package]]
 name = "click"
@@ -3636,4 +3636,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "7c067647c08d9a3a8c07a8c297a18d7e13a9eaec2c72a8aa194f726b8ac00405"
+content-hash = "70a16a95c598c55525311b1ba41d395e70d2d932c01ec8b5bce2f4abdd36fb22"
