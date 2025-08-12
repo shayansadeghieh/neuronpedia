@@ -18,7 +18,7 @@ import {
 import { AuthenticatedUser, RequestOptionalUser, withOptionalUser } from '@/lib/with-user';
 import { SteerOutputType } from '@prisma/client';
 import { EventSourceMessage, EventSourceParserStream } from 'eventsource-parser/stream';
-import { NPSteerMethod, SteerCompletionPost200Response } from 'neuronpedia-inference-client';
+import { NPLogprob, NPSteerMethod, SteerCompletionPost200Response } from 'neuronpedia-inference-client';
 import { NextResponse } from 'next/server';
 import { array, bool, InferType, number, object, string, ValidationError } from 'yup';
 
@@ -49,7 +49,33 @@ async function* transformStream(
       break;
     }
     const parsed = JSON.parse(value.data);
-    yield parsed as SteerCompletionPost200Response;
+    try {
+      // we manually process because we aren't using the typescript client :(
+      const toYield: SteerCompletionPost200Response = {
+        outputs: parsed.outputs.map((output: any) => {
+          const op = {
+            type: output.type,
+            output: output.output,
+            logprobs: output.logprobs
+              ? output.logprobs.map((logprob: any) => ({
+                  token: logprob.token,
+                  logprob: logprob.logprob,
+                  topLogprobs: logprob.top_logprobs
+                    ? logprob.top_logprobs.map((topLogprob: any) => ({
+                        token: topLogprob.token,
+                        logprob: topLogprob.logprob,
+                      }))
+                    : null,
+                }))
+              : null,
+          };
+          return op;
+        }),
+      };
+      yield toYield;
+    } catch (error) {
+      console.error(error);
+    }
   }
 }
 
@@ -85,22 +111,21 @@ async function* generateResponse(
       .pipeThrough(new TextDecoderStream())
       .pipeThrough(new EventSourceParserStream())
       .getReader();
-    // eslint-disable-next-line
+    // eslint-disable-next-line no-await-in-loop, no-restricted-syntax
     for await (const completionChunk of transformStream(streamReader)) {
       // find the output for the steerType
-      // eslint-disable-next-line
       const output = completionChunk.outputs.find((out) => out.type === steerType);
       if (!output) {
         throw new Error(`No output found for steerType: ${steerType}`);
       }
-      // eslint-disable-next-line
+      // eslint-disable-next-line no-param-reassign
       toReturnResult[steerType] = output.output;
       if (steerType === SteerOutputType.STEERED) {
-        // eslint-disable-next-line
-        toReturnResult.steeredLogProbs = output.logprobs ? JSON.stringify(output.logprobs) : null;
+        // eslint-disable-next-line no-param-reassign
+        toReturnResult.steeredLogProbs = output.logprobs ? output.logprobs : null;
       } else {
-        // eslint-disable-next-line
-        toReturnResult.defaultLogProbs = output.logprobs ? JSON.stringify(output.logprobs) : null;
+        // eslint-disable-next-line no-param-reassign
+        toReturnResult.defaultLogProbs = output.logprobs ? output.logprobs : null;
       }
       yield toReturnResult;
     }
@@ -117,8 +142,8 @@ async function* generateResponse(
 export type SteerResult = {
   [SteerOutputType.STEERED]: string | null;
   [SteerOutputType.DEFAULT]: string | null;
-  steeredLogProbs: string | null;
-  defaultLogProbs: string | null;
+  steeredLogProbs: NPLogprob[] | null;
+  defaultLogProbs: NPLogprob[] | null;
   id: string | null;
   shareUrl: string | null | undefined;
   limit: string | null;
@@ -179,7 +204,10 @@ async function saveSteerOutput(
         strengthMultiplier: body.strength_multiplier,
         steerMethod: body.steer_method,
         version: STEERING_VERSION,
-        logprobs: type === SteerOutputType.STEERED ? toReturnResult.steeredLogProbs : toReturnResult.defaultLogProbs,
+        logprobs:
+          type === SteerOutputType.STEERED
+            ? JSON.stringify(toReturnResult.steeredLogProbs)
+            : JSON.stringify(toReturnResult.defaultLogProbs),
         toNeurons:
           type === SteerOutputType.DEFAULT
             ? {}
@@ -419,12 +447,14 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
     const savedDefault = savedSteerOutputs.filter((steerOutput) => steerOutput.type === SteerOutputType.DEFAULT);
     if (savedSteereds.length > 0) {
       toReturnResult[SteerOutputType.STEERED] = savedSteereds[0].outputText;
+      toReturnResult.steeredLogProbs = savedSteereds[0].logprobs ? JSON.parse(savedSteereds[0].logprobs) : null;
       toReturnResult.id = savedSteereds[0].id;
       toReturnResult.shareUrl = `${NEXT_PUBLIC_URL}/steer/${savedSteereds[0].id}`;
       steerTypesToRun = steerTypesToRun.filter((type) => type !== SteerOutputType.STEERED);
     }
     if (savedDefault.length > 0) {
       toReturnResult[SteerOutputType.DEFAULT] = savedDefault[0].outputText;
+      toReturnResult.defaultLogProbs = savedDefault[0].logprobs ? JSON.parse(savedDefault[0].logprobs) : null;
       steerTypesToRun = steerTypesToRun.filter((type) => type !== SteerOutputType.DEFAULT);
     }
     if (steerTypesToRun.length === 0) {
@@ -477,16 +507,12 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
     if (!toReturnResult[SteerOutputType.STEERED] && steeredCompletionResult) {
       console.log("didn't have steered, filling it");
       toReturnResult[SteerOutputType.STEERED] = steeredCompletionResult.output;
-      toReturnResult.steeredLogProbs = steeredCompletionResult.logprobs
-        ? JSON.stringify(steeredCompletionResult.logprobs)
-        : null;
+      toReturnResult.steeredLogProbs = steeredCompletionResult.logprobs ? steeredCompletionResult.logprobs : null;
     }
     if (!toReturnResult[SteerOutputType.DEFAULT] && defaultCompletionResult) {
       console.log("didn't have default, filling it");
       toReturnResult[SteerOutputType.DEFAULT] = defaultCompletionResult.output;
-      toReturnResult.defaultLogProbs = defaultCompletionResult.logprobs
-        ? JSON.stringify(defaultCompletionResult.logprobs)
-        : null;
+      toReturnResult.defaultLogProbs = defaultCompletionResult.logprobs ? defaultCompletionResult.logprobs : null;
     }
 
     toReturnResult = await saveSteerOutput(body, steerTypesToRun, toReturnResult, request.user?.id);

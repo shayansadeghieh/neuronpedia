@@ -29,7 +29,7 @@ import {
 import { NeuronWithPartialRelations } from '@/prisma/generated/zod';
 import { Model, Visibility } from '@prisma/client';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { NPSteerMethod } from 'neuronpedia-inference-client';
+import { NPSteerMethod , NPLogprob } from 'neuronpedia-inference-client';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import SteerAdvancedSettings from './advanced-settings';
@@ -76,7 +76,9 @@ export default function Steerer({
   const [defaultChatMessages, setDefaultChatMessages] = useState<ChatMessage[]>([]);
   const [steeredChatMessages, setSteeredChatMessages] = useState<ChatMessage[]>([]);
   const [defaultCompletionText, setDefaultCompletionText] = useState('');
+  const [defaultCompletionLogProbs, setDefaultCompletionLogProbs] = useState<NPLogprob[] | null>(null);
   const [steeredCompletionText, setSteeredCompletionText] = useState('');
+  const [steeredCompletionLogProbs, setSteeredCompletionLogProbs] = useState<NPLogprob[] | null>(null);
 
   // Default Steering Settings
   const [steerTokens, setSteerTokens] = useState(STEER_N_COMPLETION_TOKENS);
@@ -125,6 +127,8 @@ export default function Steerer({
     setSteeredChatMessages([]);
     setDefaultCompletionText('');
     setSteeredCompletionText('');
+    setDefaultCompletionLogProbs(null);
+    setSteeredCompletionLogProbs(null);
     setTypedInText('');
     setUrl(null);
   }
@@ -192,6 +196,8 @@ export default function Steerer({
           setIsSteering(false);
           setDefaultCompletionText('');
           setSteeredCompletionText('');
+          setDefaultCompletionLogProbs(null);
+          setSteeredCompletionLogProbs(null);
           return;
         }
         setIsSteering(false);
@@ -216,6 +222,8 @@ export default function Steerer({
           if (resp.DEFAULT?.chatTemplate) {
             setDefaultChatMessages(resp.DEFAULT?.chatTemplate || []);
             setSteeredChatMessages(resp.STEERED?.chatTemplate || []);
+            setDefaultCompletionLogProbs(resp.DEFAULT?.logprobs || null);
+            setSteeredCompletionLogProbs(resp.STEERED?.logprobs || null);
           } else {
             const defaultRaw = resp.DEFAULT?.raw;
             const steeredRaw = resp.STEERED?.raw;
@@ -691,7 +699,11 @@ export default function Steerer({
           showSettingsOnMobile={showSettingsOnMobile}
           isSteering={isSteering}
           defaultCompletionText={defaultCompletionText}
+          defaultCompletionLogProbs={defaultCompletionLogProbs}
+          setDefaultCompletionLogProbs={setDefaultCompletionLogProbs}
           steeredCompletionText={steeredCompletionText}
+          steeredCompletionLogProbs={steeredCompletionLogProbs}
+          setSteeredCompletionLogProbs={setSteeredCompletionLogProbs}
           modelId={modelId}
           selectedFeatures={selectedFeatures}
           typedInText={typedInText}
