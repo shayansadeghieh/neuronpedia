@@ -180,10 +180,12 @@ async def run_batched_generate(
                             if norm == 0:
                                 raise ValueError("Zero norm steering vector")
                             steering_vector = steering_vector / norm
-   
+
                         # If it's attention hook, reshape it to (n_heads, head_dim)
                         # get n_heads from the transformerlens model
-                        if isinstance(feature, NPSteerFeature) and "attn.hook_z" in sae_manager.get_sae_hook(feature.source):
+                        if isinstance(
+                            feature, NPSteerFeature
+                        ) and "attn.hook_z" in sae_manager.get_sae_hook(feature.source):
                             n_heads = model.cfg.n_heads
                             d_head = model.cfg.d_head
                             steering_vector = steering_vector.view(n_heads, d_head)
