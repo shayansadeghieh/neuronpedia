@@ -68,6 +68,9 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
           in: PUBLIC_ACTIVATIONS_USER_IDS,
         },
       },
+      orderBy: {
+        maxValue: 'desc',
+      },
     });
 
     if (!activations || activations.length === 0) {
