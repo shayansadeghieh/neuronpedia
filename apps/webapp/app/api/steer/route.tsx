@@ -260,7 +260,7 @@ async function saveSteerOutput(
         },
         {}
       ],
-      "description": "Given a prompt and a set of SAE features, steer a model to generate both its default and steered text. This is for completions, not chat.",
+      "description": "Given a prompt and a set of SAE features, steer a model to generate both its default and steered text, as well as logprobs for each generated token. This is for completions, not chat.",
       "requestBody": {
         "required": true,
         "content": {

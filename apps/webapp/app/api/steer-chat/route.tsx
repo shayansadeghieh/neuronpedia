@@ -408,7 +408,7 @@ export type SteerSchemaTypeChat = InferType<typeof steerSchema>;
         },
         {}
       ],
-      "description": "Given chat messages and a set of SAE features, steer a model to generate both its default and steered chat completions. This is for chat, not completions.",
+      "description": "Given chat messages and a set of SAE features, steer a model to generate both its default and steered chat completions, as well as logprobs for each generated token. This is for chat, not completions.",
       "requestBody": {
         "required": true,
         "content": {
