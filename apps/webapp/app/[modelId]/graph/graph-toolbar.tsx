@@ -117,7 +117,7 @@ export default function GraphToolbar() {
           className="relative hidden h-12 items-center justify-center whitespace-nowrap border-sky-500 bg-sky-50 text-xs font-medium leading-none text-sky-600 hover:bg-sky-100 hover:text-sky-700 sm:flex"
           onClick={() => setIsWelcomeModalOpen(true)}
         >
-          <BookOpenIcon className="mr-1.5 h-4 w-4" /> User Guide
+          <BookOpenIcon className="mr-1.5 h-4 w-4" /> Guide
           {(() => {
             try {
               const hasVisited = localStorage.getItem('circuit-tracer-visited');
@@ -142,7 +142,7 @@ export default function GraphToolbar() {
           <Plus className="mr-1.5 h-4 w-4" /> New<span className="hidden pl-[3px] sm:inline">Graph</span>
         </Button>
 
-        <div className="hidden flex-col sm:flex">
+        <div className="flex flex-col">
           <div className="w-full pb-0.5 text-center text-[9px] font-medium uppercase text-slate-400">Select Model</div>
           <Select.Root
             value={selectedModelId}
@@ -157,7 +157,7 @@ export default function GraphToolbar() {
                   e.stopPropagation();
                 }
               }}
-              className="inline-flex h-12 w-40 max-w-40 items-center justify-between gap-1 rounded border border-slate-300 bg-white px-4 py-2 pr-2 text-sm leading-none focus:outline-none focus:ring-0"
+              className="inline-flex h-12 w-32 max-w-32 items-center justify-between gap-1 rounded border border-slate-300 bg-white px-4 py-2 pr-2 text-sm leading-none focus:outline-none focus:ring-0 sm:w-40 sm:max-w-40"
             >
               <Select.Value>
                 <div className="flex flex-col items-start justify-start gap-y-0.5 text-left">

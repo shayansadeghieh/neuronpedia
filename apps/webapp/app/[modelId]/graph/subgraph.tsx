@@ -17,7 +17,7 @@ const NODE_HEIGHT = 25;
 const MINIMUM_SUBGRAPH_LINK_STROKE_WIDTH = 1;
 const MAX_SUBGRAPH_LINK_LUMINANCE = 0.9;
 
-const STEER_MODEL_IDS = ['gemma-2-2b'];
+const STEER_MODEL_IDS = ['gemma-2-2b']; // , 'qwen3-4b' need to fix steering for this model
 
 // Custom force container function to keep nodes within bounds
 function forceContainer(bbox: [[number, number], [number, number]]) {

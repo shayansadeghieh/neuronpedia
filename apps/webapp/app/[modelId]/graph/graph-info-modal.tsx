@@ -309,6 +309,14 @@ export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: Grap
                     {url}
                   </a>
                 ))}
+                <a
+                  href={selectedMetadataGraph.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block break-all text-xs text-sky-600 hover:underline"
+                >
+                  Raw Graph JSON (no labels)
+                </a>
               </div>
             </div>
           )}
@@ -317,7 +325,7 @@ export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: Grap
           <div className="border-t pt-4">
             <Button onClick={handleDownload} className="w-full gap-2" disabled={!selectedMetadataGraph}>
               <DownloadIcon className="h-4 w-4" />
-              Download Graph JSON
+              Download Graph JSON + Labels
             </Button>
           </div>
         </div>
