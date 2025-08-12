@@ -14,7 +14,7 @@ uvicorn = {extras = ["standard"], version = ">=0.34.2"}
 pydantic = ">=2.11.4"
 torch = ">=2.0.0"
 transformers = ">=4.0.0"
-circuit-tracer = { git = "https://github.com/safety-research/circuit-tracer.git", branch = "main" }
+circuit-tracer = { git = "https://github.com/safety-research/circuit-tracer.git", rev = "ca8b011" } # TODO: migrate to v0.2.0
 python-dotenv = "^1.1.0"
 
 [build-system]
