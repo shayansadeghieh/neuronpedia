@@ -3,10 +3,12 @@ import { GraphProvider } from '@/components/provider/graph-provider';
 import { GraphStateProvider } from '@/components/provider/graph-state-provider';
 import { prisma } from '@/lib/db';
 import { getModelById } from '@/lib/db/model';
+import { ASSET_BASE_URL } from '@/lib/env';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { notFound } from 'next/navigation';
 import {
+  ADDITIONAL_MODELS_TO_LOAD,
   ANT_BUCKET_URL,
   ANT_MODELS_TO_LOAD,
   getGraphMetadatasFromBucket,
@@ -30,8 +32,8 @@ export async function generateMetadata({
   // use modelIdToModelDisplayName to get the model name if it's there. othewise use it directly
   const modelName = modelIdToModelDisplayName.get(modelId) || modelId;
 
-  const title = `${slug ? `${slug} - ` : ''}${modelName} Attribution Graph`;
-  const description = ``;
+  const title = `${slug ? `${slug} - ` : ''}${modelName} Graph | Neuronpedia`;
+  const description = `Attribution Graph for ${modelName}`;
   let url = `/${modelId}/graph`;
 
   if (slug) {
@@ -44,6 +46,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
+      images: [`${ASSET_BASE_URL}/graph-preview.jpg`],
       url,
     },
   };
@@ -240,13 +243,15 @@ export default async function Page({
         console.error('Error parsing params clerps:', error);
       }
     }
-  } else if (ANT_MODELS_TO_LOAD.has(modelId)) {
+  } else if (ANT_MODELS_TO_LOAD.has(modelId) || ADDITIONAL_MODELS_TO_LOAD.has(modelId)) {
     // no default slug and it's a haiku model, just pick the first one
     // pick the first graph in the map
     [metadataGraph] = modelIdToGraphMetadatasMap[modelId];
-  } else {
-    // no default slug, let's show gemma austin dallas
-    metadataGraph = modelIdToGraphMetadatasMap['gemma-2-2b'].find((graph) => graph.slug === 'gemma-fact-dallas-austin');
+  } else if (modelIdToGraphMetadatasMap['gemma-2-2b']) {
+    metadataGraph = modelIdToGraphMetadatasMap['gemma-2-2b'].find(
+      // no default slug, let's show gemma austin dallas
+      (graph) => graph.slug === 'gemma-fact-dallas-austin',
+    );
     pinnedIds =
       '27_22605_10,20_15589_10,E_26865_9,21_5943_10,23_12237_10,20_15589_9,16_25_9,14_2268_9,18_8959_10,4_13154_9,7_6861_9,19_1445_10,E_2329_7,E_6037_4,0_13727_7,6_4012_7,17_7178_10,15_4494_4,6_4662_4,4_7671_4,3_13984_4,1_1000_4,19_7477_9,18_6101_10,16_4298_10,7_691_10';
     parsedSupernodes = [
@@ -262,6 +267,8 @@ export default async function Page({
     ];
     pruningThreshold = 0.6;
     densityThreshold = 0.99;
+  } else {
+    console.error(`No default graph found for model ${modelId}`);
   }
 
   return (

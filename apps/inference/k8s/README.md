@@ -130,7 +130,7 @@ kubectl rollout restart deployment gemma-2-2b-public-gpu-lite-neuronpedia-infere
 kubectl rollout restart deployment gemma-2-2b-it-public-gpu-lite-neuronpedia-inference && \
 kubectl rollout restart deployment gemma-2-9b-it-a-gpu-neuronpedia-inference && \
 kubectl rollout restart deployment gemma-2-9b-it-b-gpu-neuronpedia-inference && \
-kubectl rollout restart deployment gemma-2-2b-gpu-neuronpedia-inference && \
+kubectl rollout restart deployment gemma-2-2b-gpu-lite-neuronpedia-inference && \
 kubectl rollout restart deployment gemma-2-9b-gpu-neuronpedia-inference && \
 kubectl rollout restart deployment deepseek-r1-llama-8b-a-gpu-lite-neuronpedia-inference && \
 kubectl rollout restart deployment deepseek-r1-llama-8b-b-gpu-lite-neuronpedia-inference && \

@@ -1,0 +1,148 @@
+model_name: "Qwen/Qwen3-4B"
+feature_input_hook: "hook_resid_mid"
+feature_output_hook: "mlp.hook_out"
+
+transcoders:
+  - id: "qwen3-4b-0"
+    layer: 0
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_0.safetensors"
+
+  - id: "qwen3-4b-1"
+    layer: 1
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_1.safetensors"
+
+  - id: "qwen3-4b-2"
+    layer: 2
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_2.safetensors"
+
+  - id: "qwen3-4b-3"
+    layer: 3
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_3.safetensors"
+
+  - id: "qwen3-4b-4"
+    layer: 4
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_4.safetensors"
+
+  - id: "qwen3-4b-5"
+    layer: 5
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_5.safetensors"
+
+  - id: "qwen3-4b-6"
+    layer: 6
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_6.safetensors"
+
+  - id: "qwen3-4b-7"
+    layer: 7
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_7.safetensors"
+
+  - id: "qwen3-4b-8"
+    layer: 8
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_8.safetensors"
+
+  - id: "qwen3-4b-9"
+    layer: 9
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_9.safetensors"
+
+  - id: "qwen3-4b-10"
+    layer: 10
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_10.safetensors"
+
+  - id: "qwen3-4b-11"
+    layer: 11
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_11.safetensors"
+
+  - id: "qwen3-4b-12"
+    layer: 12
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_12.safetensors"
+
+  - id: "qwen3-4b-13"
+    layer: 13
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_13.safetensors"
+
+  - id: "qwen3-4b-14"
+    layer: 14
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_14.safetensors"
+
+  - id: "qwen3-4b-15"
+    layer: 15
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_15.safetensors"
+
+  - id: "qwen3-4b-16"
+    layer: 16
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_16.safetensors"
+
+  - id: "qwen3-4b-17"
+    layer: 17
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_17.safetensors"
+
+  - id: "qwen3-4b-18"
+    layer: 18
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_18.safetensors"
+
+  - id: "qwen3-4b-19"
+    layer: 19
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_19.safetensors"
+
+  - id: "qwen3-4b-20"
+    layer: 20
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_20.safetensors"
+
+  - id: "qwen3-4b-21"
+    layer: 21
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_21.safetensors"
+
+  - id: "qwen3-4b-22"
+    layer: 22
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_22.safetensors"
+
+  - id: "qwen3-4b-23"
+    layer: 23
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_23.safetensors"
+
+  - id: "qwen3-4b-24"
+    layer: 24
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_24.safetensors"
+
+  - id: "qwen3-4b-25"
+    layer: 25
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_25.safetensors"
+
+  - id: "qwen3-4b-26"
+    layer: 26
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_26.safetensors"
+
+  - id: "qwen3-4b-27"
+    layer: 27
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_27.safetensors"
+
+  - id: "qwen3-4b-28"
+    layer: 28
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_28.safetensors"
+
+  - id: "qwen3-4b-29"
+    layer: 29
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_29.safetensors"
+
+  - id: "qwen3-4b-30"
+    layer: 30
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_30.safetensors"
+
+  - id: "qwen3-4b-31"
+    layer: 31
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_31.safetensors"
+
+  - id: "qwen3-4b-32"
+    layer: 32
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_32.safetensors"
+
+  - id: "qwen3-4b-33"
+    layer: 33
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_33.safetensors"
+
+  - id: "qwen3-4b-34"
+    layer: 34
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_34.safetensors"
+
+  - id: "qwen3-4b-35"
+    layer: 35
+    filepath: "hf://mntss/skip-transcoders-qwen-3-4b/layer_35.safetensors"
