@@ -40,14 +40,14 @@ def parse_args():
     parser.add_argument(
         "--model_id",   
         default="google/gemma-2-2b",     
-        choices=["google/gemma-2-2b", "meta-llama/Llama-3.2-1B"],
+        choices=["google/gemma-2-2b", "meta-llama/Llama-3.2-1B", "Qwen/Qwen3-4B"],
         help="The ID of the transformerlens model to use. Default is google/gemma-2-2b.",
     )
     parser.add_argument(
         "--model_dtype",           
-        default="float32",
+        default="bfloat16",
         choices=["bfloat16", "float16", "float32"],
-        help="The dtype of the transformerlens model to use. Default is float32.",
+        help="The dtype of the transformerlens model to use. Default is bfloat16.",
     )
     parser.add_argument(
         "--device",
