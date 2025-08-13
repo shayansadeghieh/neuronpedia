@@ -28,6 +28,19 @@ from tests.conftest import (
 
 ENDPOINT = "/v1/steer/completion-chat"
 
+TEST_STEER_FEATURE = NPSteerFeature(
+    model=MODEL_ID,
+    source=SAE_SELECTED_SOURCES[0],
+    index=STEER_FEATURE_INDEX,
+    strength=STRENGTH,
+)
+
+TEST_STEER_VECTOR = NPSteerVector(
+    steering_vector=[1000.0] * 768,
+    strength=STRENGTH,
+    hook="blocks.7.hook_resid_post",
+)
+
 
 def test_completion_chat_steered_with_features_additive(client: TestClient):
     """
@@ -39,14 +52,7 @@ def test_completion_chat_steered_with_features_additive(client: TestClient):
         steer_method=NPSteerMethod.SIMPLE_ADDITIVE,
         normalize_steering=False,
         types=[NPSteerType.STEERED, NPSteerType.DEFAULT],
-        features=[
-            NPSteerFeature(
-                model=MODEL_ID,
-                source=SAE_SELECTED_SOURCES[0],
-                index=STEER_FEATURE_INDEX,
-                strength=STRENGTH,
-            )
-        ],
+        features=[TEST_STEER_FEATURE],
         n_completion_tokens=N_COMPLETION_TOKENS,
         temperature=TEMPERATURE,
         strength_multiplier=STRENGTH_MULTIPLIER,
@@ -94,13 +100,7 @@ def test_completion_chat_steered_with_vectors_additive(client: TestClient):
         steer_method=NPSteerMethod.SIMPLE_ADDITIVE,
         normalize_steering=False,
         types=[NPSteerType.STEERED, NPSteerType.DEFAULT],
-        vectors=[
-            NPSteerVector(
-                steering_vector=[1000.0] * 768,  # Large vector to ensure impact
-                strength=STRENGTH,
-                hook="blocks.7.hook_resid_post",
-            )
-        ],
+        vectors=[TEST_STEER_VECTOR],
         n_completion_tokens=N_COMPLETION_TOKENS,
         temperature=TEMPERATURE,
         strength_multiplier=STRENGTH_MULTIPLIER,
@@ -150,14 +150,7 @@ def test_completion_chat_steered_with_features_orthogonal(client: TestClient):
         steer_method=NPSteerMethod.ORTHOGONAL_DECOMP,
         normalize_steering=False,
         types=[NPSteerType.STEERED, NPSteerType.DEFAULT],
-        features=[
-            NPSteerFeature(
-                model=MODEL_ID,
-                source=SAE_SELECTED_SOURCES[0],
-                index=STEER_FEATURE_INDEX,
-                strength=STRENGTH,
-            )
-        ],
+        features=[TEST_STEER_FEATURE],
         n_completion_tokens=N_COMPLETION_TOKENS,
         temperature=TEMPERATURE,
         strength_multiplier=STRENGTH_MULTIPLIER,
@@ -206,14 +199,7 @@ def test_completion_chat_token_limit_exceeded(client: TestClient):
         steer_method=NPSteerMethod.SIMPLE_ADDITIVE,
         normalize_steering=False,
         types=[NPSteerType.STEERED],
-        features=[
-            NPSteerFeature(
-                model=MODEL_ID,
-                source=SAE_SELECTED_SOURCES[0],
-                index=STEER_FEATURE_INDEX,
-                strength=STRENGTH,
-            )
-        ],
+        features=[TEST_STEER_FEATURE],
         n_completion_tokens=N_COMPLETION_TOKENS,
         temperature=TEMPERATURE,
         strength_multiplier=STRENGTH_MULTIPLIER,
@@ -267,21 +253,8 @@ def test_completion_chat_invalid_request_both_features_and_vectors(client: TestC
         steer_method=NPSteerMethod.SIMPLE_ADDITIVE,
         normalize_steering=False,
         types=[NPSteerType.STEERED],
-        features=[
-            NPSteerFeature(
-                model=MODEL_ID,
-                source=SAE_SELECTED_SOURCES[0],
-                index=STEER_FEATURE_INDEX,
-                strength=STRENGTH,
-            )
-        ],
-        vectors=[
-            NPSteerVector(
-                steering_vector=[1.0] * 768,
-                strength=STRENGTH,
-                hook="blocks.7.hook_resid_post",
-            )
-        ],
+        features=[TEST_STEER_FEATURE],
+        vectors=[TEST_STEER_VECTOR],
         n_completion_tokens=N_COMPLETION_TOKENS,
         temperature=TEMPERATURE,
         strength_multiplier=STRENGTH_MULTIPLIER,
