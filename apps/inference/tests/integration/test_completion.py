@@ -304,6 +304,7 @@ def test_completion_steered_with_vectors_orthogonal(client: TestClient):
     assert outputs_by_type[NPSteerType.STEERED] == expected_steered_output
     assert outputs_by_type[NPSteerType.DEFAULT] == expected_default_output
 
+
 def test_completion_invalid_request_no_features_or_vectors(client: TestClient):
     """
     Test error handling when neither features nor vectors are provided.
@@ -367,6 +368,7 @@ def test_completion_invalid_request_both_features_and_vectors(client: TestClient
     assert response.status_code == 400
     data = response.json()
     assert "exactly one of features or vectors must be provided" in data["error"]
+
 
 def test_completion_logprobs(client: TestClient):
     """Test that logprobs are returned for both STEERED and DEFAULT types."""
@@ -630,4 +632,3 @@ def test_completion_logprobs_streaming(client: TestClient):
                 assert "logprob" in top_logprob
                 assert isinstance(top_logprob["token"], str)
                 assert isinstance(top_logprob["logprob"], (int, float))
-

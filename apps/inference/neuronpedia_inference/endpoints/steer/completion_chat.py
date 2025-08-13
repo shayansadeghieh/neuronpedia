@@ -83,7 +83,6 @@ async def completion_chat(request: SteerCompletionChatPostRequest):
     for message in promptChat:
         promptChatFormatted.append({"role": message.role, "content": message.content})
 
-    # tokenize = True adds a BOS
     if model.tokenizer is None:
         raise ValueError("Tokenizer is not initialized")
 
@@ -93,13 +92,14 @@ async def completion_chat(request: SteerCompletionChatPostRequest):
         or model.tokenizer.chat_template is None
     ):
         logger.warning(
-            "Model's tokenizer does not support chat templates. Utilizing general chat template."
+            "Model's tokenizer does not support chat templates. Using generic chat template."
         )
         template_applied_prompt = apply_generic_chat_template(
             promptChatFormatted, add_generation_prompt=True
         )
-        promptTokenized = model.to_tokens(template_applied_prompt)[0]
+        promptTokenized = model.to_tokens(template_applied_prompt, prepend_bos=True)[0]
     else:
+        # tokenize = True adds a BOS
         promptTokenized = model.tokenizer.apply_chat_template(
             promptChatFormatted, tokenize=True, add_generation_prompt=True
         )
