@@ -71,13 +71,13 @@ export const MODEL_DO_NOT_FILTER_NODES = new Set(['gelu-4l-x128k64-v0']);
 export const MODEL_DIGITS_IN_FEATURE_ID = {
   'gemma-2-2b': Number(16384).toString().length,
   'llama-3-131k-relu': Number(131072).toString().length,
-  'qwen3-4b': Number(131072).toString().length,
+  //  'qwen3-4b': Number(131072).toString().length,
 };
 
 export const MODEL_TO_SOURCESET_ID = {
   'gemma-2-2b': 'gemmascope-transcoder-16k',
   'llama-3-131k-relu': 'skip-transcoder-mntss',
-  'qwen3-4b': 'TODO_SOURCESET_ID',
+  // 'qwen3-4b': 'TODO_SOURCESET_ID',
 };
 
 export const ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID = {
@@ -91,10 +91,7 @@ export const ERROR_MODEL_DOES_NOT_EXIST = 'ERR_MODEL_DOES_NOT_EXIST';
 
 // ============ End of Neuronpedia Specific =============
 
-export function getLayerFromAnthropicFeature(
-  modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-  featureNode: CLTGraphNode,
-) {
+function getLayerFromAnthropicFeature(modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID, featureNode: CLTGraphNode) {
   if (MODEL_FEATURE_ID_IS_ONLY_INDEX.has(modelId)) {
     return parseInt(featureNode.layer, 10);
   }
@@ -108,10 +105,7 @@ export function getLayerFromAnthropicFeature(
   return parseInt(layerStr, 10);
 }
 
-export function getIndexFromAnthropicFeature(
-  modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-  featureNode: CLTGraphNode,
-) {
+function getIndexFromAnthropicFeature(modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID, featureNode: CLTGraphNode) {
   if (MODEL_FEATURE_ID_IS_ONLY_INDEX.has(modelId)) {
     return featureNode.feature;
   }
@@ -125,6 +119,48 @@ export function getIndexFromAnthropicFeature(
   return parseInt(indexStr, 10);
 }
 
+export function getIndexFromCantorValue(feature: number): number {
+  const w = Math.floor((Math.sqrt(8 * feature + 1) - 1) / 2);
+  const t = (w * w + w) / 2;
+  const y = feature - t;
+  return y;
+}
+
+export function getLayerFromCantorValue(feature: number): number {
+  const w = Math.floor((Math.sqrt(8 * feature + 1) - 1) / 2);
+  const t = (w * w + w) / 2;
+  const x = w - (feature - t);
+  return x;
+}
+
+export function getLayerFromFeatureAndGraph(modelId: string, node: CLTGraphNode, selectedGraph: CLTGraph | null) {
+  if (selectedGraph?.metadata.schema_version === 1) {
+    return getLayerFromCantorValue(node.feature);
+  }
+  // if we have MODEL_DIGITS_IN_FEATURE_ID, then we can use the modelId to get the layer, else error
+  if (MODEL_DIGITS_IN_FEATURE_ID[modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID]) {
+    return getLayerFromAnthropicFeature(modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, node);
+  }
+  console.error(
+    `LayerFromFeature: ${modelId} does not have MODEL_DIGITS_IN_FEATURE_ID. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
+  );
+  return 0;
+}
+
+export function getIndexFromFeatureAndGraph(modelId: string, node: CLTGraphNode, selectedGraph: CLTGraph | null) {
+  if (selectedGraph?.metadata.schema_version === 1) {
+    return getIndexFromCantorValue(node.feature);
+  }
+  // if we have MODEL_DIGITS_IN_FEATURE_ID, then we can use the modelId to get the index, else error
+  if (MODEL_DIGITS_IN_FEATURE_ID[modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID]) {
+    return getIndexFromAnthropicFeature(modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, node);
+  }
+  console.error(
+    `IndexFromFeature: ${modelId} does not have MODEL_DIGITS_IN_FEATURE_ID. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
+  );
+  return 0;
+}
+
 export function getAnthropicFeatureIdFromLayerAndIndex(
   modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
   layer: number,
@@ -135,6 +171,30 @@ export function getAnthropicFeatureIdFromLayerAndIndex(
   const paddedIndex = index.toString().padStart(digitsInNumFeatures, '0');
 
   return parseInt(`${layer}${paddedIndex}`, 10);
+}
+
+function getCantorValueFromLayerAndIndex(layer: number, index: number) {
+  // return the cantor value using the cantor pairing function
+  const cantorValue = ((layer + index) * (layer + index + 1)) / 2 + index;
+  return cantorValue;
+}
+
+export function getFeatureIdFromLayerAndIndex(
+  modelId: string,
+  layer: number,
+  index: number,
+  selectedGraph: CLTGraph | null,
+) {
+  if (selectedGraph?.metadata.schema_version === 1) {
+    return getCantorValueFromLayerAndIndex(layer, index);
+  }
+  if (MODEL_DIGITS_IN_FEATURE_ID[modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID]) {
+    return getAnthropicFeatureIdFromLayerAndIndex(modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, layer, index);
+  }
+  console.error(
+    `FeatureIdFromLayerAndIndex: ${modelId} does not have MODEL_DIGITS_IN_FEATURE_ID. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
+  );
+  return 0;
 }
 
 export function convertAnthropicFeatureToNeuronpediaSourceSet(
@@ -264,6 +324,39 @@ export const modelIdToModelDisplayName = new Map<string, string>([
   ['llama-3-131k-relu', 'Llama 3.2 1B - Relu'],
 ]);
 
+export const modelIdAndSchemaToTranscoders = new Map<string, { name: string; hfUrl: string; npUrl: string | null }[]>([
+  [
+    'gemma-2-2b',
+    [
+      {
+        name: 'Gemmascope PLT',
+        hfUrl: 'https://huggingface.co/google/gemma-scope-2b-pt-transcoders',
+        npUrl: 'https://neuronpedia.org/gemma-2-2b/gemmascope-transcoder-16k',
+      },
+    ],
+  ],
+  // [
+  //   'qwen3-4b-skip',
+  //   [
+  //     {
+  //       name: 'Hanna/Piotrowski Skip Transcoders',
+  //       hfUrl: 'https://huggingface.co/mntss/skip-transcoders-qwen-3-4b',
+  //       npUrl: null,
+  //     },
+  //   ],
+  // ],
+  [
+    'qwen3-4b',
+    [
+      {
+        name: 'Hanna/Piotrowski PLT',
+        hfUrl: 'https://huggingface.co/mwhanna/qwen3-4b-transcoders',
+        npUrl: null,
+      },
+    ],
+  ],
+]);
+
 export const anthropicModels = [
   'jackl-circuits-runs-1-4-sofa-v3_0',
   'jackl-circuits-runs-1-1-druid-cp_0',
@@ -318,6 +411,9 @@ export type CLTGraphInnerMetadata = {
     node_threshold?: number;
     edge_threshold?: number;
   };
+
+  // determines cantor or not for feature ID
+  schema_version?: number;
 
   // we add these ourselves
   // subset of our DB Model
