@@ -250,7 +250,10 @@ export default function FeatureStats({
                           </button>
                         </Tooltip.Trigger>
                         <Tooltip.Portal>
-                          <Tooltip.Content className="rounded bg-slate-500 px-3 py-2 text-xs text-white" sideOffset={5}>
+                          <Tooltip.Content
+                            className="z-20 rounded bg-slate-500 px-3 py-2 text-xs text-white"
+                            sideOffset={5}
+                          >
                             Top negative logits of the feature.
                             <Tooltip.Arrow className="fill-slate-500" />
                           </Tooltip.Content>
@@ -285,7 +288,11 @@ export default function FeatureStats({
                       >
                         {replaceHtmlAnomalies(s)}
                       </pre>
-                      <div>{currentNeuron?.neg_values[i] === MISSING_LOGIT_VALUE ? 'N/A' : currentNeuron?.neg_values[i].toFixed(2)}</div>
+                      <div>
+                        {currentNeuron?.neg_values[i] === MISSING_LOGIT_VALUE
+                          ? 'N/A'
+                          : currentNeuron?.neg_values[i].toFixed(2)}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -306,7 +313,10 @@ export default function FeatureStats({
                           </button>
                         </Tooltip.Trigger>
                         <Tooltip.Portal>
-                          <Tooltip.Content className="rounded bg-slate-500 px-3 py-2 text-xs text-white" sideOffset={5}>
+                          <Tooltip.Content
+                            className="z-20 rounded bg-slate-500 px-3 py-2 text-xs text-white"
+                            sideOffset={5}
+                          >
                             Top positive logits of the feature.
                             <Tooltip.Arrow className="fill-slate-500" />
                           </Tooltip.Content>
@@ -341,7 +351,11 @@ export default function FeatureStats({
                       >
                         {replaceHtmlAnomalies(s)}
                       </pre>
-                      <div>{currentNeuron?.pos_values[i] === MISSING_LOGIT_VALUE ? 'N/A' : currentNeuron?.pos_values[i].toFixed(2)}</div>
+                      <div>
+                        {currentNeuron?.pos_values[i] === MISSING_LOGIT_VALUE
+                          ? 'N/A'
+                          : currentNeuron?.pos_values[i].toFixed(2)}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -369,7 +383,7 @@ export default function FeatureStats({
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
                   <Tooltip.Content
-                    className="rounded bg-slate-500 px-3 py-2 text-center text-xs text-white"
+                    className="z-20 rounded bg-slate-500 px-3 py-2 text-center text-xs text-white"
                     sideOffset={5}
                   >
                     (First) Histogram of randomly sampled non-zero activations.
