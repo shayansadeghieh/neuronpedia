@@ -31,6 +31,7 @@
   - ["I Want to Use a Local Database / Import More Neuronpedia Data"](#i-want-to-use-a-local-database--import-more-neuronpedia-data)
   - ["I Want to Do Webapp (Frontend + API) Development"](#i-want-to-do-webapp-frontend--api-development)
   - ["I Want to Run/Develop Inference Locally"](#i-want-to-rundevelop-inference-locally)
+  - ['I Want to Run/Develop Graph Server Locally'](#i-want-to-rundevelop-graph-server-locally)
   - ['I Want to Run/Develop Autointerp Locally'](#i-want-to-rundevelop-autointerp-locally)
   - ['I Want to Do High Volume Autointerp Explanations'](#i-want-to-do-high-volume-autointerp-explanations)
   - ['I Want to Generate My Own Dashboards/Data and Add It to Neuronpedia'](#i-want-to-generate-my-own-dashboardsdata-and-add-it-to-neuronpedia)
@@ -250,8 +251,7 @@ To interact with the inference server, you have a few options - note that this w
 
 1.  Load the webapp with the [local database setup](#i-want-to-use-a-local-database--import-more-neuronpedia-data), then using the model / selected source as you would normally do on Neuronpedia.
 2.  Use the pre-generated inference python client at `packages/python/neuronpedia-inference-client` (set environment variable `INFERENCE_SERVER_SECRET` to `public`, or whatever it's set to in `.env.localhost` if you've changed it)
-3.  Use the openapi spec, located at `schemas/openapi/inference-server.yaml` to make calls with any client of your choice.
-4.  [TODO #1](https://github.com/hijohnnylin/neuronpedia/issues/1): Use a documentation generator to make a simple tester-server that can be activated with `make doc-inference-localhost`
+3.  Use the openapi spec, located at `schemas/openapi/inference-server.yaml` to make calls with any client of your choice. You can get a Swagger interactive spec at `/docs` after the server starts up. See the `apps/inference/README.md` for details.
 
 #### Pre-Loaded Inference Server Configurations
 
@@ -333,6 +333,7 @@ The graph server powers the attribution graph generation functionality, built on
    ```
    > ➡️ The [`USE_LOCAL_HF_CACHE=1` flag](https://github.com/hijohnnylin/neuronpedia/pull/89) mounts your local HuggingFace cache at `${HOME}/.cache/huggingface/hub:/root/.cache/huggingface/hub`. If you wish to create a new cache in your container instead, you can omit this flag here and in the next step.
 5. run the graph server:
+
    ```
    # CUDA
    make graph-localhost-dev-gpu \
@@ -342,7 +343,8 @@ The graph server powers the attribution graph generation functionality, built on
    make graph-localhost-dev \
         USE_LOCAL_HF_CACHE=1
    ```
-6. Wait for the container to spin up 
+
+6. Wait for the container to spin up
 
 For example requests, see the [Graph Server README](apps/graph/README.md#example-request---output-graph-json-directly).
 
@@ -372,6 +374,7 @@ The autointerp server provides automatic interpretation and scoring of neural ne
    ```
    > ➡️ The [`USE_LOCAL_HF_CACHE=1` flag](https://github.com/hijohnnylin/neuronpedia/pull/89) mounts your local HuggingFace cache at `${HOME}/.cache/huggingface/hub:/root/.cache/huggingface/hub`. If you wish to create a new cache in your container instead, you can omit this flag here and in the next step.
 4. run the autointerp server:
+
    ```
    # CUDA
    make autointerp-localhost-dev-gpu \
@@ -381,6 +384,7 @@ The autointerp server provides automatic interpretation and scoring of neural ne
    make autointerp-localhost-dev \
         USE_LOCAL_HF_CACHE=1
    ```
+
 5. wait for it to load
 
 #### Using the Autointerp Server
@@ -388,8 +392,7 @@ The autointerp server provides automatic interpretation and scoring of neural ne
 To interact with the autointerp server, you have a few options:
 
 1. Use the pre-generated autointerp python client at `packages/python/neuronpedia-autointerp-client` (set environment variable `AUTOINTERP_SERVER_SECRET` to `public`, or whatever it's set to in `.env.localhost` if you've changed it)
-2. Use the openapi spec, located at `schemas/openapi/autointerp-server.yaml` to make calls with any client of your choice.
-3. TODO: Use a documentation generator to make a simple tester-server that can be activated with `make doc-autointerp-localhost`
+2. Use the openapi spec, located at `schemas/openapi/autointerp-server.yaml` to make calls with any client of your choice. You can get a Swagger interactive spec at `/docs` after the server starts up. See the `apps/inference/README.md` for details.
 
 #### Doing Local Autointerp Development
 
