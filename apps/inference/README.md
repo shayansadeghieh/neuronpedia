@@ -4,6 +4,7 @@
 - [repo status](#repo-status)
 - [setup + run - non-docker](#setup--run---non-docker)
   - [customizing the inference server (different models, SAEs, etc)](#customizing-the-inference-server-different-models-saes-etc)
+  - [Documentation / Usage (Swagger)](#documentation--usage-swagger)
   - [loading specific saes from saelens](#loading-specific-saes-from-saelens)
   - [developing the inference client](#developing-the-inference-client)
 - [setup + run - docker](#setup--run---docker)
@@ -44,6 +45,15 @@ poetry run python start.py
 ### customizing the inference server (different models, SAEs, etc)
 
 open the `start.py` script to see the flags that neuronpedia reads either from the arguments or from the environment variables.
+
+### Documentation / Usage (Swagger)
+
+FastAPI has a built-in docs + endpoint tester. After running the server, to see interactive docs, go to [http://localhost:5002/docs](http://localhost:5002/docs)
+
+Notes/Caveats:
+
+- Simple usage: Expand `/v1/activation/single`, click Try It Out, then click "Execute".
+- If you set a SECRET (not set by default) in your `.env` file, you'll need to add a `x-secret-key` header.
 
 ### loading specific saes from saelens
 

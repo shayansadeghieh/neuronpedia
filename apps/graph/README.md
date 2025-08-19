@@ -284,6 +284,14 @@ Response (Arrays Truncated)
 }
 ```
 
+## Documentation / Usage (Swagger)
+
+FastAPI has a built-in docs + endpoint tester. After running the server, to see interactive docs, go to [http://localhost:5004/docs](http://localhost:5004/docs)
+
+Notes/Caveats:
+
+- If you set a SECRET (not set by default) in your `.env` file, you'll need to add a `x-secret-key` header.
+
 ### Runpod Serverless
 
 The `apps/graph/runpod` directory contains a [Runpod Serverless](https://docs.runpod.io/serverless/overview) worker that does the same as `apps/graph` - it just in a format the Runpod expects. It has its own `README.md`.
