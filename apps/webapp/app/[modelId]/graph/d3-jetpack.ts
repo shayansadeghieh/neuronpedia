@@ -9,8 +9,30 @@
 
 import * as d3Base from 'd3';
 
-// Create a mutable clone so we don't mutate the ESM namespace object
-const d3: any = { ...d3Base };
+type D3Jetpack = typeof d3Base & {
+  clamp: (min: number, d: number, max: number) => number;
+  conventions: (c?: any) => any;
+  nestBy: <T>(array: T[], key: (d: T) => string) => Array<T[] & { key: string }>;
+  attachTooltip: (sel: any, tooltipSel?: any, fieldFns?: any) => void;
+};
+
+// Create a mutable, well-typed clone so we don't mutate the ESM namespace object
+const d3 = { ...(d3Base as any) } as D3Jetpack;
+
+// Extend d3 types only for Selection methods we add
+declare module 'd3' {
+  interface Selection<GElement extends d3Base.BaseType, Datum, PElement extends d3Base.BaseType, PDatum> {
+    selectAppend(name: string): d3Base.Selection<d3Base.BaseType, Datum, PElement, PDatum>;
+    appendMany<NewDatum>(name: string, data: NewDatum[]): d3Base.Selection<d3Base.BaseType, NewDatum, PElement, PDatum>;
+    at(name: string | Record<string, any>, value?: any): d3Base.Selection<GElement, Datum, PElement, PDatum>;
+    st(name: string | Record<string, any>, value?: any): d3Base.Selection<GElement, Datum, PElement, PDatum>;
+    translate(
+      xy: [number, number] | ((d: any, i: number) => [number, number]),
+      dim?: number,
+    ): d3Base.Selection<GElement, Datum, PElement, PDatum>;
+    parent(): d3Base.Selection<d3Base.BaseType, Datum, null, undefined>;
+  }
+}
 
 // Helper function to parse attributes from tag names like "div.class#id"
 function parseAttributes(name: string | any): {
