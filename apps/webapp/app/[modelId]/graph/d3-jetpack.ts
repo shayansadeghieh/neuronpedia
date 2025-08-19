@@ -7,27 +7,10 @@
 //
 // Forked from https://github.com/gka/d3-jetpack — BSD-3
 
-import * as d3 from 'd3';
+import * as d3Base from 'd3';
 
-// Extend d3 types
-declare module 'd3' {
-  export interface Selection<GElement extends d3.BaseType, Datum, PElement extends d3.BaseType, PDatum> {
-    selectAppend: (name: string) => Selection<d3.BaseType, Datum, PElement, PDatum>;
-    appendMany: <NewDatum>(name: string, data: NewDatum[]) => Selection<d3.BaseType, NewDatum, PElement, PDatum>;
-    at: (name: string | object, value?: any) => Selection<GElement, Datum, PElement, PDatum>;
-    st: (name: string | object, value?: any) => Selection<GElement, Datum, PElement, PDatum>;
-    translate: (
-      xy: [number, number] | ((d: any, i: number) => [number, number]),
-      dim?: number,
-    ) => Selection<GElement, Datum, PElement, PDatum>;
-    parent: () => Selection<d3.BaseType, Datum, null, undefined>;
-  }
-
-  export function nestBy<T>(array: T[], key: (d: T) => string): Array<T[] & { key: string }>;
-  export function clamp(min: number, d: number, max: number): number;
-  export function conventions(c?: any): any;
-  export function attachTooltip(sel: any, tooltipSel?: any, fieldFns?: any): void;
-}
+// Create a mutable clone so we don't mutate the ESM namespace object
+const d3: any = { ...d3Base };
 
 // Helper function to parse attributes from tag names like "div.class#id"
 function parseAttributes(name: string | any): {
