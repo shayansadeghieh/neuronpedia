@@ -472,6 +472,9 @@ async def forward_pass_handler(req: Request):
         request_body = await req.json()
         req_data = ForwardPassRequest.model_validate(request_body)
     except ValidationError as e:
+        if request_lock.locked():
+            print(f"Thread {threading.get_ident()}: Releasing lock.")
+            request_lock.release()
         return {"error": str(e)}
 
     try:
