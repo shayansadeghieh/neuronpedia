@@ -828,7 +828,7 @@ export default function GenerateGraphModal() {
                                     variant="destructive"
                                     size="sm"
                                     className="h-5 w-5 min-w-5 self-start px-0 text-xs"
-                                    disabled={index !== chatPrompts.length - 1}
+                                    disabled={index !== chatPrompts.length - 1 || isGenerating}
                                     onClick={() => {
                                       // eslint-disable-next-line
                                       setChatPrompts(chatPrompts.filter((_, i) => i !== index));
@@ -845,7 +845,7 @@ export default function GenerateGraphModal() {
                                 variant="default"
                                 size="sm"
                                 className="h-9 flex-1 px-2 text-xs"
-                                disabled={chatPrompts.length > 0}
+                                disabled={chatPrompts.length > 0 || isGenerating}
                                 onClick={() => {
                                   setChatPrompts([...chatPrompts, { role: 'system', content: '' }]);
                                 }}
@@ -858,12 +858,13 @@ export default function GenerateGraphModal() {
                                 size="sm"
                                 className="h-9 flex-1 px-2 text-xs"
                                 disabled={
-                                  chatPrompts.length === 0
+                                  isGenerating ||
+                                  (chatPrompts.length === 0
                                     ? false
                                     : !(
                                         chatPrompts[chatPrompts.length - 1].role === 'system' ||
                                         chatPrompts[chatPrompts.length - 1].role === 'assistant'
-                                      ) || chatPrompts[chatPrompts.length - 1].content.trim().length === 0 // user can only come after system or assistant
+                                      ) || chatPrompts[chatPrompts.length - 1].content.trim().length === 0) // user can only come after system or assistant
                                 }
                                 onClick={() => {
                                   setChatPrompts([...chatPrompts, { role: 'user', content: '' }]);
@@ -877,10 +878,11 @@ export default function GenerateGraphModal() {
                                 size="sm"
                                 className="h-9 flex-1 px-2 text-xs"
                                 disabled={
-                                  chatPrompts.length > 0
+                                  isGenerating ||
+                                  (chatPrompts.length > 0
                                     ? chatPrompts[chatPrompts.length - 1].role !== 'user' ||
                                       chatPrompts[chatPrompts.length - 1].content.trim().length === 0 // assistant can only come after user
-                                    : true
+                                    : true)
                                 }
                                 onClick={() => {
                                   setChatPrompts([

@@ -3,6 +3,7 @@ import {
   CLTGraph,
   FilterGraphType,
   getGraphBaseUrlToName,
+  modelIdAndSchemaToTranscoders,
   modelIdToModelDisplayName,
 } from '@/app/[modelId]/graph/utils';
 import { useGlobalContext } from '@/components/provider/global-provider';
@@ -166,11 +167,16 @@ export default function GraphToolbar() {
                       globalModels[selectedModelId]?.displayName ||
                       selectedModelId}
                   </div>
-                  {globalModels[selectedModelId]?.owner && (
+                  {modelIdAndSchemaToTranscoders.get(selectedModelId)?.map((trans) => (
+                    <div key={trans.name} className="w-full text-[9px] font-normal text-slate-400">
+                      {trans.name}
+                    </div>
+                  ))}
+                  {/* {globalModels[selectedModelId]?.owner && (
                     <div className="w-full text-[9px] font-normal text-slate-400">
                       {globalModels[selectedModelId]?.owner}
                     </div>
-                  )}
+                  )} */}
                   {selectedModelId === 'jackl-circuits-runs-1-4-sofa-v3_0' && (
                     <div className="w-full text-[9px] font-normal text-slate-400">Anthropic</div>
                   )}
@@ -195,23 +201,44 @@ export default function GraphToolbar() {
                     <Select.Item
                       key={modelId}
                       value={modelId}
-                      className="relative flex h-12 w-full cursor-pointer select-none items-center overflow-x-hidden whitespace-pre rounded py-0 pl-4 pr-6 text-xs hover:bg-slate-100 data-[highlighted]:bg-slate-100 data-[highlighted]:outline-none"
+                      className="relative flex h-12 w-full cursor-pointer select-none flex-row items-center overflow-x-hidden whitespace-pre rounded py-0 pl-4 pr-6 text-xs hover:bg-slate-100 data-[highlighted]:bg-slate-100 data-[highlighted]:outline-none"
                     >
-                      <Select.ItemText className="w-full">
-                        <div className="flex w-full flex-col items-start justify-start gap-y-0">
-                          <div className="w-full truncate text-left">
-                            {modelIdToModelDisplayName.get(modelId) || globalModels[modelId]?.displayName || modelId}
-                          </div>
-                          {globalModels[modelId]?.owner && (
+                      <Select.ItemText className="flex w-full flex-1">
+                        <div className="flex w-full flex-1 flex-row items-center gap-x-3">
+                          <div className="flex w-full flex-1 flex-col items-start justify-start gap-y-0">
+                            <div className="w-full truncate text-left">
+                              {modelIdToModelDisplayName.get(modelId) || globalModels[modelId]?.displayName || modelId}
+                            </div>
+                            {modelIdAndSchemaToTranscoders.get(modelId)?.map((trans) => (
+                              <div key={trans.name} className="w-full text-[9px] font-normal text-slate-400">
+                                {trans.name}
+                              </div>
+                            ))}
+                            {/* {globalModels[modelId]?.owner && (
                             <div className="w-full text-[9px] font-normal text-slate-400">
                               {globalModels[modelId]?.owner}
                             </div>
-                          )}
-                          {modelId === 'jackl-circuits-runs-1-4-sofa-v3_0' && (
-                            <div className="w-full text-[9px] font-normal text-slate-400">Anthropic</div>
-                          )}
+                          )} */}
+                            {modelId === 'jackl-circuits-runs-1-4-sofa-v3_0' && (
+                              <div className="w-full text-[9px] font-normal text-slate-400">Anthropic</div>
+                            )}
+                          </div>
                         </div>
                       </Select.ItemText>
+                      {/* {modelIdToTranscoders.get(modelId)?.[0]?.hfUrl && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="z-[99999] h-6 w-6 p-0 text-slate-400 hover:text-slate-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            window.open(modelIdToTranscoders.get(modelId)?.[0]?.hfUrl, '_blank');
+                          }}
+                        >
+                          <ExternalLinkIcon className="h-4 w-4" />
+                        </Button>
+                      )} */}
                     </Select.Item>
                   ))}
                 </Select.Viewport>
