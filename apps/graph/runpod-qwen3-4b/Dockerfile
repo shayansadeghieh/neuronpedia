@@ -18,9 +18,6 @@ RUN poetry config virtualenvs.create false
 # Install dependencies
 RUN poetry lock && poetry install --no-interaction --no-ansi --no-root
 
-# Copy the custom transcoder yaml file
-COPY qwen3-4b.yaml /
-
 # Copy your handler file
 COPY rp_handler.py /
 

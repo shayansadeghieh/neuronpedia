@@ -10,7 +10,8 @@ from datetime import datetime, timezone
 import psutil
 import requests
 import torch
-from circuit_tracer.attribution import attribute, compute_salient_logits
+from circuit_tracer import attribute
+from circuit_tracer.attribution.attribute import compute_salient_logits
 from circuit_tracer.graph import prune_graph
 from circuit_tracer.replacement_model import ReplacementModel
 from circuit_tracer.utils.create_graph_files import (
@@ -42,7 +43,9 @@ loaded_scan = "qwen3-4b"
 
 print("Loading model...")
 start_time = time.time()
-model = ReplacementModel.from_pretrained(tlens_model_name, "./qwen3-4b.yaml", dtype=torch.bfloat16)
+model = ReplacementModel.from_pretrained(
+    tlens_model_name, "mwhanna/qwen3-4b-transcoders", dtype=torch.bfloat16
+)
 print(f"Model loaded in {time.time() - start_time:.2f} seconds")
 
 
@@ -292,50 +295,34 @@ def steer_handler(event):
                     )
                 )
 
-        hooks, steered_logits, _ = model._get_feature_intervention_hooks(
-            req_data.prompt,
-            intervention_tuples,
-            freeze_attention=req_data.freeze_attention,
-        )
-
         # set the seed
         if req_data.seed is not None:
             torch.manual_seed(req_data.seed)
-        default_generations = [
-            model.generate(
-                req_data.prompt,
-                do_sample=True,
-                use_past_kv_cache=False,
-                verbose=False,
-                stop_at_eos=False,
-                max_new_tokens=req_data.n_tokens,
-                temperature=req_data.temperature,
-                freq_penalty=req_data.freq_penalty,
-            )
-        ]
+        default_generation = model.generate(
+            req_data.prompt,
+            do_sample=True,
+            use_past_kv_cache=False,
+            verbose=False,
+            stop_at_eos=False,
+            max_new_tokens=req_data.n_tokens,
+            temperature=req_data.temperature,
+            freq_penalty=req_data.freq_penalty,
+        )
 
         # reset the seed
         if req_data.seed is not None:
             torch.manual_seed(req_data.seed)
-        with model.hooks(hooks):
-            steered_generations = [
-                model.generate(
-                    req_data.prompt,
-                    do_sample=True,
-                    use_past_kv_cache=False,
-                    verbose=False,
-                    stop_at_eos=False,
-                    max_new_tokens=req_data.n_tokens
-                    + 1,  # generate one more token to get the logits for the last token
-                    temperature=req_data.temperature,
-                    freq_penalty=req_data.freq_penalty,
-                )
-            ]
-
-        steered_logits = steered_logits[0]
-
-        default_generation = default_generations[0]
-        steered_generation = steered_generations[0]
+        (steered_generation, steered_logits, _) = model.feature_intervention_generate(
+            req_data.prompt,
+            intervention_tuples,
+            freeze_attention=req_data.freeze_attention,
+            do_sample=True,
+            verbose=False,
+            stop_at_eos=False,
+            max_new_tokens=req_data.n_tokens + 1,
+            temperature=req_data.temperature,
+            freq_penalty=req_data.freq_penalty,
+        )
 
         default_tokenized = model.tokenizer.encode(
             default_generation, add_special_tokens=False
@@ -505,7 +492,10 @@ def graph_generation_handler(event):
         tokenizer = AutoTokenizer.from_pretrained(model.cfg.tokenizer_name)
 
         _nodes = create_nodes(
-            _graph, _node_mask, tokenizer, _cumulative_scores, None
+            _graph,
+            _node_mask,
+            tokenizer,
+            _cumulative_scores,  # , None
         )
         print("nodes created")
         _used_nodes, _used_edges = create_used_nodes_and_edges(
@@ -536,13 +526,10 @@ def graph_generation_handler(event):
         model_dict["metadata"]["info"] = {
             "creator_name": user_id if user_id else "Anonymous (CT)",
             "creator_url": "https://neuronpedia.org",
-            "source_urls": [
-                "https://neuronpedia.org/gemma-2-2b/gemmascope-transcoder-16k",
-                "https://huggingface.co/google/gemma-scope-2b-pt-transcoders",
-            ],
+            "source_urls": ["https://huggingface.co/mwhanna/qwen3-4b-transcoders"],
             "generator": {
                 "name": "circuit-tracer by Hanna & Piotrowski",
-                "version": "0.1.0 | 1ed3f19",
+                "version": "0.2.0 | 3976e39",
                 "url": "https://github.com/safety-research/circuit-tracer",
             },
             "create_time_ms": current_time_ms,

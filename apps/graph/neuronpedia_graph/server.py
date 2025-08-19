@@ -5,7 +5,6 @@ import gc
 import gzip
 import json
 import os
-import sys
 import threading
 import time
 from typing import Any
@@ -13,7 +12,8 @@ from typing import Any
 import psutil
 import requests
 import torch
-from circuit_tracer.attribution import attribute, compute_salient_logits
+from circuit_tracer import attribute
+from circuit_tracer.attribution.attribute import compute_salient_logits
 from circuit_tracer.graph import prune_graph
 from circuit_tracer.replacement_model import ReplacementModel
 from circuit_tracer.utils.create_graph_files import (
@@ -54,7 +54,7 @@ def get_device() -> torch.device:
     device_env = os.environ.get("DEVICE")
     if device_env:
         return torch.device(device_env)
-    
+
     if torch.cuda.is_available():
         return torch.device("cuda")
     elif torch.backends.mps.is_available():
@@ -68,14 +68,14 @@ def get_model_dtype() -> torch.dtype | None:
     Parse MODEL_DTYPE environment variable into torch dtype.
     Default is float32.
     """
-    model_dtype_env = os.environ.get("MODEL_DTYPE", "bfloat16")    
-    
+    model_dtype_env = os.environ.get("MODEL_DTYPE", "bfloat16")
+
     dtype_mapping = {
         "bfloat16": torch.bfloat16,
         "float16": torch.float16,
         "float32": torch.float32,
     }
-    
+
     return dtype_mapping.get(model_dtype_env)
 
 
@@ -90,7 +90,18 @@ request_lock = threading.Lock()
 TLENS_MODEL_ID_TO_SCAN = {
     "google/gemma-2-2b": "gemma-2-2b",
     "meta-llama/Llama-3.2-1B": "llama-3-131k-relu",
-    "Qwen/Qwen3-4B": 'qwen3-4b', # TODO: check if this is ok?
+    "Qwen/Qwen3-4B": "qwen3-4b",
+}
+
+TLENS_MODEL_TO_SOURCE_URL_ARRAYS = {
+    "google/gemma-2-2b": [
+        "https://neuronpedia.org/gemma-2-2b/gemmascope-transcoder-16k",
+        "https://huggingface.co/google/gemma-scope-2b-pt-transcoders",
+    ],
+    "llama-3-131k-relu": [],
+    "Qwen/Qwen3-4B": [
+        "https://huggingface.co/mwhanna/qwen3-4b-transcoders"
+    ],  # ["https://huggingface.co/mntss/skip-transcoders-qwen-3-4b"],
 }
 
 # this is what neuronpedia will send in the request
@@ -99,8 +110,9 @@ NP_MODEL_ID_TO_TLENS_MODEL_ID = {
     "llama3.1-8b": "meta-llama/Llama-3.2-1B",
 }
 
-CUSTOM_TRANSCODER_YAML = {
-    "Qwen/Qwen3-4B": "./qwen3-4b.yaml",
+CUSTOM_TRANSCODER_HF_PATH = {
+    # "Qwen/Qwen3-4B": "neuronpedia/skip-transcoders-qwen-3-4b",
+    "Qwen/Qwen3-4B": "mwhanna/qwen3-4b-transcoders",
 }
 
 loaded_model_arg = os.getenv("MODEL_ID")
@@ -128,10 +140,17 @@ else:
 device = get_device()
 model_dtype = get_model_dtype()
 
-if loaded_model_arg in CUSTOM_TRANSCODER_YAML:
-    model = ReplacementModel.from_pretrained(loaded_model_arg, CUSTOM_TRANSCODER_YAML[loaded_model_arg], device=device, dtype=model_dtype)
+if loaded_model_arg in CUSTOM_TRANSCODER_HF_PATH:
+    model = ReplacementModel.from_pretrained(
+        loaded_model_arg,
+        CUSTOM_TRANSCODER_HF_PATH[loaded_model_arg],
+        device=device,
+        dtype=model_dtype,
+    )
 else:
-    model = ReplacementModel.from_pretrained(loaded_model_arg, transcoder_name, device=device, dtype=model_dtype)
+    model = ReplacementModel.from_pretrained(
+        loaded_model_arg, transcoder_name, device=device, dtype=model_dtype
+    )
 
 loaded_scan = TLENS_MODEL_ID_TO_SCAN.get(loaded_model_arg)
 if loaded_scan is None:
@@ -315,50 +334,34 @@ async def steer_handler(req: Request):
                     )
                 )
 
-        hooks, steered_logits, _ = model._get_feature_intervention_hooks(
-            req_data.prompt,
-            intervention_tuples,
-            freeze_attention=req_data.freeze_attention,
-        )
-
         # set the seed
         if req_data.seed is not None:
             torch.manual_seed(req_data.seed)
-        default_generations = [
-            model.generate(
-                req_data.prompt,
-                do_sample=True,
-                use_past_kv_cache=False,
-                verbose=False,
-                stop_at_eos=False,
-                max_new_tokens=req_data.n_tokens,
-                temperature=req_data.temperature,
-                freq_penalty=req_data.freq_penalty,
-            )
-        ]
+        default_generation = model.generate(
+            req_data.prompt,
+            do_sample=True,
+            use_past_kv_cache=False,
+            verbose=False,
+            stop_at_eos=False,
+            max_new_tokens=req_data.n_tokens,
+            temperature=req_data.temperature,
+            freq_penalty=req_data.freq_penalty,
+        )
 
         # reset the seed
         if req_data.seed is not None:
             torch.manual_seed(req_data.seed)
-        with model.hooks(hooks):
-            steered_generations = [
-                model.generate(
-                    req_data.prompt,
-                    do_sample=True,
-                    use_past_kv_cache=False,
-                    verbose=False,
-                    stop_at_eos=False,
-                    max_new_tokens=req_data.n_tokens
-                    + 1,  # generate one more token to get the logits for the last token
-                    temperature=req_data.temperature,
-                    freq_penalty=req_data.freq_penalty,
-                )
-            ]
-
-        steered_logits = steered_logits[0]
-
-        default_generation = default_generations[0]
-        steered_generation = steered_generations[0]
+        (steered_generation, steered_logits, _) = model.feature_intervention_generate(
+            req_data.prompt,
+            intervention_tuples,
+            freeze_attention=req_data.freeze_attention,
+            do_sample=True,
+            verbose=False,
+            stop_at_eos=False,
+            max_new_tokens=req_data.n_tokens + 1,
+            temperature=req_data.temperature,
+            freq_penalty=req_data.freq_penalty,
+        )
 
         default_tokenized = model.tokenizer.encode(
             default_generation, add_special_tokens=False
@@ -655,7 +658,10 @@ async def generate_graph(req: Request):
             tokenizer = AutoTokenizer.from_pretrained(model.cfg.tokenizer_name)
 
             _nodes = create_nodes(
-                _graph, _node_mask, tokenizer, _cumulative_scores, current_scan if loaded_model_arg not in CUSTOM_TRANSCODER_YAML else None
+                _graph,
+                _node_mask,
+                tokenizer,
+                _cumulative_scores,  # , current_scan if loaded_model_arg not in CUSTOM_TRANSCODER_HF_PATH else None
             )
             print("nodes created")
             _used_nodes, _used_edges = create_used_nodes_and_edges(
@@ -690,13 +696,10 @@ async def generate_graph(req: Request):
                 if req_data.user_id
                 else "Anonymous (CT)",
                 "creator_url": "https://neuronpedia.org",
-                "source_urls": [
-                    "https://neuronpedia.org/gemma-2-2b/gemmascope-transcoder-16k",
-                    "https://huggingface.co/google/gemma-scope-2b-pt-transcoders",
-                ],
+                "source_urls": TLENS_MODEL_TO_SOURCE_URL_ARRAYS[loaded_model_arg],
                 "generator": {
                     "name": "circuit-tracer by Hanna & Piotrowski",
-                    "version": "0.1.0 | 1ed3f19",
+                    "version": "0.2.0 | 3976e39",
                     "url": "https://github.com/safety-research/circuit-tracer",
                 },
                 "create_time_ms": current_time_ms,
@@ -787,9 +790,13 @@ async def generate_graph(req: Request):
         except HTTPException:
             raise
         except Exception as e:
+            import traceback
+
             print(
                 f"Thread {threading.get_ident()}: Error during graph generation in worker thread: {e}"
             )
+            print("Stack trace:")
+            traceback.print_exc()
             raise HTTPException(
                 status_code=500, detail="Internal server error during graph generation"
             )
