@@ -93,7 +93,7 @@ export default function FeatureStats({
             <div className="flex w-full flex-col">
               <div className="mb-1 flex flex-row items-center gap-x-1 font-mono text-[11px] font-bold uppercase text-slate-500">
                 <div>Neuron Alignment</div>
-                <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
+                <Tooltip.Provider delayDuration={300} skipDelayDuration={0}>
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
                       <button type="button">
@@ -145,7 +145,7 @@ export default function FeatureStats({
             <div className="flex w-full flex-col">
               <div className="mb-1 flex flex-row items-center gap-x-1 font-mono text-[11px] font-bold uppercase text-slate-500">
                 <div>Correlated Neurons</div>
-                <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
+                <Tooltip.Provider delayDuration={300} skipDelayDuration={0}>
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
                       <button type="button">
@@ -205,7 +205,7 @@ export default function FeatureStats({
                     <div className="mb-0 flex flex-row items-center justify-center gap-x-1 font-sans text-[10px] font-normal uppercase text-slate-400">
                       Head Attr Weights
                     </div>
-                    <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
+                    <Tooltip.Provider delayDuration={300} skipDelayDuration={0}>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <button type="button">
@@ -242,7 +242,7 @@ export default function FeatureStats({
                     <div className="mb-0.5 flex flex-row items-center justify-center gap-x-1 font-sans text-[10px] font-normal uppercase text-slate-400 sm:mb-0">
                       Negative Logits
                     </div>
-                    <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
+                    <Tooltip.Provider delayDuration={300} skipDelayDuration={0}>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <button type="button">
@@ -305,7 +305,7 @@ export default function FeatureStats({
                     <div className="mb-0.5 flex flex-row items-center justify-center gap-x-1 font-sans text-[10px] font-normal uppercase text-slate-400 sm:mb-0">
                       POSITIVE LOGITS
                     </div>
-                    <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
+                    <Tooltip.Provider delayDuration={300} skipDelayDuration={0}>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <button type="button">
@@ -374,7 +374,7 @@ export default function FeatureStats({
               Act<span className="hidden sm:inline-block">ivations</span> Density{' '}
               {((currentNeuron?.frac_nonzero || 0) * 100).toFixed(3)}%
             </div>
-            <Tooltip.Provider delayDuration={0} skipDelayDuration={0}>
+            <Tooltip.Provider delayDuration={300} skipDelayDuration={0}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
                   <button type="button">
