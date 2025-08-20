@@ -13,7 +13,7 @@ import {
 import CustomTooltip from '@/components/custom-tooltip';
 import ExplanationsSearcher from '@/components/explanations-searcher';
 import { useGraphModalContext } from '@/components/provider/graph-modal-provider';
-import { PREFERRED_EXPLANATION_TYPE_NAME, useGraphContext } from '@/components/provider/graph-provider';
+import { PREFERRED_EXPLANATION_TYPES_NAMES, useGraphContext } from '@/components/provider/graph-provider';
 import { Button } from '@/components/shadcn/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/shadcn/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/shadcn/dialog';
@@ -692,7 +692,10 @@ export default function SteerModal() {
                           if (queuedAddFeature.neuron?.explanations) {
                             queuedAddFeature.neuron.explanations = [
                               {
-                                typeName: PREFERRED_EXPLANATION_TYPE_NAME,
+                                typeName:
+                                  PREFERRED_EXPLANATION_TYPES_NAMES.length > 0
+                                    ? PREFERRED_EXPLANATION_TYPES_NAMES[0]
+                                    : '',
                                 description: queuedAddFeature.description,
                               },
                             ];
@@ -841,8 +844,12 @@ export default function SteerModal() {
                           .then((n: NeuronWithPartialRelations) => {
                             const explanation =
                               n.explanations && n.explanations.length > 0
-                                ? n.explanations.find((e) => e.typeName === PREFERRED_EXPLANATION_TYPE_NAME)
-                                  ? n.explanations.find((e) => e.typeName === PREFERRED_EXPLANATION_TYPE_NAME)
+                                ? n.explanations.find((e) =>
+                                    PREFERRED_EXPLANATION_TYPES_NAMES.includes(e.typeName || ''),
+                                  )
+                                  ? n.explanations.find((e) =>
+                                      PREFERRED_EXPLANATION_TYPES_NAMES.includes(e.typeName || ''),
+                                    )
                                   : n.explanations.length > 0
                                     ? n.explanations[0]
                                     : null
@@ -856,7 +863,11 @@ export default function SteerModal() {
                             setQueuedAddFeature({
                               neuron: n,
                               description: explanation?.description || 'No Label Found',
-                              typeName: explanation?.typeName || PREFERRED_EXPLANATION_TYPE_NAME,
+                              typeName:
+                                explanation?.typeName ||
+                                (PREFERRED_EXPLANATION_TYPES_NAMES.length > 0
+                                  ? PREFERRED_EXPLANATION_TYPES_NAMES[0]
+                                  : ''),
                               explanationModelName: explanation?.explanationModelName || '',
                               id: explanation?.id || '',
                               modelId: explanation?.modelId || '',

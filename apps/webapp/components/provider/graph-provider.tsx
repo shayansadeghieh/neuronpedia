@@ -53,7 +53,7 @@ const ANTHROPIC_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE = 32;
 const NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE = 2048;
 export const GRAPH_PREFETCH_ACTIVATIONS_COUNT = 3;
 const DEFAULT_DENSITY_THRESHOLD = 0.99;
-export const PREFERRED_EXPLANATION_TYPE_NAME = 'np_max-act-logits';
+export const PREFERRED_EXPLANATION_TYPES_NAMES = ['np_max-act-logits', 'np_max-act'];
 
 // Define the main graph context type (without modal state)
 type GraphContextType = {
@@ -228,8 +228,8 @@ export function GraphProvider({
   const getOriginalClerpForNode = (node: CLTGraphNode) => {
     if (node.featureDetailNP) {
       // if any of the explanations.typeName === PREFERRED_EXPLANATION_TYPE_NAME, then use that one
-      const explanation = node.featureDetailNP.explanations?.find(
-        (e) => e.typeName === PREFERRED_EXPLANATION_TYPE_NAME,
+      const explanation = node.featureDetailNP.explanations?.find((e) =>
+        PREFERRED_EXPLANATION_TYPES_NAMES.includes(e.typeName || ''),
       );
       if (explanation) {
         return explanation.description;
