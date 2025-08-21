@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { getModelById } from '@/lib/db/model';
 import { neuronExistsAndUserHasAccess } from '@/lib/db/neuron';
+import { ERROR_NOT_FOUND_MESSAGE } from '@/lib/db/userCanAccess';
 import { DEMO_MODE, NEXT_PUBLIC_URL } from '@/lib/env';
 import { steerCompletion } from '@/lib/utils/inference';
 import {
@@ -366,7 +367,7 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
     // model access
     const modelAccess = await getModelById(body.modelId, request.user);
     if (!modelAccess) {
-      return NextResponse.json({ message: 'Model Not Found' }, { status: 404 });
+      return NextResponse.json({ message: ERROR_NOT_FOUND_MESSAGE }, { status: 404 });
     }
     // each feature access
     const featuresWithVectors: SteerFeature[] = [];
@@ -380,7 +381,7 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
         request.user,
       );
       if (!accessResult) {
-        return NextResponse.json({ message: 'Not Found' }, { status: 404 });
+        return NextResponse.json({ message: ERROR_NOT_FOUND_MESSAGE }, { status: 404 });
       }
       featuresWithVectors.push({ ...feature, neuron: accessResult });
     }
