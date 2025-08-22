@@ -316,7 +316,7 @@ model GraphHostSource {
   modelId String
   model   Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
 
-  sources GraphHostSourceOnSource[]
+  sourceSets GraphHostSourceOnSourceSet[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -324,17 +324,17 @@ model GraphHostSource {
   @@index([modelId])
 }
 
-model GraphHostSourceOnSource {
-  sourceId      String
-  sourceModelId String
-  source        Source @relation(fields: [sourceId, sourceModelId], references: [id, modelId], onDelete: Cascade)
+model GraphHostSourceOnSourceSet {
+  sourceSetName    String
+  sourceSetModelId String
+  sourceSet        SourceSet @relation(fields: [sourceSetName, sourceSetModelId], references: [name, modelId], onDelete: Cascade)
 
   graphHostSourceId String
   graphHostSource   GraphHostSource @relation(fields: [graphHostSourceId], references: [id], onDelete: Cascade)
 
-  @@id([sourceId, sourceModelId, graphHostSourceId])
-  @@index([sourceModelId])
-  @@index([sourceModelId, sourceId])
+  @@id([sourceSetName, sourceSetModelId, graphHostSourceId])
+  @@index([sourceSetModelId])
+  @@index([sourceSetModelId, sourceSetName])
 }
 
 model InferenceHostSource {
@@ -374,8 +374,6 @@ model Source {
 
   inferenceEnabled Boolean                       @default(false)
   inferenceHosts   InferenceHostSourceOnSource[]
-  graphEnabled     Boolean                       @default(false)
-  graphHostSources GraphHostSourceOnSource[]
 
   saelensConfig  Json?
   saelensRelease String?
@@ -440,6 +438,9 @@ model SourceSet {
   neurons      Neuron[]
   releaseName  String?
   releases     SourceRelease? @relation(fields: [releaseName], references: [name], onDelete: Cascade)
+
+  graphEnabled     Boolean                      @default(false)
+  graphHostSources GraphHostSourceOnSourceSet[]
 
   defaultOfModelId String?
   defaultOfModel   Model?  @relation(name: "defaultSourceSet")
