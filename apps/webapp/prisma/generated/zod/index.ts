@@ -78,11 +78,15 @@ export const VerificationTokenScalarFieldEnumSchema = z.enum(['identifier','toke
 
 export const ModelScalarFieldEnumSchema = z.enum(['id','displayNameShort','displayName','creatorId','tlensId','dimension','thinking','visibility','defaultSourceSetName','defaultSourceId','inferenceEnabled','instruct','layers','neuronsPerLayer','createdAt','owner','updatedAt','website']);
 
+export const GraphHostSourceScalarFieldEnumSchema = z.enum(['id','name','hostUrl','modelId','createdAt','updatedAt']);
+
+export const GraphHostSourceOnSourceScalarFieldEnumSchema = z.enum(['sourceId','sourceModelId','graphHostSourceId']);
+
 export const InferenceHostSourceScalarFieldEnumSchema = z.enum(['id','name','hostUrl','modelId','createdAt','updatedAt']);
 
 export const InferenceHostSourceOnSourceScalarFieldEnumSchema = z.enum(['sourceId','sourceModelId','inferenceHostId']);
 
-export const SourceScalarFieldEnumSchema = z.enum(['id','modelId','hasDashboards','inferenceEnabled','saelensConfig','saelensRelease','saelensSaeId','hfRepoId','hfFolderId','visibility','defaultOfModelId','setName','creatorId','hasUmap','hasUmapLogSparsity','hasUmapClusters','num_prompts','num_tokens_in_prompt','dataset','notes','cosSimMatchModelId','cosSimMatchSourceId','createdAt']);
+export const SourceScalarFieldEnumSchema = z.enum(['id','modelId','hasDashboards','inferenceEnabled','graphEnabled','saelensConfig','saelensRelease','saelensSaeId','hfRepoId','hfFolderId','visibility','defaultOfModelId','setName','creatorId','hasUmap','hasUmapLogSparsity','hasUmapClusters','num_prompts','num_tokens_in_prompt','dataset','notes','cosSimMatchModelId','cosSimMatchSourceId','createdAt']);
 
 export const SourceSetScalarFieldEnumSchema = z.enum(['modelId','name','hasDashboards','allowInferenceSearch','visibility','description','type','creatorName','urls','creatorEmail','creatorId','releaseName','defaultOfModelId','defaultRange','defaultShowBreaks','showDfa','showCorrelated','showHeadAttribution','showUmap','createdAt']);
 
@@ -1023,6 +1027,7 @@ export type ModelRelations = {
   steerOutputs: SteerOutputWithRelations[];
   evals: EvalWithRelations[];
   sourceInferenceHosts: InferenceHostSourceWithRelations[];
+  graphHostSources: GraphHostSourceWithRelations[];
   graphMetadata: GraphMetadataWithRelations[];
 };
 
@@ -1039,6 +1044,7 @@ export const ModelWithRelationsSchema: z.ZodType<ModelWithRelations> = ModelSche
   steerOutputs: z.lazy(() => SteerOutputWithRelationsSchema).array(),
   evals: z.lazy(() => EvalWithRelationsSchema).array(),
   sourceInferenceHosts: z.lazy(() => InferenceHostSourceWithRelationsSchema).array(),
+  graphHostSources: z.lazy(() => GraphHostSourceWithRelationsSchema).array(),
   graphMetadata: z.lazy(() => GraphMetadataWithRelationsSchema).array(),
 }))
 
@@ -1056,6 +1062,7 @@ export type ModelPartialRelations = {
   steerOutputs?: SteerOutputPartialWithRelations[];
   evals?: EvalPartialWithRelations[];
   sourceInferenceHosts?: InferenceHostSourcePartialWithRelations[];
+  graphHostSources?: GraphHostSourcePartialWithRelations[];
   graphMetadata?: GraphMetadataPartialWithRelations[];
 };
 
@@ -1072,6 +1079,7 @@ export const ModelPartialWithRelationsSchema: z.ZodType<ModelPartialWithRelation
   steerOutputs: z.lazy(() => SteerOutputPartialWithRelationsSchema).array(),
   evals: z.lazy(() => EvalPartialWithRelationsSchema).array(),
   sourceInferenceHosts: z.lazy(() => InferenceHostSourcePartialWithRelationsSchema).array(),
+  graphHostSources: z.lazy(() => GraphHostSourcePartialWithRelationsSchema).array(),
   graphMetadata: z.lazy(() => GraphMetadataPartialWithRelationsSchema).array(),
 })).partial()
 
@@ -1088,7 +1096,125 @@ export const ModelWithPartialRelationsSchema: z.ZodType<ModelWithPartialRelation
   steerOutputs: z.lazy(() => SteerOutputPartialWithRelationsSchema).array(),
   evals: z.lazy(() => EvalPartialWithRelationsSchema).array(),
   sourceInferenceHosts: z.lazy(() => InferenceHostSourcePartialWithRelationsSchema).array(),
+  graphHostSources: z.lazy(() => GraphHostSourcePartialWithRelationsSchema).array(),
   graphMetadata: z.lazy(() => GraphMetadataPartialWithRelationsSchema).array(),
+}).partial())
+
+/////////////////////////////////////////
+// GRAPH HOST SOURCE SCHEMA
+/////////////////////////////////////////
+
+export const GraphHostSourceSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string(),
+  hostUrl: z.string(),
+  modelId: z.string(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+})
+
+export type GraphHostSource = z.infer<typeof GraphHostSourceSchema>
+
+/////////////////////////////////////////
+// GRAPH HOST SOURCE PARTIAL SCHEMA
+/////////////////////////////////////////
+
+export const GraphHostSourcePartialSchema = GraphHostSourceSchema.partial()
+
+export type GraphHostSourcePartial = z.infer<typeof GraphHostSourcePartialSchema>
+
+// GRAPH HOST SOURCE RELATION SCHEMA
+//------------------------------------------------------
+
+export type GraphHostSourceRelations = {
+  model: ModelWithRelations;
+  sources: GraphHostSourceOnSourceWithRelations[];
+};
+
+export type GraphHostSourceWithRelations = z.infer<typeof GraphHostSourceSchema> & GraphHostSourceRelations
+
+export const GraphHostSourceWithRelationsSchema: z.ZodType<GraphHostSourceWithRelations> = GraphHostSourceSchema.merge(z.object({
+  model: z.lazy(() => ModelWithRelationsSchema),
+  sources: z.lazy(() => GraphHostSourceOnSourceWithRelationsSchema).array(),
+}))
+
+// GRAPH HOST SOURCE PARTIAL RELATION SCHEMA
+//------------------------------------------------------
+
+export type GraphHostSourcePartialRelations = {
+  model?: ModelPartialWithRelations;
+  sources?: GraphHostSourceOnSourcePartialWithRelations[];
+};
+
+export type GraphHostSourcePartialWithRelations = z.infer<typeof GraphHostSourcePartialSchema> & GraphHostSourcePartialRelations
+
+export const GraphHostSourcePartialWithRelationsSchema: z.ZodType<GraphHostSourcePartialWithRelations> = GraphHostSourcePartialSchema.merge(z.object({
+  model: z.lazy(() => ModelPartialWithRelationsSchema),
+  sources: z.lazy(() => GraphHostSourceOnSourcePartialWithRelationsSchema).array(),
+})).partial()
+
+export type GraphHostSourceWithPartialRelations = z.infer<typeof GraphHostSourceSchema> & GraphHostSourcePartialRelations
+
+export const GraphHostSourceWithPartialRelationsSchema: z.ZodType<GraphHostSourceWithPartialRelations> = GraphHostSourceSchema.merge(z.object({
+  model: z.lazy(() => ModelPartialWithRelationsSchema),
+  sources: z.lazy(() => GraphHostSourceOnSourcePartialWithRelationsSchema).array(),
+}).partial())
+
+/////////////////////////////////////////
+// GRAPH HOST SOURCE ON SOURCE SCHEMA
+/////////////////////////////////////////
+
+export const GraphHostSourceOnSourceSchema = z.object({
+  sourceId: z.string(),
+  sourceModelId: z.string(),
+  graphHostSourceId: z.string(),
+})
+
+export type GraphHostSourceOnSource = z.infer<typeof GraphHostSourceOnSourceSchema>
+
+/////////////////////////////////////////
+// GRAPH HOST SOURCE ON SOURCE PARTIAL SCHEMA
+/////////////////////////////////////////
+
+export const GraphHostSourceOnSourcePartialSchema = GraphHostSourceOnSourceSchema.partial()
+
+export type GraphHostSourceOnSourcePartial = z.infer<typeof GraphHostSourceOnSourcePartialSchema>
+
+// GRAPH HOST SOURCE ON SOURCE RELATION SCHEMA
+//------------------------------------------------------
+
+export type GraphHostSourceOnSourceRelations = {
+  source: SourceWithRelations;
+  graphHostSource: GraphHostSourceWithRelations;
+};
+
+export type GraphHostSourceOnSourceWithRelations = z.infer<typeof GraphHostSourceOnSourceSchema> & GraphHostSourceOnSourceRelations
+
+export const GraphHostSourceOnSourceWithRelationsSchema: z.ZodType<GraphHostSourceOnSourceWithRelations> = GraphHostSourceOnSourceSchema.merge(z.object({
+  source: z.lazy(() => SourceWithRelationsSchema),
+  graphHostSource: z.lazy(() => GraphHostSourceWithRelationsSchema),
+}))
+
+// GRAPH HOST SOURCE ON SOURCE PARTIAL RELATION SCHEMA
+//------------------------------------------------------
+
+export type GraphHostSourceOnSourcePartialRelations = {
+  source?: SourcePartialWithRelations;
+  graphHostSource?: GraphHostSourcePartialWithRelations;
+};
+
+export type GraphHostSourceOnSourcePartialWithRelations = z.infer<typeof GraphHostSourceOnSourcePartialSchema> & GraphHostSourceOnSourcePartialRelations
+
+export const GraphHostSourceOnSourcePartialWithRelationsSchema: z.ZodType<GraphHostSourceOnSourcePartialWithRelations> = GraphHostSourceOnSourcePartialSchema.merge(z.object({
+  source: z.lazy(() => SourcePartialWithRelationsSchema),
+  graphHostSource: z.lazy(() => GraphHostSourcePartialWithRelationsSchema),
+})).partial()
+
+export type GraphHostSourceOnSourceWithPartialRelations = z.infer<typeof GraphHostSourceOnSourceSchema> & GraphHostSourceOnSourcePartialRelations
+
+export const GraphHostSourceOnSourceWithPartialRelationsSchema: z.ZodType<GraphHostSourceOnSourceWithPartialRelations> = GraphHostSourceOnSourceSchema.merge(z.object({
+  source: z.lazy(() => SourcePartialWithRelationsSchema),
+  graphHostSource: z.lazy(() => GraphHostSourcePartialWithRelationsSchema),
 }).partial())
 
 /////////////////////////////////////////
@@ -1218,6 +1344,7 @@ export const SourceSchema = z.object({
   modelId: z.string(),
   hasDashboards: z.boolean(),
   inferenceEnabled: z.boolean(),
+  graphEnabled: z.boolean(),
   saelensConfig: NullableJsonValue.optional(),
   saelensRelease: z.string().nullable(),
   saelensSaeId: z.string().nullable(),
@@ -1253,6 +1380,7 @@ export type SourcePartial = z.infer<typeof SourcePartialSchema>
 
 export type SourceRelations = {
   inferenceHosts: InferenceHostSourceOnSourceWithRelations[];
+  graphHostSources: GraphHostSourceOnSourceWithRelations[];
   neurons: NeuronWithRelations[];
   defaultOfModel?: ModelWithRelations | null;
   set: SourceSetWithRelations;
@@ -1268,6 +1396,7 @@ export type SourceWithRelations = Omit<z.infer<typeof SourceSchema>, "saelensCon
 
 export const SourceWithRelationsSchema: z.ZodType<SourceWithRelations> = SourceSchema.merge(z.object({
   inferenceHosts: z.lazy(() => InferenceHostSourceOnSourceWithRelationsSchema).array(),
+  graphHostSources: z.lazy(() => GraphHostSourceOnSourceWithRelationsSchema).array(),
   neurons: z.lazy(() => NeuronWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelWithRelationsSchema).nullable(),
   set: z.lazy(() => SourceSetWithRelationsSchema),
@@ -1282,6 +1411,7 @@ export const SourceWithRelationsSchema: z.ZodType<SourceWithRelations> = SourceS
 
 export type SourcePartialRelations = {
   inferenceHosts?: InferenceHostSourceOnSourcePartialWithRelations[];
+  graphHostSources?: GraphHostSourceOnSourcePartialWithRelations[];
   neurons?: NeuronPartialWithRelations[];
   defaultOfModel?: ModelPartialWithRelations | null;
   set?: SourceSetPartialWithRelations;
@@ -1297,6 +1427,7 @@ export type SourcePartialWithRelations = Omit<z.infer<typeof SourcePartialSchema
 
 export const SourcePartialWithRelationsSchema: z.ZodType<SourcePartialWithRelations> = SourcePartialSchema.merge(z.object({
   inferenceHosts: z.lazy(() => InferenceHostSourceOnSourcePartialWithRelationsSchema).array(),
+  graphHostSources: z.lazy(() => GraphHostSourceOnSourcePartialWithRelationsSchema).array(),
   neurons: z.lazy(() => NeuronPartialWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelPartialWithRelationsSchema).nullable(),
   set: z.lazy(() => SourceSetPartialWithRelationsSchema),
@@ -1312,6 +1443,7 @@ export type SourceWithPartialRelations = Omit<z.infer<typeof SourceSchema>, "sae
 
 export const SourceWithPartialRelationsSchema: z.ZodType<SourceWithPartialRelations> = SourceSchema.merge(z.object({
   inferenceHosts: z.lazy(() => InferenceHostSourceOnSourcePartialWithRelationsSchema).array(),
+  graphHostSources: z.lazy(() => GraphHostSourceOnSourcePartialWithRelationsSchema).array(),
   neurons: z.lazy(() => NeuronPartialWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelPartialWithRelationsSchema).nullable(),
   set: z.lazy(() => SourceSetPartialWithRelationsSchema),
