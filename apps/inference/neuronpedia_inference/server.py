@@ -186,7 +186,7 @@ async def initialize(
         )
 
         # add hook_in to mlp for transcoders
-        def add_hook_in_to_mlp(mlp):
+        def add_hook_in_to_mlp(mlp):  # type: ignore
             mlp.hook_in = HookPoint()
             original_forward = mlp.forward
             mlp.forward = lambda x: original_forward(mlp.hook_in(x))
