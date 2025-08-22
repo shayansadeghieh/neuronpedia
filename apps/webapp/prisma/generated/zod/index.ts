@@ -78,7 +78,7 @@ export const VerificationTokenScalarFieldEnumSchema = z.enum(['identifier','toke
 
 export const ModelScalarFieldEnumSchema = z.enum(['id','displayNameShort','displayName','creatorId','tlensId','dimension','thinking','visibility','defaultSourceSetName','defaultSourceId','inferenceEnabled','instruct','layers','neuronsPerLayer','createdAt','owner','updatedAt','website']);
 
-export const GraphHostSourceScalarFieldEnumSchema = z.enum(['id','name','hostUrl','modelId','createdAt','updatedAt']);
+export const GraphHostSourceScalarFieldEnumSchema = z.enum(['id','name','hostUrl','runpodServerlessUrl','modelId','createdAt','updatedAt']);
 
 export const GraphHostSourceOnSourceScalarFieldEnumSchema = z.enum(['sourceId','sourceModelId','graphHostSourceId']);
 
@@ -1107,7 +1107,8 @@ export const ModelWithPartialRelationsSchema: z.ZodType<ModelWithPartialRelation
 export const GraphHostSourceSchema = z.object({
   id: z.string().cuid(),
   name: z.string(),
-  hostUrl: z.string(),
+  hostUrl: z.string().nullable(),
+  runpodServerlessUrl: z.string().nullable(),
   modelId: z.string(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),

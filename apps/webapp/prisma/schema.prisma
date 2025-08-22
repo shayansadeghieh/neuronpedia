@@ -308,9 +308,10 @@ model Model {
 }
 
 model GraphHostSource {
-  id      String @id @default(cuid())
-  name    String
-  hostUrl String
+  id                  String  @id @default(cuid())
+  name                String
+  hostUrl             String?
+  runpodServerlessUrl String?
 
   modelId String
   model   Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)

@@ -1,36 +1,9 @@
 import ATTRIBUTION_GRAPH_SCHEMA from '@/app/api/graph/graph-schema.json';
-import {
-  DEFAULT_CREATOR_USER_ID,
-  GRAPH_RUNPOD_SERVER,
-  GRAPH_RUNPOD_SERVER_QWEN3_4B,
-  GRAPH_SERVER,
-  GRAPH_SERVER_QWEN3_4B,
-  NEXT_PUBLIC_URL,
-} from '@/lib/env';
+import { DEFAULT_CREATOR_USER_ID, NEXT_PUBLIC_URL } from '@/lib/env';
 import { GraphMetadata, GraphMetadataWithPartialRelations, NeuronWithPartialRelations } from '@/prisma/generated/zod';
 import cuid from 'cuid';
 import { z } from 'zod';
 import d3 from './d3-jetpack';
-
-export function getGraphServerUrlForModel(modelId: string) {
-  if (modelId === 'qwen3-4b') {
-    return GRAPH_SERVER_QWEN3_4B;
-  }
-  if (modelId === 'gemma-2-2b') {
-    return GRAPH_SERVER;
-  }
-  throw new Error(`No graph server url found for model ${modelId}`);
-}
-
-export function getGraphRunpodServerUrlForModel(modelId: string) {
-  if (modelId === 'qwen3-4b') {
-    return GRAPH_RUNPOD_SERVER_QWEN3_4B;
-  }
-  if (modelId === 'gemma-2-2b') {
-    return GRAPH_RUNPOD_SERVER;
-  }
-  throw new Error(`No graph runpod server url found for model ${modelId}`);
-}
 
 // TODO: make this an env variable
 export const NP_GRAPH_BUCKET = 'neuronpedia-attrib';
