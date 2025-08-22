@@ -235,7 +235,7 @@ export function GraphProvider({
         return explanation.description;
       }
       // otherwise just return the first explanation
-      return node.featureDetailNP.explanations?.[0]?.description;
+      return node.featureDetailNP.explanations?.[0]?.description || '';
     }
     return node.ppClerp;
   };

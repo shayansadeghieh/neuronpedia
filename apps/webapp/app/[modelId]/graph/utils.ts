@@ -20,7 +20,8 @@ export const MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR = new Set(['gemma-2-2b']);
 // TODO: remove the MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR once fellows graph gets on cantor
 export const graphModelHasNpDashboards = (graph: CLTGraph) =>
   MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR.has(graph.metadata.scan) ||
-  graph.metadata.feature_details?.neuronpedia_source_set !== undefined;
+  graph.metadata.feature_details?.neuronpedia_source_set !== undefined ||
+  MODEL_TO_SOURCESET_ID[graph.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID] !== undefined;
 
 // has dashboards in the bucket
 export const MODEL_HAS_S3_DASHBOARDS = new Set([
@@ -50,7 +51,7 @@ export const MODEL_DIGITS_IN_FEATURE_ID = {
 export const MODEL_TO_SOURCESET_ID = {
   'gemma-2-2b': 'gemmascope-transcoder-16k',
   'llama-3-131k-relu': 'skip-transcoder-mntss',
-  // 'qwen3-4b': 'TODO_SOURCESET_ID',
+  'qwen3-4b': 'transcoder-hp',
 };
 
 export const ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID = {

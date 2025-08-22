@@ -413,7 +413,12 @@ export default function GenerateGraphModal() {
                           </Label>
                           <RadixSelect.Root
                             value={values.modelId}
-                            onValueChange={(value: string) => setFieldValue('modelId', value)}
+                            onValueChange={(value: string) => {
+                              setFieldValue('modelId', value);
+                              setGraphTokenizeResponse(null);
+                              setChatPrompts([]);
+                              setFieldValue('prompt', '');
+                            }}
                             disabled={isGenerating}
                           >
                             <RadixSelect.Trigger

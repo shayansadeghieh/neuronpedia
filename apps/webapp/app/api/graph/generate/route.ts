@@ -292,9 +292,7 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
     );
 
     // download the file from S3
-    console.log('signedUrl', signedUrl);
     const cleanUrl = signedUrl.split('?')[0];
-    console.log('downloading: ', cleanUrl);
     const response = await fetch(cleanUrl);
     if (!response.ok) {
       return NextResponse.json(
