@@ -88,7 +88,5 @@ export const getGraphServerRequestUrlForSourceSet = async (modelId: string, sour
     // for runpod the action is in the body
     return `${await getGraphServerRunpodHostForSourceSet(modelId, sourceSetName)}/runsync`;
   }
-  console.log('getGraphServerRequestUrlForSourceSet', modelId, sourceSetName, action);
-  console.log('returning ', await getGraphServerHostForSourceSet(modelId, sourceSetName), '/', action);
   return `${await getGraphServerHostForSourceSet(modelId, sourceSetName)}/${action}`;
 };
