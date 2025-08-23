@@ -3524,8 +3524,8 @@ neuronpedia = ["automated-interpretability (>=0.0.5,<1.0.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/shayansadeghieh/SAELens.git"
-reference = "4fab7af"
-resolved_reference = "4fab7af79ae82cb7af426fbf80b4bac4db1784f6"
+reference = "update-brackets-jaxtyping"
+resolved_reference = "1d092694f86c2cb887646850e18c04696059686c"
 
 [[package]]
 name = "safetensors"
@@ -5036,4 +5036,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "7f8d00aac6c9b2ba14ee34c37b22b4e75a0fece6a689957b297a0a6306e42d1c"
+content-hash = "7b3cf281648de1651123ea8a99246885cfab762b642bb9920d11cc46ea03de4d"

@@ -26,7 +26,7 @@ huggingface = "^0.0.1"
 pandas = "^2.2.2"
 # TODO: Add back sae-lens once we have a stable version of transformer-lens that is compatible with sae-lens
 # sae-lens requires transformer-lens < 3.0.0. To avoid compatibility issues, we utilize a fork that allows us to install sae-lens.
-sae-lens = {git = "https://github.com/shayansadeghieh/SAELens.git", rev = "4fab7af"}
+sae-lens = {git = "https://github.com/shayansadeghieh/SAELens.git", branch = "update-brackets-jaxtyping"}
 fastapi = "^0.115.6"
 uvicorn = "^0.34.0"
 sentry-sdk = {extras = ["fastapi"], version = "^2.20.0"}
