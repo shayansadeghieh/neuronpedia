@@ -3524,7 +3524,7 @@ neuronpedia = ["automated-interpretability (>=0.0.5,<1.0.0)"]
 [package.source]
 type = "git"
 url = "https://github.com/shayansadeghieh/SAELens.git"
-reference = "HEAD"
+reference = "4fab7af"
 resolved_reference = "4fab7af79ae82cb7af426fbf80b4bac4db1784f6"
 
 [[package]]
@@ -5036,4 +5036,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "96b1d05a36277ef558409ddf6e5a1a6e19968e1130ca25dfae737a7c82051ed1"
+content-hash = "7f8d00aac6c9b2ba14ee34c37b22b4e75a0fece6a689957b297a0a6306e42d1c"
