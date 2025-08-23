@@ -25,7 +25,7 @@ huggingface-hub = "^0.34.0"
 huggingface = "^0.0.1"
 pandas = "^2.2.2"
 # TODO: Add back sae-lens once we have a stable version of transformer-lens that is compatible with sae-lens
-# sae-lens requires transformer-lens < 3.0.0. To avoid compatability issues, we install sae-lens separately using pip and use the --no-deps flag (indicating don't check dependencies).
+# sae-lens requires transformer-lens < 3.0.0. To avoid compatibility issues, we install sae-lens separately using pip and use the --no-deps flag (indicating don't check dependencies).
 # See the apps/inference/Makefile install-prerelease-tlens command
 # sae-lens = "^6.6.4"
 fastapi = "^0.115.6"

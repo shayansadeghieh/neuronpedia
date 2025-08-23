@@ -46,7 +46,7 @@ run-server:
 install-prerelease-tlens:
 	$(POETRY) config virtualenvs.create true
 	$(POETRY) install	
-	$(POETRY) run pip install babe datasets nltk plotly plotly-express pyyaml safetensors simple-parsing tenacity
+	$(POETRY) run pip install httpx babe datasets nltk plotly plotly-express python-dotenv pyyaml safetensors simple-parsing tenacity typing-extensions
 	$(POETRY) run pip install sae-lens==6.6.4 --no-deps
 
 	
