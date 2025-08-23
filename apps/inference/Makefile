@@ -1,4 +1,4 @@
-.PHONY: test-verbose coverage format test check-format check-ci install install-dev all run-server install-prerelease-tlens
+.PHONY: test-verbose coverage format test check-format check-ci install install-dev all run-server
 
 # Variables
 PYTHON = python
@@ -39,14 +39,3 @@ all: install-dev format check-format test coverage
 
 run-server:
 	$(POETRY) run python start.py
-
-# TODO: Remove install-prerelease-tlens once we have a stable version of transformer-lens that is compatible with sae-lens
-# We first install the packages from pyproject.toml. Then, we install sae-lens' dependencies separately since we are using the --no-deps flag.
-# Finally, we install sae-lens with the --no-deps flag.
-install-prerelease-tlens:
-	$(POETRY) config virtualenvs.create true
-	$(POETRY) install	
-	$(POETRY) run pip install httpx babe datasets nltk plotly plotly-express python-dotenv pyyaml safetensors simple-parsing tenacity typing-extensions
-	$(POETRY) run pip install sae-lens==6.6.4 --no-deps
-
-	

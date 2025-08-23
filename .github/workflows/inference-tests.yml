@@ -27,14 +27,15 @@ jobs:
       uses: snok/install-poetry@v1
       with:
         version: latest
-    # TODO: Remove install-prerelease-tlens once we have a stable version of transformer-lens that is compatible with sae-lens
     - name: Install dependencies
-      run: make install-prerelease-tlens
+      run: |
+        poetry config virtualenvs.create true
+        poetry install --with dev
     - name: Check linting
       run: poetry run ruff check .
     - name: Check formatting
       run: poetry run ruff format --check .      
-    # - name: Type checking
-    #   run: poetry run pyright .
+    - name: Type checking
+      run: poetry run pyright .
     - name: Run tests
       run: poetry run pytest
