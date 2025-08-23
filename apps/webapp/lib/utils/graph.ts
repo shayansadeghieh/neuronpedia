@@ -1,13 +1,11 @@
-import { ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID } from '@/app/[modelId]/graph/utils';
-import {
-  GRAPH_RUNPOD_SECRET,
-  GRAPH_RUNPOD_SERVER,
-  GRAPH_SERVER_SECRET,
-  USE_LOCALHOST_GRAPH,
-  USE_RUNPOD_GRAPH,
-} from '@/lib/env';
+import { ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID, MODEL_TO_SOURCESET_ID } from '@/app/[modelId]/graph/utils';
+import { GRAPH_RUNPOD_SECRET, GRAPH_RUNPOD_SERVER, USE_RUNPOD_GRAPH } from '@/lib/env';
 import * as yup from 'yup';
-import { getGraphRunpodServerUrlForModel, getGraphServerUrlForModel } from '../db/graph-host-source';
+import {
+  getAuthHeaderForGraphServerRequest,
+  getGraphServerRequestUrlForSourceSet,
+  wrapRequestBodyForRunpodIfNeeded,
+} from '../db/graph-host-source';
 import {
   STEER_FREEZE_ATTENTION,
   STEER_FREQUENCY_PENALTY,
@@ -141,36 +139,23 @@ export const getGraphTokenize = async (
   modelId: string,
 ): Promise<GraphTokenizeResponse> => {
   let response;
+  const action = 'forward-pass';
   const body = {
     prompt,
     max_n_logits: maxNLogits,
     desired_logit_prob: desiredLogitProb,
-    request_type: 'forward_pass',
+    request_type: action,
   };
-  if (USE_RUNPOD_GRAPH) {
-    response = await fetch(`${getGraphRunpodServerUrlForModel(modelId)}/runsync`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
-      },
-      body: JSON.stringify({
-        input: body,
-      }),
-    });
-  } else {
-    response = await fetch(
-      `${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : getGraphServerUrlForModel(modelId)}/forward-pass`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-secret-key': GRAPH_SERVER_SECRET,
-        },
-        body: JSON.stringify(body),
-      },
-    );
-  }
+  // TODO: should not hardcode this for each model
+  const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
+  response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaderForGraphServerRequest(),
+    },
+    body: JSON.stringify(wrapRequestBodyForRunpodIfNeeded(body)),
+  });
 
   let json = await response.json();
   if (json.error) {
@@ -214,6 +199,7 @@ export const generateGraphAndUploadToS3 = async (
   userId: string | undefined,
 ) => {
   let response;
+  const action = 'generate-graph';
   const body = {
     prompt,
     model_id: GRAPH_MODEL_MAP[modelId as keyof typeof GRAPH_MODEL_MAP],
@@ -227,33 +213,17 @@ export const generateGraphAndUploadToS3 = async (
     signed_url: signedUrl,
     user_id: userId,
   };
-  if (USE_RUNPOD_GRAPH) {
-    response = await fetch(`${getGraphRunpodServerUrlForModel(modelId)}/runsync`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
-      },
-      body: JSON.stringify({
-        input: body,
-      }),
-    });
-  } else {
-    console.log('body', body);
-    response = await fetch(
-      `${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : getGraphServerUrlForModel(modelId)}/generate-graph`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-secret-key': GRAPH_SERVER_SECRET,
-        },
-        body: JSON.stringify(body),
-      },
-    );
-  }
+  const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
+  response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaderForGraphServerRequest(),
+    },
+    body: JSON.stringify(wrapRequestBodyForRunpodIfNeeded(body)),
+  });
+
   const json = await response.json();
-  console.log('server json response', json);
   if (json.error) {
     throw new Error(json.error);
   }
@@ -261,7 +231,8 @@ export const generateGraphAndUploadToS3 = async (
   if (!response.ok) {
     throw new Error(`External API returned ${response.status}: ${response.statusText}`);
   }
-  return json;
+
+  // no need to return anything since it was uploaded to s3
 };
 
 export const SteerLogitFeatureSchema = yup.object({
@@ -346,6 +317,7 @@ export const steerLogits = async (
   steeredOutputOnly: boolean,
 ) => {
   let response;
+  const action = 'steer';
   // TODO: clean up model id usage
   const mappedModelId = GRAPH_GENERATION_ENABLED_MODELS.includes(modelId)
     ? GRAPH_MODEL_MAP[modelId as keyof typeof GRAPH_MODEL_MAP]
@@ -357,36 +329,22 @@ export const steerLogits = async (
     n_tokens: nTokens,
     top_k: topK,
     freeze_attention: freezeAttention,
-    request_type: 'steer', // for Runpod
     temperature,
     freq_penalty: freqPenalty,
     seed,
     steered_output_only: steeredOutputOnly,
+    request_type: action,
   };
-  if (USE_RUNPOD_GRAPH) {
-    response = await fetch(`${getGraphRunpodServerUrlForModel(modelId)}/runsync`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
-      },
-      body: JSON.stringify({
-        input: body,
-      }),
-    });
-  } else {
-    response = await fetch(
-      `${USE_LOCALHOST_GRAPH ? 'http://127.0.0.1:5004' : getGraphServerUrlForModel(modelId)}/steer`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-secret-key': GRAPH_SERVER_SECRET,
-        },
-        body: JSON.stringify(body),
-      },
-    );
-  }
+
+  const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
+  response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaderForGraphServerRequest(),
+    },
+    body: JSON.stringify(wrapRequestBodyForRunpodIfNeeded(body)),
+  });
 
   let json = await response.json();
   if (json.error) {
