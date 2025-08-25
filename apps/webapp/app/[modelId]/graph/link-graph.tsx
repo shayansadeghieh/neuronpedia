@@ -980,6 +980,7 @@ export default function LinkGraph() {
         return `translate(${pos[0]},${pos[1]})`;
       })
       .text((d) => featureTypeToText(d.feature_type))
+      .attr('opacity', (d) => (d.feature_type === 'mlp reconstruction error' ? 0.35 : 1))
       .attr('font-family', 'Arial')
       .attr('font-size', (d) => featureTypeToTextSize(isMobile, d.feature_type)) // weird safari mobile bug where it renders the diamond too large
       .attr('fill', (d) => d.nodeColor || '#000')

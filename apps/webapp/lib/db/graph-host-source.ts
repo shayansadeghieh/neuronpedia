@@ -51,7 +51,7 @@ export const getGraphServerRunpodHostForSourceSet = async (
 ) => {
   const hosts = await getSourceSetGraphHosts(modelId, sourceSetName, user);
   // find first host that has runpodServerlessUrl
-  const host = hosts.find((host) => host.graphHostSource.runpodServerlessUrl);
+  const host = hosts.find((h) => h.graphHostSource.runpodServerlessUrl);
   if (!host) {
     throw new Error('No runpod serverless host found.');
   }

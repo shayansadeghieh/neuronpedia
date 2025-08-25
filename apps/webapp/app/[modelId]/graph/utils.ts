@@ -14,6 +14,12 @@ export const MAX_GRAPH_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 
 // ============ Neuronpedia Specific =============
 
+export const MODEL_TO_SOURCESET_ID = {
+  'gemma-2-2b': 'gemmascope-transcoder-16k',
+  'llama-3-131k-relu': 'skip-transcoder-mntss',
+  'qwen3-4b': 'transcoder-hp',
+};
+
 // TODO: make this a DB column
 // models not in this list can only get FeatureDetails from the bucket
 export const MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR = new Set(['gemma-2-2b']);
@@ -46,12 +52,6 @@ export const MODEL_DIGITS_IN_FEATURE_ID = {
   'gemma-2-2b': Number(16384).toString().length,
   'llama-3-131k-relu': Number(131072).toString().length,
   //  'qwen3-4b': Number(131072).toString().length,
-};
-
-export const MODEL_TO_SOURCESET_ID = {
-  'gemma-2-2b': 'gemmascope-transcoder-16k',
-  'llama-3-131k-relu': 'skip-transcoder-mntss',
-  'qwen3-4b': 'transcoder-hp',
 };
 
 export const ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID = {
@@ -928,6 +928,7 @@ export function filterNodes(
   selectedGraph: CLTGraph,
   visState: CltVisState,
   clickedId: string | null,
+  hideMlpErrors: boolean = false,
 ) {
   if (data.metadata.node_threshold !== undefined && data.metadata.node_threshold > 0) {
     nodes = nodes.filter((d) => shouldShowNodeForInfluenceThreshold(d, visState, clickedId));
@@ -936,6 +937,9 @@ export function filterNodes(
   nodes = nodes.filter((d) =>
     shouldShowNodeForDensityThreshold(graphModelHasNpDashboards(selectedGraph), d, visState, clickedId),
   );
+  if (hideMlpErrors) {
+    nodes = nodes.filter((d) => d.feature_type !== 'mlp reconstruction error');
+  }
   return nodes;
 }
 

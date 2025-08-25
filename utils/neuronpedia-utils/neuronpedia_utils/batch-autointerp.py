@@ -124,6 +124,8 @@ queuedToSave: List[Explanation] = []
 FAILED_FEATURE_INDEXES_QUEUED: List[int] | None = None
 FAILED_FEATURE_INDEXES_OUTPUT: List[str] = []
 
+IGNORE_FIRST_N_TOKENS: int = 0
+
 
 def replace_html_anomalies_and_special_chars(texts: list[str]) -> list[str]:
     return [
@@ -401,6 +403,13 @@ async def start(activations_dir: str):
                         continue
                     if END_INDEX is not None and int(activation.index) > END_INDEX:
                         continue
+                    if IGNORE_FIRST_N_TOKENS > 0:
+                        activation.tokens = activation.tokens[IGNORE_FIRST_N_TOKENS:]
+                        activation.values = activation.values[IGNORE_FIRST_N_TOKENS:]
+                        if activation.dfaValues is not None:
+                            activation.dfaValues = activation.dfaValues[
+                                IGNORE_FIRST_N_TOKENS:
+                            ]
                     global FAILED_FEATURE_INDEXES_QUEUED
                     if (
                         FAILED_FEATURE_INDEXES_QUEUED is not None
@@ -466,6 +475,7 @@ class AutoInterpConfig:
     max_top_activations_to_show_explainer_per_feature: int
     autointerp_batch_size: int
     gzip_output: bool
+    ignore_first_n_tokens: int
 
 
 def is_gemini_model(model_name: str) -> bool:
@@ -514,6 +524,11 @@ def main(
     only_failed_features: bool = typer.Option(
         False, help="Whether to only auto-interp failed features", prompt=True
     ),
+    ignore_first_n_tokens: int = typer.Option(
+        0,
+        help="Optional number of tokens to ignore from the beginning of the text so that autointerp doesn't see it",
+        prompt=True,
+    ),
 ):
     if explainer_type_name not in VALID_EXPLAINER_TYPE_NAMES:
         raise ValueError(f"Invalid explainer type name: {explainer_type_name}")
@@ -536,7 +551,8 @@ def main(
         MAX_TOP_ACTIVATIONS_TO_SHOW_EXPLAINER_PER_FEATURE, \
         AUTOINTERP_BATCH_SIZE, \
         EXPLANATIONS_OUTPUT_DIR, \
-        GZIP_OUTPUT
+        GZIP_OUTPUT, \
+        IGNORE_FIRST_N_TOKENS
     INPUT_DIR_WITH_SOURCE_EXPORTS = input_dir_with_source_exports
     if not os.path.exists(INPUT_DIR_WITH_SOURCE_EXPORTS):
         raise ValueError(
@@ -561,7 +577,7 @@ def main(
         max_top_activations_to_show_explainer_per_feature
     )
     AUTOINTERP_BATCH_SIZE = autointerp_batch_size
-
+    IGNORE_FIRST_N_TOKENS = ignore_first_n_tokens
     EXPLANATIONS_OUTPUT_DIR = output_dir
     if not EXPLANATIONS_OUTPUT_DIR:
         EXPLANATIONS_OUTPUT_DIR = os.path.join(
@@ -582,6 +598,7 @@ def main(
         max_top_activations_to_show_explainer_per_feature=MAX_TOP_ACTIVATIONS_TO_SHOW_EXPLAINER_PER_FEATURE,
         autointerp_batch_size=AUTOINTERP_BATCH_SIZE,
         gzip_output=gzip_output,
+        ignore_first_n_tokens=IGNORE_FIRST_N_TOKENS,
     )
 
     print("Auto-Interp Config\n", json.dumps(asdict(config), indent=2))
@@ -602,6 +619,9 @@ def main(
             print(
                 f"Number of failed features to auto-interp: {len(FAILED_FEATURE_INDEXES_QUEUED)}"
             )
+            if len(FAILED_FEATURE_INDEXES_QUEUED) == 0:
+                print("No failed features to auto-interp")
+                return
 
     total_start_time = time.time()
 

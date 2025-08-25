@@ -2,9 +2,11 @@ import {
   ATTRIBUTION_GRAPH_SCHEMA,
   CLTGraph,
   makeGraphPublicAccessGraphUrl,
+  MODEL_TO_SOURCESET_ID,
   NP_GRAPH_BUCKET,
 } from '@/app/[modelId]/graph/utils';
 import { prisma } from '@/lib/db';
+import { getGraphServerRunpodHostForSourceSet } from '@/lib/db/graph-host-source';
 import { USE_RUNPOD_GRAPH } from '@/lib/env';
 import {
   checkRunpodQueueJobs,
@@ -265,7 +267,14 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
 
     // check the queue
     if (USE_RUNPOD_GRAPH) {
-      const queueNumber = await checkRunpodQueueJobs();
+      const host = await getGraphServerRunpodHostForSourceSet(
+        validatedData.modelId,
+        MODEL_TO_SOURCESET_ID[validatedData.modelId as keyof typeof MODEL_TO_SOURCESET_ID],
+      );
+      if (!host) {
+        throw new Error('No runpod serverless host found.');
+      }
+      const queueNumber = await checkRunpodQueueJobs(host);
       if (queueNumber > MAX_RUNPOD_JOBS_IN_QUEUE) {
         // console.log('larger than queue but continuing');
         return NextResponse.json(
