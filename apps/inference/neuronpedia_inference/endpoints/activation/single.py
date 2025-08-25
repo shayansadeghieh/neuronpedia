@@ -73,7 +73,7 @@ async def activation_single(
             prompt,
             prepend_bos=prepend_bos,
             truncate=False,
-        )[0]        
+        )     
 
         if len(tokens) > config.token_limit:
             logger.error(
