@@ -1138,7 +1138,7 @@ export function computeGraphScoresFromGraphData(
   completenessScore: number;
 } {
   let graphNodesToUse = graphData.nodes;
-  // if we have pinned IDs, then we need to filter the features to only include the pinned IDs, and the mlp errors to only include the ones at the ctx_idx and layer of pinned IDs
+  // if we have pinned IDs, then we need to filter the features to only include the pinned IDs, and the mlp errors to only include ones connected to pinned IDs
   if (pinnedIds.length > 0) {
     // get all the pinned nodes, we'll use this to find the mlp errors to keep
     const pinnedNodes = graphData.nodes.filter((node) => pinnedIds.includes(node.node_id));
@@ -1152,12 +1152,20 @@ export function computeGraphScoresFromGraphData(
           filteredGraphNodes.push(node);
         }
       }
-      // if it's a mlp error and it's at the ctx_idx and layer of a pinned ID, then add it to filteredGraphNodes
+      // if it's a mlp error and connected to a pinned ID, then add it to filteredGraphNodes
       else if (node.feature_type === 'mlp reconstruction error') {
-        // if there's a pinned node at the same ctx_idx and layer, then add it to filteredGraphNodes
-        const pinnedNode = pinnedNodes.find((n) => n.ctx_idx === node.ctx_idx && n.layer === node.layer);
-        if (pinnedNode) {
-          filteredGraphNodes.push(node);
+        // check each pinned node
+        for (const pinnedNode of pinnedNodes) {
+          // check in the graphData.links if there's a link from the pinned node to the mlp error
+          const link = graphData.links.find(
+            (l) =>
+              (l.source === node.node_id && l.target === pinnedNode.node_id) ||
+              (l.source === pinnedNode.node_id && l.target === node.node_id),
+          );
+          if (link) {
+            filteredGraphNodes.push(node);
+            break;
+          }
         }
       } else {
         // the remaining are embed and logits, add them
@@ -1165,12 +1173,16 @@ export function computeGraphScoresFromGraphData(
       }
     }
     graphNodesToUse = filteredGraphNodes;
+    // if the graphNodes don't have any cross layer transcoders, then return 0, 0
+    if (graphNodesToUse.filter((node) => node.feature_type === 'cross layer transcoder').length === 0) {
+      return { replacementScore: 0, completenessScore: 0 };
+    }
   }
 
   // Get the adjacency matrix
   const { matrix: adjacencyMatrix, sortedNodes } = reconstructAdjacencyMatrix(graphNodesToUse, graphData.links);
 
-  // // print the sortednodes
+  // // // print the sortednodes
   // if (pinnedIds.length > 0) {
   //   console.log('graphNodesToUse:');
   //   sortedNodes.forEach((node) => {
