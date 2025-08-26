@@ -214,7 +214,6 @@ def process_saelens_activations(
     index: int,
 ) -> ActivationSinglePost200ResponseActivation:        
     feature_acts = sae.encode(cache[hook_name])
-    print("this is feature_acts", feature_acts)
     values = torch.transpose(feature_acts.squeeze(0), 0, 1)[index].detach().tolist()
     max_value = max(values)
     return ActivationSinglePost200ResponseActivation(
@@ -254,10 +253,8 @@ def calculate_dfa(
     index: int,
     max_value_index: int,
     tokens: torch.Tensor,
-) -> dict[str, list[float] | int | float]:
-    print("before model.run_with_cache")
-    _, cache = model.run_with_cache(tokens)
-    print("past model.run_with_cache")
+) -> dict[str, list[float] | int | float]:    
+    _, cache = model.run_with_cache(tokens)    
     v = cache["v", layer_num]  # [batch, src_pos, n_heads, d_head]
     attn_weights = cache["pattern", layer_num]  # [batch, n_heads, dest_pos, src_pos]
 

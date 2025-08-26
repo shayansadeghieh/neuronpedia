@@ -111,8 +111,7 @@ async def initialize(
         # Validate inputs
         df = get_saelens_neuronpedia_directory_df()
         models = df["model"].unique()
-        sae_sets = df["neuronpedia_set"].unique() 
-        print("this is models", models)       
+        sae_sets = df["neuronpedia_set"].unique()           
         if args.model_id not in models:
             logger.error(
                 f"Error: Invalid model_id '{args.model_id}'. Use --list_models to see available options."
