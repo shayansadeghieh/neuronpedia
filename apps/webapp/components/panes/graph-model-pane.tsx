@@ -63,37 +63,35 @@ export default function GraphModelPane({
               >
                 <Select.Viewport className="w-full p-0 text-slate-700">
                   {graphMetadatas.map((graph) => (
-                    <>
-                      <Select.Group className="divide-y divide-slate-200">
-                        <div className="relative flex w-full flex-row items-center hover:bg-sky-100">
-                          <Select.Item
-                            key={graph.slug}
-                            value={graph.slug}
-                            className="group relative flex w-full cursor-pointer select-none items-center overflow-x-hidden py-2.5 pl-4 pr-4 text-xs outline-none hover:bg-slate-100 data-[highlighted]:bg-sky-50"
-                          >
-                            <Select.ItemText className="w-full min-w-full" asChild>
-                              <div className="flex w-full min-w-full flex-col items-start justify-start gap-y-0">
-                                <div className="flex w-full flex-row items-center justify-between">
-                                  <div className="font-mono text-[10px] font-medium text-sky-700">{graph.slug}</div>
-                                </div>
-                                <div className="mt-2 w-full whitespace-pre-line pl-0 text-[10px] leading-tight text-slate-500">
-                                  <div className="flex flex-wrap">
-                                    {graph.promptTokens.map((token, i) => (
-                                      <Fragment key={`${token}-${i}`}>
-                                        <span className="mx-[1px] mb-1 rounded bg-slate-100 px-[2px] py-0.5 font-mono text-slate-700 group-hover:bg-sky-200 group-hover:text-sky-700 group-data-[highlighted]:bg-sky-200 group-data-[highlighted]:text-sky-700">
-                                          {token.replaceAll(' ', '\u00A0')}
-                                        </span>
-                                        {(token === '⏎' || token === '⏎⏎') && <div className="w-full" />}
-                                      </Fragment>
-                                    ))}
-                                  </div>
+                    <Select.Group key={graph.slug} className="divide-y divide-slate-200">
+                      <div className="relative flex w-full flex-row items-center hover:bg-sky-100">
+                        <Select.Item
+                          key={graph.slug}
+                          value={graph.slug}
+                          className="group relative flex w-full cursor-pointer select-none items-center overflow-x-hidden py-2.5 pl-4 pr-4 text-xs outline-none hover:bg-slate-100 data-[highlighted]:bg-sky-50"
+                        >
+                          <Select.ItemText className="w-full min-w-full" asChild>
+                            <div className="flex w-full min-w-full flex-col items-start justify-start gap-y-0">
+                              <div className="flex w-full flex-row items-center justify-between">
+                                <div className="font-mono text-[10px] font-medium text-sky-700">{graph.slug}</div>
+                              </div>
+                              <div className="mt-2 w-full whitespace-pre-line pl-0 text-[10px] leading-tight text-slate-500">
+                                <div className="flex flex-wrap">
+                                  {graph.promptTokens.map((token, i) => (
+                                    <Fragment key={`${token}-${i}`}>
+                                      <span className="mx-[1px] mb-1 rounded bg-slate-100 px-[2px] py-0.5 font-mono text-slate-700 group-hover:bg-sky-200 group-hover:text-sky-700 group-data-[highlighted]:bg-sky-200 group-data-[highlighted]:text-sky-700">
+                                        {token.replaceAll(' ', '\u00A0')}
+                                      </span>
+                                      {(token === '⏎' || token === '⏎⏎') && <div className="w-full" />}
+                                    </Fragment>
+                                  ))}
                                 </div>
                               </div>
-                            </Select.ItemText>
-                          </Select.Item>
-                        </div>
-                      </Select.Group>
-                    </>
+                            </div>
+                          </Select.ItemText>
+                        </Select.Item>
+                      </div>
+                    </Select.Group>
                   ))}
                 </Select.Viewport>
                 <Select.ScrollDownButton className="flex h-7 cursor-pointer items-center justify-center bg-white text-slate-700 hover:bg-slate-100">
