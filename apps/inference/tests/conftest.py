@@ -44,7 +44,7 @@ def initialize_models():
     # Set environment variables for testing
     os.environ.update(
         {
-            "MODEL_ID": "gpt2-small",
+            "MODEL_ID": "gpt2",
             "SAE_SETS": json.dumps(["res-jb"]),
             "MODEL_DTYPE": "float16",
             "SAE_DTYPE": "float32",

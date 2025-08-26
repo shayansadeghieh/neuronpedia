@@ -3513,7 +3513,7 @@ pyyaml = "^6.0.1"
 safetensors = ">=0.4.2,<1.0.0"
 simple-parsing = "^0.1.6"
 tenacity = ">=9.0.0"
-transformer-lens = {git = "https://github.com/TransformerLensOrg/TransformerLens.git", tag = "v3.0.0a5"}
+transformer-lens = {git = "https://github.com/TransformerLensOrg/TransformerLens.git", tag = "dev-3.x"}
 transformers = "^4.38.1"
 typing-extensions = "^4.10.0"
 
@@ -3525,7 +3525,7 @@ neuronpedia = ["automated-interpretability (>=0.0.5,<1.0.0)"]
 type = "git"
 url = "https://github.com/shayansadeghieh/SAELens.git"
 reference = "update-brackets-jaxtyping"
-resolved_reference = "1d092694f86c2cb887646850e18c04696059686c"
+resolved_reference = "59e0e09cca2161fbce2558e6751e8b4738cfa8bd"
 
 [[package]]
 name = "safetensors"
@@ -4439,8 +4439,8 @@ wandb = ">=0.13.5"
 [package.source]
 type = "git"
 url = "https://github.com/TransformerLensOrg/TransformerLens.git"
-reference = "v3.0.0a5"
-resolved_reference = "4ece3c40ac83b80fedb66c29cb9229098c953ba0"
+reference = "dev-3.x"
+resolved_reference = "999309ad6d74d72cbafbaed4a657745d17d7adf4"
 
 [[package]]
 name = "transformers"
@@ -5036,4 +5036,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "7b3cf281648de1651123ea8a99246885cfab762b642bb9920d11cc46ea03de4d"
+content-hash = "a7b0aa6101029931c31c6930a63a3b7e47b6943117972376823a3ea70381987f"

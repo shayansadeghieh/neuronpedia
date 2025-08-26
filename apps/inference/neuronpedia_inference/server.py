@@ -165,11 +165,11 @@ async def initialize(
                 
         # Get the model name to use, applying TransformerLens mapping if needed
         model_name_to_load = config.override_model_id if config.override_model_id else config.model_id
-        transformerlens_model_name = get_tlens_model_name(model_name_to_load)
+        # transformerlens_model_name = get_tlens_model_name(model_name_to_load)
         
-        logger.info(f"Loading model: {model_name_to_load} -> {transformerlens_model_name}")
+        # logger.info(f"Loading model: {model_name_to_load} -> {transformerlens_model_name}")
         
-        model = TransformerBridge.boot_transformers(model_name=transformerlens_model_name,
+        model = TransformerBridge.boot_transformers(model_name=model_name_to_load,
                                                     device=args.device,
                                                     dtype=STR_TO_DTYPE[config.model_dtype])
 

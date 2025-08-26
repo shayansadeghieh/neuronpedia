@@ -213,7 +213,35 @@ def process_saelens_activations(
     hook_name: str,
     index: int,
 ) -> ActivationSinglePost200ResponseActivation:
-    feature_acts = sae.encode(cache[hook_name])
+    # Check if the hook name exists in the cache, if not try to find the correct one
+    if hook_name not in cache:
+        # For residual stream SAEs, try common alternatives
+        if "hook_resid_pre" in hook_name:
+            layer_match = hook_name.split('.')[1]  # Extract layer number
+            
+            # Try blocks.X.hook_in first (residual stream before layer processing)
+            hook_in_alternative = f"blocks.{layer_match}.hook_in"
+            if hook_in_alternative in cache:
+                hook_name = hook_in_alternative
+            else:
+                # Try hook_resid_post instead
+                alternative_hook = hook_name.replace("hook_resid_pre", "hook_resid_post")
+                if alternative_hook in cache:
+                    hook_name = alternative_hook
+                else:
+                    # Try blocks.X.hook_out as last resort
+                    hook_out_alternative = f"blocks.{layer_match}.hook_out"
+                    if hook_out_alternative in cache:
+                        hook_name = hook_out_alternative
+    
+    # Ensure cache data is on the same device as the SAE
+    cache_data = cache[hook_name]
+    if hasattr(sae, 'device'):
+        cache_data = cache_data.to(sae.device)
+    elif hasattr(sae, 'W_enc') and hasattr(sae.W_enc, 'device'):
+        cache_data = cache_data.to(sae.W_enc.device)
+    
+    feature_acts = sae.encode(cache_data)
     values = torch.transpose(feature_acts.squeeze(0), 0, 1)[index].detach().tolist()
     max_value = max(values)
     return ActivationSinglePost200ResponseActivation(
