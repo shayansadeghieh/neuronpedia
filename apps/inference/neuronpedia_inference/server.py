@@ -172,6 +172,7 @@ async def initialize(
         # Enable compatibility mode for legacy HookedTransformer components/hooks
         model.enable_compatibility_mode()
 
+        # TODO: Investigate why this generates an infinite loop
         # add hook_in to mlp for transcoders
         # def add_hook_in_to_mlp(mlp):  # type: ignore
         #     mlp.hook_in = HookPoint()
