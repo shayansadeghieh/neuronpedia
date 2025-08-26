@@ -18,7 +18,7 @@ from transformer_lens.model_bridge import TransformerBridge
 from transformer_lens.hook_points import HookPoint
 
 from neuronpedia_inference.args import list_available_options, parse_env_and_args
-from neuronpedia_inference.config import Config, get_saelens_neuronpedia_directory_df, get_tlens_model_name
+from neuronpedia_inference.config import Config, get_saelens_neuronpedia_directory_df
 from neuronpedia_inference.endpoints.activation.all import (
     router as activation_all_router,
 )
@@ -111,7 +111,8 @@ async def initialize(
         # Validate inputs
         df = get_saelens_neuronpedia_directory_df()
         models = df["model"].unique()
-        sae_sets = df["neuronpedia_set"].unique()        
+        sae_sets = df["neuronpedia_set"].unique() 
+        print("this is models", models)       
         if args.model_id not in models:
             logger.error(
                 f"Error: Invalid model_id '{args.model_id}'. Use --list_models to see available options."
@@ -163,24 +164,22 @@ async def initialize(
 
         logger.info("Loading model...")
                 
-        # Get the model name to use, applying TransformerLens mapping if needed
-        model_name_to_load = config.override_model_id if config.override_model_id else config.model_id
-        # transformerlens_model_name = get_tlens_model_name(model_name_to_load)
-        
-        # logger.info(f"Loading model: {model_name_to_load} -> {transformerlens_model_name}")
-        
-        model = TransformerBridge.boot_transformers(model_name=model_name_to_load,
+        # Load the model utilizing the new transformerlens bridge    
+        model = TransformerBridge.boot_transformers(model_name=config.override_model_id if config.override_model_id else config.model_id,
                                                     device=args.device,
                                                     dtype=STR_TO_DTYPE[config.model_dtype])
+        
+        # Enable compatibility mode for legacy HookedTransformer components/hooks
+        model.enable_compatibility_mode()
 
         # add hook_in to mlp for transcoders
-        def add_hook_in_to_mlp(mlp):  # type: ignore
-            mlp.hook_in = HookPoint()
-            original_forward = mlp.forward
-            mlp.forward = lambda x: original_forward(mlp.hook_in(x))
+        # def add_hook_in_to_mlp(mlp):  # type: ignore
+        #     mlp.hook_in = HookPoint()
+        #     original_forward = mlp.forward
+        #     mlp.forward = lambda x: original_forward(mlp.hook_in(x))
 
-        for block in model.blocks:
-            add_hook_in_to_mlp(block.mlp)        
+        # for block in model.blocks:
+        #     add_hook_in_to_mlp(block.mlp)        
 
         Model._instance = model
         config.set_num_layers(model.cfg.n_layers)
