@@ -120,6 +120,7 @@ export default async function Page({
     densityThreshold?: string;
     embed?: string;
     subgraph?: string;
+    generate?: string;
   };
 }) {
   const { modelId } = params;
@@ -271,6 +272,9 @@ export default async function Page({
     console.error(`No default graph found for model ${modelId}`);
   }
 
+  const generateParam = searchParams.generate as string | undefined;
+  const showGenerateModal = generateParam === 'true';
+
   return (
     <GraphStateProvider>
       <GraphProvider
@@ -292,7 +296,7 @@ export default async function Page({
             Use a larger screen to view this page. UI is simplified for mobile.
           </div>
         )}
-        <GraphWrapper hasSlug={!!searchParams.slug} />
+        <GraphWrapper hasSlug={!!searchParams.slug} showGenerateModal={showGenerateModal} />
       </GraphProvider>
     </GraphStateProvider>
   );

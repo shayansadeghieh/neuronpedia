@@ -16,7 +16,7 @@ import WelcomeModal from './modals/welcome-modal';
 import GraphNodeConnections from './node-connections';
 import Subgraph from './subgraph';
 
-export default function GraphWrapper({ hasSlug }: { hasSlug: boolean }) {
+export default function GraphWrapper({ hasSlug, showGenerateModal }: { hasSlug: boolean; showGenerateModal: boolean }) {
   const { isLoadingGraphData, selectedMetadataGraph, loadingGraphLabel } = useGraphContext();
 
   const searchParams = useSearchParams();
@@ -64,8 +64,8 @@ export default function GraphWrapper({ hasSlug }: { hasSlug: boolean }) {
         </div>
         <LoadSubgraphModal />
         <SaveSubgraphModal />
-        <WelcomeModal hasSlug={hasSlug} />
-        <GenerateGraphModal />
+        <WelcomeModal hasSlug={hasSlug} showGenerateModal={showGenerateModal} />
+        <GenerateGraphModal showGenerateModal={showGenerateModal} />
         <CopyModal />
         <SteerModal />
       </div>
