@@ -140,7 +140,6 @@ export default function LinkGraph() {
       d.nodeColor = '#ffffff';
     });
   }
-  colorNodes();
 
   function colorLinks() {
     const linearPctScale = d3.scaleLinear().domain([-0.4, 0.4]);
@@ -162,7 +161,17 @@ export default function LinkGraph() {
       }
     });
   }
-  colorLinks();
+
+  // Avoid doing heavy coloring work during render; only run when selectedGraph changes
+  const lastColoredGraphSlugRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!selectedGraph) return;
+    const slug = selectedGraph?.metadata?.slug || 'unknown-graph';
+    if (lastColoredGraphSlugRef.current === slug) return;
+    colorNodes();
+    colorLinks();
+    lastColoredGraphSlugRef.current = slug;
+  }, [selectedGraph]);
 
   function distance(x1: number, y1: number, x2: number, y2: number) {
     return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);

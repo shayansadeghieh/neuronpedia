@@ -9,17 +9,9 @@ import { Card, CardContent } from '@/components/shadcn/card';
 import { useScreenSize } from '@/lib/hooks/use-screen-size';
 import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import { Circle, FolderOpen, Joystick, PinIcon, PinOffIcon, Save, Share2, TrashIcon } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import d3 from './d3-jetpack';
-import {
-  clientCheckIsEmbed,
-  CLTGraphLink,
-  CLTGraphNode,
-  computeGraphScoresFromGraphData,
-  hideTooltip,
-  showTooltip,
-  isOldQwenGraph,
-} from './utils';
+import { clientCheckIsEmbed, CLTGraphLink, CLTGraphNode, hideTooltip, isOldQwenGraph, showTooltip } from './utils';
 
 const NODE_WIDTH = 75;
 const NODE_HEIGHT = 25;
@@ -1175,14 +1167,14 @@ export default function Subgraph() {
     return totalNodes;
   }
 
-  // Calculate replacement and completeness scores when pinned IDs change
-  const subgraphScores = useMemo(() => {
-    if (!selectedGraph) {
-      return { replacementScore: 0, completenessScore: 0 };
-    }
+  // // Calculate replacement and completeness scores when pinned IDs change
+  // const subgraphScores = useMemo(() => {
+  //   if (!selectedGraph) {
+  //     return { replacementScore: 0, completenessScore: 0 };
+  //   }
 
-    return computeGraphScoresFromGraphData(selectedGraph, visState.pinnedIds);
-  }, [selectedGraph, visState.pinnedIds]);
+  //   return computeGraphScoresFromGraphData(selectedGraph, visState.pinnedIds);
+  // }, [selectedGraph, visState.pinnedIds]);
 
   return (
     <Card
@@ -1215,9 +1207,9 @@ export default function Subgraph() {
                 <div className="font-medium text-slate-600">
                   Graph: {selectedGraph.metadata.replacement_score?.toFixed(2) || 'N/A'}
                 </div>
-                <div className="font-medium text-slate-600">
+                {/* <div className="font-medium text-slate-600">
                   Subgraph*: {visState.pinnedIds.length > 0 ? subgraphScores.replacementScore?.toFixed(2) : 'N/A'}
-                </div>
+                </div> */}
               </div>
             </div>
             <div className="flex flex-1 flex-row items-center justify-center gap-x-3">
@@ -1243,9 +1235,9 @@ export default function Subgraph() {
                 <div className="font-medium text-slate-500">
                   Graph: {selectedGraph.metadata.completeness_score?.toFixed(2) || 'N/A'}
                 </div>
-                <div className="font-medium text-slate-500">
+                {/* <div className="font-medium text-slate-500">
                   Subgraph*: {visState.pinnedIds.length > 0 ? subgraphScores.completenessScore?.toFixed(2) : 'N/A'}
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
@@ -1417,25 +1409,27 @@ export default function Subgraph() {
               </div>
               Grouping Mode
             </Button>
-            {selectedGraph && 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setIsSteerModalOpen(true);
-              }}
-              className={`hidden h-11 w-[86px] flex-col items-center justify-center gap-y-[4px] whitespace-nowrap border border-emerald-600 bg-emerald-100 px-0 text-[9.5px] font-semibold leading-none text-emerald-700 shadow transition-all hover:bg-emerald-200 hover:text-emerald-700 ${
-                visState.subgraph?.activeGrouping.isActive ? '' : !STEER_MODEL_IDS.includes(selectedGraph.metadata.scan) || isOldQwenGraph(selectedGraph) ? '' :'sm:flex'
-              }`}
-              disabled={
-                visState.pinnedIds.length === 0
-              }
-              aria-label="Steer"
-            >
-              <Joystick className="h-3.5 w-3.5" />
-              Steer
-            </Button>
-            }
+            {selectedGraph && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsSteerModalOpen(true);
+                }}
+                className={`hidden h-11 w-[86px] flex-col items-center justify-center gap-y-[4px] whitespace-nowrap border border-emerald-600 bg-emerald-100 px-0 text-[9.5px] font-semibold leading-none text-emerald-700 shadow transition-all hover:bg-emerald-200 hover:text-emerald-700 ${
+                  visState.subgraph?.activeGrouping.isActive
+                    ? ''
+                    : !STEER_MODEL_IDS.includes(selectedGraph.metadata.scan) || isOldQwenGraph(selectedGraph)
+                      ? ''
+                      : 'sm:flex'
+                }`}
+                disabled={visState.pinnedIds.length === 0}
+                aria-label="Steer"
+              >
+                <Joystick className="h-3.5 w-3.5" />
+                Steer
+              </Button>
+            )}
           </div>
 
           <div className="absolute left-3 top-3 hidden flex-row items-center justify-center gap-x-1.5 sm:flex">
