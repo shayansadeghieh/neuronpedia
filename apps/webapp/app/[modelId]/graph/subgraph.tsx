@@ -18,6 +18,7 @@ import {
   computeGraphScoresFromGraphData,
   hideTooltip,
   showTooltip,
+  isOldQwenGraph,
 } from './utils';
 
 const NODE_WIDTH = 75;
@@ -25,7 +26,7 @@ const NODE_HEIGHT = 25;
 const MINIMUM_SUBGRAPH_LINK_STROKE_WIDTH = 1;
 const MAX_SUBGRAPH_LINK_LUMINANCE = 0.9;
 
-const STEER_MODEL_IDS = ['gemma-2-2b']; // , 'qwen3-4b']; // need to fix steering for this model
+const STEER_MODEL_IDS = ['gemma-2-2b', 'qwen3-4b'];
 
 // Custom force container function to keep nodes within bounds
 function forceContainer(bbox: [[number, number], [number, number]]) {
@@ -1416,23 +1417,25 @@ export default function Subgraph() {
               </div>
               Grouping Mode
             </Button>
+            {selectedGraph && 
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
                 setIsSteerModalOpen(true);
               }}
-              className={`h-11 w-[86px] flex-col items-center justify-center gap-y-[4px] whitespace-nowrap border border-emerald-600 bg-emerald-100 px-0 text-[9.5px] font-semibold leading-none text-emerald-700 shadow transition-all hover:bg-emerald-200 hover:text-emerald-700 ${
-                visState.subgraph?.activeGrouping.isActive ? 'hidden' : 'hidden sm:flex'
+              className={`hidden h-11 w-[86px] flex-col items-center justify-center gap-y-[4px] whitespace-nowrap border border-emerald-600 bg-emerald-100 px-0 text-[9.5px] font-semibold leading-none text-emerald-700 shadow transition-all hover:bg-emerald-200 hover:text-emerald-700 ${
+                visState.subgraph?.activeGrouping.isActive ? '' : !STEER_MODEL_IDS.includes(selectedGraph.metadata.scan) || isOldQwenGraph(selectedGraph) ? '' :'sm:flex'
               }`}
               disabled={
-                visState.pinnedIds.length === 0 || !STEER_MODEL_IDS.includes(selectedGraph?.metadata.scan || '')
+                visState.pinnedIds.length === 0
               }
               aria-label="Steer"
             >
               <Joystick className="h-3.5 w-3.5" />
               Steer
             </Button>
+            }
           </div>
 
           <div className="absolute left-3 top-3 hidden flex-row items-center justify-center gap-x-1.5 sm:flex">

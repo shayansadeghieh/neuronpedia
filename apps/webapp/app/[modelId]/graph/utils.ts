@@ -57,6 +57,11 @@ export const MODEL_DIGITS_IN_FEATURE_ID = {
 export const ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID = {
   'gemma-2-2b': 'gemma-2-2b',
   'llama-3-131k-relu': 'llama-3.2-1b',
+  'qwen3-4b': 'qwen3-4b',
+};
+
+export const isOldQwenGraph = (graph: CLTGraph) => {
+  return graph.metadata.scan === 'qwen3-4b' && (graph.metadata.schema_version === undefined || graph.metadata.schema_version === null);
 };
 
 export const MODEL_FEATURE_ID_IS_ONLY_INDEX = new Set(['qwen3-4b']);

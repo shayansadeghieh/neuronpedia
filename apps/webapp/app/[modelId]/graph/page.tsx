@@ -54,6 +54,14 @@ export async function generateMetadata({
 
 // Helper function to add graph metadata to the map without duplicates
 function addGraphMetadataToMap(map: ModelToGraphMetadatasMap, modelId: string, graphMetadata: any) {
+  // https://github.com/safety-research/circuit-tracer/pull/34
+  // replace ↵ with \n, → with \t, and \r with ↵ in the prompt tokens
+  if (graphMetadata.promptTokens) {
+    // eslint-disable-next-line no-param-reassign
+    graphMetadata.promptTokens = graphMetadata.promptTokens.map((token: string) =>
+      token.replace(/⏎/g, '\n').replace(/→/g, '\t').replace(/↵/g, '\r'),
+    );
+  }
   if (!map[modelId]) {
     // eslint-disable-next-line
     map[modelId] = [];

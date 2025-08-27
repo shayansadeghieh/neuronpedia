@@ -7,7 +7,7 @@
 /* eslint-disable @typescript-eslint/no-shadow */
 /* eslint-disable @typescript-eslint/no-redeclare */
 
-export const BOS_TOKENS = ['<bos>', '<|endoftext|>', '<|begin_of_text|>', "<|im_end|>"];
+export const BOS_TOKENS = ['<bos>', '<|endoftext|>', '<|begin_of_text|>'];
 
 export const LINE_BREAK_REPLACEMENT_CHAR = '↵';
 

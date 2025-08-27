@@ -43,7 +43,7 @@ import { EyeClosedIcon, EyeOpenIcon, QuestionMarkIcon, ResetIcon } from '@radix-
 import * as Slider from '@radix-ui/react-slider';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { Joystick, MousePointerClick, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import NodeToSteer from './steer-modal/node-to-steer';
 import TokenTooltip from './steer-modal/token-tooltip';
 
@@ -65,6 +65,11 @@ export default function SteerModal() {
   const [showAddFeature, setShowAddFeature] = useState(false);
   const [queuedAddFeature, setQueuedAddFeature] = useState<ExplanationWithPartialRelations | undefined>();
   const [customSteerNodes, setCustomSteerNodes] = useState<CLTGraphNode[]>([]);
+  const [lastChangedTokenPositions, setLastChangedTokenPositions] = useState<Map<string, number>>(new Map());
+  const [lastChangedSupernodeTokenPositions, setLastChangedSupernodeTokenPositions] = useState<Map<number, number>>(
+    new Map(),
+  );
+  const supernodeScrollIntoViewRefs = useRef<Map<number, (HTMLDivElement | null)[]>>(new Map());
   const [modelId, setModelId] = useState<keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID>(
     ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
       selectedGraph?.metadata.scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
@@ -152,6 +157,14 @@ export default function SteerModal() {
       const ablate = delta === 0;
       const newDelta = ablate ? null : delta;
 
+      // Track the last changed token position for this node
+      const nodeKey = `${identifier.layer}-${identifier.index}-${identifier.tokenActivePosition}`;
+      setLastChangedTokenPositions((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(nodeKey, position);
+        return newMap;
+      });
+
       setSteeredPositions((prevSteeredPositions) => {
         const feature = prevSteeredPositions.find(
           (f) =>
@@ -189,6 +202,14 @@ export default function SteerModal() {
       });
     },
     [setSteeredPositions],
+  );
+
+  const getLastChangedTokenPosition = useCallback(
+    (identifier: SteeredPositionIdentifier): number | undefined => {
+      const nodeKey = `${identifier.layer}-${identifier.index}-${identifier.tokenActivePosition}`;
+      return lastChangedTokenPositions.get(nodeKey);
+    },
+    [lastChangedTokenPositions],
   );
 
   const removeSteeredPosition = useCallback(
@@ -393,7 +414,17 @@ export default function SteerModal() {
     position: number,
     delta: number,
     steerGeneratedTokens?: boolean,
+    supernodeIndex?: number,
   ) => {
+    // Track the last changed token position for this supernode
+    if (supernodeIndex !== undefined && !steerGeneratedTokens) {
+      setLastChangedSupernodeTokenPositions((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(supernodeIndex, position);
+        return newMap;
+      });
+    }
+
     supernode.slice(1).forEach((id) => {
       const node = getFeatureNodeForNodeId(id);
       if (node) {
@@ -572,39 +603,36 @@ export default function SteerModal() {
     resetSteerSettings();
   }, [selectedGraph]);
 
-  // this is for steering automatically after 1.5 seconds. we currently don't want this behavior
-  //
-  //   const steerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  //
-  //   useEffect(() => {
-  //     if (steeredPositions.length > 0) {
-  //       // Clear any existing timeout
-  //       if (steerTimeoutRef.current) {
-  //         clearTimeout(steerTimeoutRef.current);
-  //       }
-  //
-  //       // Set a new timeout to call doSteerCall after 1 second
-  //       steerTimeoutRef.current = setTimeout(() => {
-  //         doSteerCall();
-  //       }, 1500);
-  //     } else {
-  //       // Clear output immediately if no positions
-  //       setSteerResult(undefined);
-  //       // Also clear any pending timeout
-  //       if (steerTimeoutRef.current) {
-  //         clearTimeout(steerTimeoutRef.current);
-  //         steerTimeoutRef.current = null;
-  //       }
-  //     }
-  //
-  //     // Cleanup function to clear timeout on unmount or when steeredPositions changes
-  //     return () => {
-  //       if (steerTimeoutRef.current) {
-  //         clearTimeout(steerTimeoutRef.current);
-  //         steerTimeoutRef.current = null;
-  //       }
-  //     };
-  //   }, [steeredPositions, temperature, freqPenalty, seed, freezeAttention, steerTokens]);
+  // Scroll to the last changed token position in supernode
+  useEffect(() => {
+    lastChangedSupernodeTokenPositions.forEach((tokenPosition, supernodeIndex) => {
+      // Use a longer timeout to ensure DOM elements are rendered when expanding supernode controls
+      setTimeout(() => {
+        const refs = supernodeScrollIntoViewRefs.current.get(supernodeIndex);
+        if (refs && refs[tokenPosition]) {
+          const targetRef = refs[tokenPosition];
+          if (targetRef) {
+            const parentContainer = targetRef.parentElement;
+            if (parentContainer) {
+              const elementRect = targetRef.getBoundingClientRect();
+              const parentRect = parentContainer.getBoundingClientRect();
+
+              const scrollLeft =
+                parentContainer.scrollLeft +
+                elementRect.left -
+                parentRect.left -
+                (parentRect.width - elementRect.width) / 2;
+
+              parentContainer.scrollTo({
+                left: scrollLeft,
+                behavior: 'smooth',
+              });
+            }
+          }
+        }
+      }, 50); // Increased timeout to account for DOM rendering when supernode expands
+    });
+  }, [lastChangedSupernodeTokenPositions]);
 
   return (
     <Dialog open={isSteerModalOpen} onOpenChange={setIsSteerModalOpen}>
@@ -986,6 +1014,12 @@ export default function SteerModal() {
                                   }
                                   setAllTokensDelta={setAllTokensDelta}
                                   isSteering={isSteering}
+                                  lastChangedTokenPosition={getLastChangedTokenPosition({
+                                    modelId,
+                                    layer: getLayerFromFeatureAndGraph(modelId, customNode, selectedGraph),
+                                    index: getIndexFromFeatureAndGraph(modelId, customNode, selectedGraph),
+                                    tokenActivePosition: customNode.ctx_idx,
+                                  })}
                                 />
                                 <Button
                                   variant="ghost"
@@ -1064,7 +1098,7 @@ export default function SteerModal() {
                               />
                             )}
 
-                            <div className="mb-2 flex flex-row items-center justify-start gap-x-2">
+                            <div className="relative mb-2 flex flex-row items-center justify-between gap-x-2">
                               <Button
                                 disabled={isSteering}
                                 onClick={() => {
@@ -1082,9 +1116,13 @@ export default function SteerModal() {
                                     );
                                   } else {
                                     // steer all nodes in supernode
+                                    let firstNodePosition: number | undefined;
                                     supernode.forEach((id) => {
                                       const node = getFeatureNodeForNodeId(id);
                                       if (node) {
+                                        if (firstNodePosition === undefined) {
+                                          firstNodePosition = node.ctx_idx;
+                                        }
                                         setSteeredPositionDeltaByPosition(
                                           makeNodeSteerIdentifier(node),
                                           node.ctx_idx,
@@ -1092,6 +1130,18 @@ export default function SteerModal() {
                                         );
                                       }
                                     });
+
+                                    // Track the position change for scrolling - use the first node's position
+                                    if (firstNodePosition !== undefined) {
+                                      setLastChangedSupernodeTokenPositions((prev) => {
+                                        const newMap = new Map(prev);
+                                        if (firstNodePosition !== undefined) {
+                                          newMap.set(supernodeIndex, firstNodePosition);
+                                        }
+                                        return newMap;
+                                      });
+                                    }
+
                                     // we did expand, so we show the supernode controls
                                     setExpandedSupernodeIndexes([...expandedSupernodeIndexes, supernodeIndex]);
                                   }
@@ -1105,41 +1155,48 @@ export default function SteerModal() {
                                 {isAtLeastOneNodeInSupernodeSteered(supernode) ? 'Unsteer All' : 'Steer All'}
                               </Button>
                               {isAtLeastOneNodeInSupernodeSteered(supernode) && (
-                                <Button
-                                  disabled={isSteering}
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    if (expandedSupernodeIndexes.includes(supernodeIndex)) {
-                                      setExpandedSupernodeIndexes(
-                                        expandedSupernodeIndexes.filter((i) => i !== supernodeIndex),
-                                      );
-                                    } else {
-                                      setExpandedSupernodeIndexes([...expandedSupernodeIndexes, supernodeIndex]);
-                                    }
-                                  }}
-                                  className="flex h-6 w-[120px] flex-row items-center justify-center gap-x-1.5 rounded-full border-transparent bg-slate-200 px-0 py-0 text-[8.5px] uppercase text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-600"
+                                <div
+                                  className={`absolute -top-1 right-0 flex h-9 flex-1 items-center justify-center gap-x-4 ${expandedSupernodeIndexes.includes(supernodeIndex) ? 'rounded-tl rounded-tr' : 'rounded'} bg-slate-200/60 px-5`}
                                 >
-                                  {expandedSupernodeIndexes.includes(supernodeIndex) ? (
-                                    <>
-                                      <EyeOpenIcon className="h-3 w-3" />
-                                      Group Controls
-                                    </>
-                                  ) : (
-                                    <>
-                                      <EyeClosedIcon className="h-3 w-3" />
-                                      Group Controls
-                                    </>
-                                  )}
-                                </Button>
+                                  <div className="text-[9px] uppercase text-slate-500">
+                                    Steering {(supernode.length - 1).toLocaleString()} Nodes
+                                  </div>
+                                  <Button
+                                    disabled={isSteering}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (expandedSupernodeIndexes.includes(supernodeIndex)) {
+                                        setExpandedSupernodeIndexes(
+                                          expandedSupernodeIndexes.filter((i) => i !== supernodeIndex),
+                                        );
+                                      } else {
+                                        setExpandedSupernodeIndexes([...expandedSupernodeIndexes, supernodeIndex]);
+                                      }
+                                    }}
+                                    className="flex h-6 w-[170px] flex-row items-center justify-center gap-x-1.5 rounded-full border-slate-300 bg-transparent px-0 py-0 text-[8.5px] uppercase text-slate-500 hover:border-slate-300 hover:bg-slate-200 hover:text-slate-600"
+                                  >
+                                    {expandedSupernodeIndexes.includes(supernodeIndex) ? (
+                                      <>
+                                        <EyeOpenIcon className="h-3 w-3" />
+                                        Hide Supernode Controls
+                                      </>
+                                    ) : (
+                                      <>
+                                        <EyeClosedIcon className="h-3 w-3" />
+                                        Show Supernode Controls
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
                               )}
                             </div>
 
                             {/* == start == steer the entire supernode ==  TODO: reduce duplicated code with nodeToSteer == */}
                             {isAtLeastOneNodeInSupernodeSteered(supernode) &&
                               expandedSupernodeIndexes.includes(supernodeIndex) && (
-                                <div className="flex max-w-full flex-1 flex-row items-start gap-x-1.5 pb-2 pl-6">
-                                  <div className="flex min-w-11 flex-col items-center justify-center gap-y-1 rounded bg-slate-200/50 py-2">
+                                <div className="relative mb-2 ml-6 flex max-w-full flex-1 flex-row items-start gap-x-1.5 rounded-lg rounded-tr-none bg-slate-200/60 pb-1">
+                                  <div className="flex min-w-11 flex-col items-center justify-center gap-y-1 rounded bg-slate-300/50 py-2">
                                     <Slider.Root
                                       orientation="vertical"
                                       defaultValue={[0]}
@@ -1210,7 +1267,15 @@ export default function SteerModal() {
                                     {selectedGraph?.metadata.prompt_tokens.map((token, i) => (
                                       <div
                                         key={`${token}-${i}`}
-                                        // ref={node.ctx_idx === i ? scrollIntoViewRef : undefined}
+                                        ref={(el) => {
+                                          if (!supernodeScrollIntoViewRefs.current.has(supernodeIndex)) {
+                                            supernodeScrollIntoViewRefs.current.set(supernodeIndex, []);
+                                          }
+                                          const refs = supernodeScrollIntoViewRefs.current.get(supernodeIndex);
+                                          if (refs) {
+                                            refs[i] = el;
+                                          }
+                                        }}
                                         className={`mx-1.5 min-w-fit flex-col items-center justify-center gap-y-1 ${
                                           BOS_TOKENS.includes(token) ? 'hidden' : 'flex'
                                         }`}
@@ -1223,7 +1288,13 @@ export default function SteerModal() {
                                           step={STEER_MULTIPLIER_STEP}
                                           value={[allFeaturesInSupernodeHaveSameMultiplier(supernode, i) || 0]}
                                           onValueChange={(value) => {
-                                            setSteeredPositionMultiplierByPositionForSupernode(supernode, i, value[0]);
+                                            setSteeredPositionMultiplierByPositionForSupernode(
+                                              supernode,
+                                              i,
+                                              value[0],
+                                              false,
+                                              supernodeIndex,
+                                            );
                                           }}
                                           className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
                                             allFeaturesInSupernodeHaveSameMultiplier(supernode, i) === false ||
@@ -1239,6 +1310,13 @@ export default function SteerModal() {
                                           <Slider.Thumb
                                             onClick={() => {
                                               if (!allFeaturesInSupernodeHaveSameMultiplier(supernode, i)) {
+                                                // Track this position change for scrolling
+                                                setLastChangedSupernodeTokenPositions((prev) => {
+                                                  const newMap = new Map(prev);
+                                                  newMap.set(supernodeIndex, i);
+                                                  return newMap;
+                                                });
+
                                                 supernode.slice(1).forEach((id) => {
                                                   const node = getFeatureNodeForNodeId(id);
                                                   if (node) {
@@ -1264,7 +1342,7 @@ export default function SteerModal() {
                                             )}
                                           </Slider.Thumb>
                                         </Slider.Root>
-                                        <div className="mt-0.5 h-5 rounded bg-slate-200 px-1 py-0.5 font-mono text-[8.5px] text-slate-700">
+                                        <div className="mt-0.5 h-5 rounded bg-slate-300/50 px-1 py-0.5 font-mono text-[8.5px] text-slate-700">
                                           {token.toString().replaceAll(' ', '\u00A0').replaceAll('\n', '↵')}
                                         </div>
                                         <Button
@@ -1305,7 +1383,7 @@ export default function SteerModal() {
                                       </div>
                                     ))}
                                   </div>
-                                  <div className="flex w-11 min-w-11 max-w-11 flex-col items-center justify-center gap-y-1 rounded bg-slate-200/50 py-2">
+                                  <div className="flex w-11 min-w-11 max-w-11 flex-col items-center justify-center gap-y-1 rounded bg-slate-300/50 py-2">
                                     <Slider.Root
                                       orientation="vertical"
                                       defaultValue={[0]}
@@ -1322,6 +1400,7 @@ export default function SteerModal() {
                                           0,
                                           value[0],
                                           true,
+                                          supernodeIndex,
                                         );
                                       }}
                                       className={`group relative flex h-24 w-2 items-center justify-center overflow-visible ${
@@ -1441,6 +1520,9 @@ export default function SteerModal() {
                                     setAllTokensDelta={setAllTokensDelta}
                                     isInSupernode
                                     isSteering={isSteering}
+                                    lastChangedTokenPosition={getLastChangedTokenPosition(
+                                      makeNodeSteerIdentifier(node),
+                                    )}
                                   />
                                 );
                               })}
@@ -1492,6 +1574,7 @@ export default function SteerModal() {
                                   }
                                   setAllTokensDelta={setAllTokensDelta}
                                   isSteering={isSteering}
+                                  lastChangedTokenPosition={getLastChangedTokenPosition(makeNodeSteerIdentifier(node))}
                                 />
                               );
                             })}
@@ -1662,8 +1745,7 @@ export default function SteerModal() {
                   <CardHeader className="sticky top-0 flex w-full flex-col items-start justify-start space-y-3 rounded-t-xl bg-white pb-3 pt-7">
                     <CardTitle>Results</CardTitle>
                     <div className="text-xs text-slate-500">
-                      These automatically update after steering or adjusting settings. Hover over output tokens to see
-                      their logprobs.
+                      Hover over output tokens to see its logprobs.
                     </div>
                   </CardHeader>
                   <CardContent className="flex h-full max-h-full flex-row gap-x-4 px-8">
@@ -1706,7 +1788,8 @@ export default function SteerModal() {
                           <TokenTooltip logitsByToken={steerResult.STEERED_LOGITS_BY_TOKEN} />
                         ) : (
                           <div className="mt-0 flex w-full flex-col text-xs text-slate-400">
-                            <div className="flex flex-wrap gap-x-0 gap-y-[0px]">
+                              <div className="flex flex-wrap gap-x-0 gap-y-[0px]">
+                                {/* {selectedMetadataGraph?.promptTokens} */}
                               {selectedMetadataGraph?.promptTokens.map((token, index) => (
                                 <span
                                   key={`${token}-${index}`}
