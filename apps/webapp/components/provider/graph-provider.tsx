@@ -646,7 +646,7 @@ export function GraphProvider({
     };
 
     if (selectedModelId in MODEL_TO_SOURCESET_ID) {
-      setLoadingGraphLabel(`Calculating Scores... `);
+      // setLoadingGraphLabel(`Calculating Scores... `);
       const { replacementScore, completenessScore } = computeGraphScoresFromGraphData(formattedData);
       formattedData.metadata.replacement_score = replacementScore;
       formattedData.metadata.completeness_score = completenessScore;
