@@ -79,7 +79,7 @@ export default function NodeToSteer({
 
         if (targetRef) {
           // Find the immediate parent container (the horizontal scroll container)
-          const parentContainer = targetRef.parentElement; // Go up two levels to reach the scroll container
+          const parentContainer = targetRef.parentElement;
           if (parentContainer) {
             const elementRect = targetRef.getBoundingClientRect();
             const parentRect = parentContainer.getBoundingClientRect();
