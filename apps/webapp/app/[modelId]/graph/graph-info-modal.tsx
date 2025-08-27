@@ -31,10 +31,6 @@ export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: Grap
           }
         });
 
-        // add the replacement and completeness scores
-        data.metadata.replacement_score = selectedGraph.metadata.replacement_score;
-        data.metadata.completeness_score = selectedGraph.metadata.completeness_score;
-
         // download it
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
         const url = window.URL.createObjectURL(blob);
@@ -130,7 +126,7 @@ export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: Grap
 
           {/* Graph Statistics */}
           <div className="space-y-1.5 pt-0">
-            <div className="grid grid-cols-4 text-sm">
+            <div className="grid grid-cols-2 text-sm">
               <div>
                 <span className="text-[11px] font-medium uppercase text-slate-400"># Nodes</span>
                 <p className="text-slate-800">{cltGraph.nodes?.length.toLocaleString() || 0}</p>
@@ -138,14 +134,6 @@ export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: Grap
               <div>
                 <span className="text-[11px] font-medium uppercase text-slate-400"># Links</span>
                 <p className="text-slate-800">{cltGraph.links?.length.toLocaleString() || 0}</p>
-              </div>
-              <div>
-                <span className="text-[11px] font-medium uppercase text-slate-400">Replacement Score</span>
-                <p className="text-slate-800">{metadata.replacement_score?.toFixed(2) || 'N/A'}</p>
-              </div>
-              <div>
-                <span className="text-[11px] font-medium uppercase text-slate-400">Completeness Score</span>
-                <p className="text-slate-800">{metadata.completeness_score?.toFixed(2) || 'N/A'}</p>
               </div>
             </div>
           </div>
