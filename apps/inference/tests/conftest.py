@@ -32,7 +32,7 @@ INVALID_SAE_SOURCE = "fake-source"
 
 MODEL_ID = "gpt2-small"
 TOKEN_LIMIT = "500"
-DEVICE = "mps"
+DEVICE = "cpu"
 MAX_LOADED_SAES = "1"
 MODEL_DTYPE = "float16"
 SAE_DTYPE = "float32"
