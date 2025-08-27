@@ -17,7 +17,9 @@ torch = [
   { platform = "linux", version = ">=1.10" }, # We can use any torch version on Linux (e.g colab)
   { platform = "!=linux", version = ">=1.10,!=2.0,!=2.1.0" }, # Pin >=2.1.1 on Apple devices due to known MPS errors on 2.1.0
 ]
-transformer-lens = {git = "https://github.com/TransformerLensOrg/TransformerLens.git", branch = "dev-3.x", develop = false}
+# TODO: Revert back to Johnny's branch once shayan's PR has been approved. Probably safer for all forks to live in one person's github account.
+# transformer-lens = {git = "https://github.com/TransformerLensOrg/TransformerLens.git", branch = "dev-3.x", develop = false}
+transformer-lens = {git = "https://github.com/shayansadeghieh/TransformerLens.git", branch = "dev-3.x", develop = false}
 transformers = "^4.38.1"
 einops = "^0.7.0"
 pytest = "^8.1.1"

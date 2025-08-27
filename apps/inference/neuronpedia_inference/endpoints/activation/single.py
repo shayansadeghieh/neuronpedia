@@ -175,6 +175,7 @@ def process_activations(
             cache,
             hook_name,
             index,
+            sae_manager.device,
         )
     raise ValueError(f"Invalid layer: {layer}")
 
@@ -201,9 +202,10 @@ def process_feature_activations(
     cache: ActivationCache | dict[str, torch.Tensor],
     hook_name: str,
     index: int,
+    device: str,
 ) -> ActivationSinglePost200ResponseActivation:
     if sae_type == "saelens-1":
-        return process_saelens_activations(sae, cache, hook_name, index)
+        return process_saelens_activations(sae, cache, hook_name, index, device)
     raise ValueError(f"Unsupported SAE type: {sae_type}")
 
 
@@ -212,8 +214,9 @@ def process_saelens_activations(
     cache: ActivationCache | dict[str, torch.Tensor],
     hook_name: str,
     index: int,
+    device: str,
 ) -> ActivationSinglePost200ResponseActivation:        
-    feature_acts = sae.encode(cache[hook_name])
+    feature_acts = sae.encode(cache[hook_name].to(device))
     values = torch.transpose(feature_acts.squeeze(0), 0, 1)[index].detach().tolist()
     max_value = max(values)
     return ActivationSinglePost200ResponseActivation(
