@@ -1174,7 +1174,7 @@ export default function SteerModal() {
                                         setExpandedSupernodeIndexes([...expandedSupernodeIndexes, supernodeIndex]);
                                       }
                                     }}
-                                    className="flex h-6 w-[170px] flex-row items-center justify-center gap-x-1.5 rounded-full border-slate-300 bg-transparent px-0 py-0 text-[8.5px] uppercase text-slate-500 hover:border-slate-300 hover:bg-slate-200 hover:text-slate-600"
+                                    className="flex h-6 w-[170px] flex-row items-center justify-center gap-x-1.5 rounded-full border-slate-300 bg-slate-50 px-0 py-0 text-[8.5px] uppercase text-slate-500 hover:border-slate-300 hover:bg-slate-200 hover:text-slate-600"
                                   >
                                     {expandedSupernodeIndexes.includes(supernodeIndex) ? (
                                       <>
@@ -1750,7 +1750,9 @@ export default function SteerModal() {
                     <div className="flex-1">
                       <div className="mb-1.5 mt-3 text-center text-sm font-bold text-slate-700">Default Output</div>
                       <div className="w-full">
-                        {steerResult && steerResult.DEFAULT_LOGITS_BY_TOKEN ? (
+                        {steerResult &&
+                        steerResult.DEFAULT_LOGITS_BY_TOKEN &&
+                        steerResult.DEFAULT_LOGITS_BY_TOKEN.length > 0 ? (
                           <TokenTooltip logitsByToken={steerResult.DEFAULT_LOGITS_BY_TOKEN} />
                         ) : (
                           <div className="mt-0 flex w-full flex-col text-xs text-slate-400">
@@ -1782,7 +1784,9 @@ export default function SteerModal() {
                     <div className="flex-1">
                       <div className="mb-1.5 mt-3 text-center text-sm font-bold text-slate-700">Steered Output</div>
                       <div className="w-full">
-                        {steerResult && steerResult.STEERED_LOGITS_BY_TOKEN.length > 0 ? (
+                        {steerResult &&
+                        steerResult.STEERED_LOGITS_BY_TOKEN &&
+                        steerResult.STEERED_LOGITS_BY_TOKEN.length > 0 ? (
                           <TokenTooltip logitsByToken={steerResult.STEERED_LOGITS_BY_TOKEN} />
                         ) : (
                           <div className="mt-0 flex w-full flex-col text-xs text-slate-400">
