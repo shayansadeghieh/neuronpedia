@@ -11,7 +11,9 @@ import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import { Circle, FolderOpen, Joystick, PinIcon, PinOffIcon, Save, Share2, TrashIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import d3 from './d3-jetpack';
-import { clientCheckIsEmbed, CLTGraphLink, CLTGraphNode, hideTooltip, isOldQwenGraph, showTooltip } from './utils';
+import { CLTGraphLink, CLTGraphNode } from './graph-types';
+import { computeGraphScoresInWorker } from './score-worker-client';
+import { clientCheckIsEmbed, hideTooltip, isOldQwenGraph, MODEL_TO_SOURCESET_ID, showTooltip } from './utils';
 
 const NODE_WIDTH = 75;
 const NODE_HEIGHT = 25;
@@ -89,6 +91,7 @@ export default function Subgraph() {
     getOverrideClerpForNode,
     makeTooltipText,
     resetSelectedGraphToBlankVisState,
+    selectedModelId,
   } = useGraphContext();
 
   // Use the new graph state context
@@ -160,6 +163,59 @@ export default function Subgraph() {
   const isEditingLabelRef = useRef(isEditingLabel);
 
   const screenSize = useScreenSize();
+
+  // Web worker compute via helper
+  const latestRequestIdRef = useRef(0);
+  const [subgraphScores, setSubgraphScores] = useState({ replacementScore: 0, completenessScore: 0 });
+
+  // Web worker compute for overall graph scores
+  const [graphScores, setGraphScores] = useState({ replacementScore: 0, completenessScore: 0 });
+
+  useEffect(() => {
+    if (!selectedGraph) {
+      setGraphScores({ replacementScore: 0, completenessScore: 0 });
+      return;
+    }
+
+    // Use existing scores if available
+    if (
+      selectedGraph.metadata.replacement_score !== undefined &&
+      selectedGraph.metadata.completeness_score !== undefined
+    ) {
+      setGraphScores({
+        replacementScore: selectedGraph.metadata.replacement_score,
+        completenessScore: selectedGraph.metadata.completeness_score,
+      });
+      return;
+    }
+
+    // Compute scores in web worker for the full graph (no pinned nodes)
+    computeGraphScoresInWorker(selectedGraph, [])
+      .then(({ replacementScore, completenessScore }) => {
+        setGraphScores({ replacementScore, completenessScore });
+      })
+      .catch(() => {
+        setGraphScores({ replacementScore: 0, completenessScore: 0 });
+      });
+  }, [selectedGraph]);
+
+  useEffect(() => {
+    if (!selectedGraph) {
+      setSubgraphScores({ replacementScore: 0, completenessScore: 0 });
+      return;
+    }
+    latestRequestIdRef.current += 1;
+    const requestId = latestRequestIdRef.current;
+    computeGraphScoresInWorker(selectedGraph, visState.pinnedIds)
+      .then(({ replacementScore, completenessScore }) => {
+        if (requestId !== latestRequestIdRef.current) return;
+        setSubgraphScores({ replacementScore, completenessScore });
+      })
+      .catch(() => {
+        if (requestId !== latestRequestIdRef.current) return;
+        setSubgraphScores({ replacementScore: 0, completenessScore: 0 });
+      });
+  }, [selectedGraph, visState.pinnedIds]);
 
   // Helper to create pct input color function
   const pctInputColorFn = useCallback((d: number) => {
@@ -1167,15 +1223,6 @@ export default function Subgraph() {
     return totalNodes;
   }
 
-  // // Calculate replacement and completeness scores when pinned IDs change
-  // const subgraphScores = useMemo(() => {
-  //   if (!selectedGraph) {
-  //     return { replacementScore: 0, completenessScore: 0 };
-  //   }
-
-  //   return computeGraphScoresFromGraphData(selectedGraph, visState.pinnedIds);
-  // }, [selectedGraph, visState.pinnedIds]);
-
   return (
     <Card
       className={`h-full w-full flex-1 bg-white transition-all sm:block ${clickedIdRef.current ? 'hidden' : ''} ${
@@ -1183,7 +1230,7 @@ export default function Subgraph() {
       }`}
     >
       <CardContent className="relative h-full px-0 py-0">
-        {selectedGraph && selectedGraph.metadata.replacement_score !== undefined && (
+        {selectedGraph && selectedModelId in MODEL_TO_SOURCESET_ID && (
           <div className="absolute bottom-1 left-0 hidden w-full flex-row items-center justify-center gap-x-1.5 px-5 text-[9px] text-slate-500 sm:flex">
             <div className="flex flex-1 flex-row items-center justify-center gap-x-3">
               <div className="z-10 flex flex-row items-center justify-center gap-x-0.5">
@@ -1205,11 +1252,11 @@ export default function Subgraph() {
               </div>
               <div className="flex flex-row items-center justify-center gap-x-2">
                 <div className="font-medium text-slate-600">
-                  Graph: {selectedGraph.metadata.replacement_score?.toFixed(2) || 'N/A'}
+                  Graph: {graphScores.replacementScore?.toFixed(2) || 'N/A'}
                 </div>
-                {/* <div className="font-medium text-slate-600">
+                <div className="font-medium text-slate-600">
                   Subgraph*: {visState.pinnedIds.length > 0 ? subgraphScores.replacementScore?.toFixed(2) : 'N/A'}
-                </div> */}
+                </div>
               </div>
             </div>
             <div className="flex flex-1 flex-row items-center justify-center gap-x-3">
@@ -1233,11 +1280,11 @@ export default function Subgraph() {
               </div>
               <div className="flex flex-row items-center justify-center gap-x-2">
                 <div className="font-medium text-slate-500">
-                  Graph: {selectedGraph.metadata.completeness_score?.toFixed(2) || 'N/A'}
+                  Graph: {graphScores.completenessScore?.toFixed(2) || 'N/A'}
                 </div>
-                {/* <div className="font-medium text-slate-500">
+                <div className="font-medium text-slate-500">
                   Subgraph*: {visState.pinnedIds.length > 0 ? subgraphScores.completenessScore?.toFixed(2) : 'N/A'}
-                </div> */}
+                </div>
               </div>
             </div>
           </div>

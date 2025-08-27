@@ -1,7 +1,5 @@
 import {
   clientCheckIsEmbed,
-  CLTGraph,
-  FilterGraphType,
   getGraphBaseUrlToName,
   modelIdAndSchemaToTranscoders,
   modelIdToModelDisplayName,
@@ -27,6 +25,7 @@ import { useRouter } from 'next-nprogress-bar';
 import { useSearchParams } from 'next/navigation';
 import { Fragment, useState } from 'react';
 import GraphInfoModal from './graph-info-modal';
+import { CLTGraph, FilterGraphType } from './graph-types';
 import UploadGraphModal from './upload-graph-modal';
 
 export default function GraphToolbar() {

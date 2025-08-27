@@ -6,11 +6,10 @@ import { useScreenSize } from '@/lib/hooks/use-screen-size';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import d3 from './d3-jetpack';
 import GraphControls, { MIN_TOKENS_TO_ALLOW_HORIZONTAL_SCROLL } from './graph-controls';
+import { CLTGraphLink, CLTGraphNode } from './graph-types';
 import {
   clientCheckClaudeMode,
   CLTGraphExtended,
-  CLTGraphLink,
-  CLTGraphNode,
   featureTypeToText,
   featureTypeToTextSize,
   filterNodes,

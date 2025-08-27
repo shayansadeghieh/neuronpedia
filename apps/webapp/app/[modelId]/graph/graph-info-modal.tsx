@@ -4,7 +4,7 @@ import { useGraphContext } from '@/components/provider/graph-provider';
 import { Button } from '@/components/shadcn/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
 import { DownloadIcon, Info } from 'lucide-react';
-import { CLTGraph } from './utils';
+import { CLTGraph } from './graph-types';
 
 interface GraphInfoModalProps {
   cltGraph: CLTGraph | null;

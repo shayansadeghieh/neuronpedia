@@ -3,7 +3,6 @@
 import FeatureDashboard from '@/app/[modelId]/[layer]/[index]/feature-dashboard';
 import {
   ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
-  CLTGraphNode,
   getFeatureIdFromLayerAndIndex,
   getIndexFromFeatureAndGraph,
   getLayerFromFeatureAndGraph,
@@ -44,6 +43,7 @@ import * as Slider from '@radix-ui/react-slider';
 import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { Joystick, MousePointerClick, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CLTGraphNode } from '../graph-types';
 import NodeToSteer from './steer-modal/node-to-steer';
 import TokenTooltip from './steer-modal/token-tooltip';
 
@@ -1744,9 +1744,7 @@ export default function SteerModal() {
                 <Card className="flex h-full w-full flex-col bg-white">
                   <CardHeader className="sticky top-0 flex w-full flex-col items-start justify-start space-y-3 rounded-t-xl bg-white pb-3 pt-7">
                     <CardTitle>Results</CardTitle>
-                    <div className="text-xs text-slate-500">
-                      Hover over output tokens to see its logprobs.
-                    </div>
+                    <div className="text-xs text-slate-500">Hover over output tokens to see its logprobs.</div>
                   </CardHeader>
                   <CardContent className="flex h-full max-h-full flex-row gap-x-4 px-8">
                     <div className="flex-1">
@@ -1788,8 +1786,8 @@ export default function SteerModal() {
                           <TokenTooltip logitsByToken={steerResult.STEERED_LOGITS_BY_TOKEN} />
                         ) : (
                           <div className="mt-0 flex w-full flex-col text-xs text-slate-400">
-                              <div className="flex flex-wrap gap-x-0 gap-y-[0px]">
-                                {/* {selectedMetadataGraph?.promptTokens} */}
+                            <div className="flex flex-wrap gap-x-0 gap-y-[0px]">
+                              {/* {selectedMetadataGraph?.promptTokens} */}
                               {selectedMetadataGraph?.promptTokens.map((token, index) => (
                                 <span
                                   key={`${token}-${index}`}

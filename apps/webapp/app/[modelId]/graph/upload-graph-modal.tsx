@@ -7,12 +7,8 @@ import { Progress } from '@/components/shadcn/progress';
 import { AlertCircle, ChartScatter, Loader2, UploadCloud } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useState } from 'react';
-import {
-  CLTGraph,
-  ERROR_MODEL_DOES_NOT_EXIST,
-  makeGraphPublicAccessGraphUri,
-  MAX_GRAPH_UPLOAD_SIZE_BYTES,
-} from './utils';
+import { CLTGraph } from './graph-types';
+import { ERROR_MODEL_DOES_NOT_EXIST, makeGraphPublicAccessGraphUri, MAX_GRAPH_UPLOAD_SIZE_BYTES } from './utils';
 
 export default function UploadGraphModal() {
   const [isOpen, setIsOpen] = useState(false);

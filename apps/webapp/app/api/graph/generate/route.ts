@@ -1,6 +1,6 @@
+import { CLTGraph } from '@/app/[modelId]/graph/graph-types';
 import {
   ATTRIBUTION_GRAPH_SCHEMA,
-  CLTGraph,
   makeGraphPublicAccessGraphUrl,
   MODEL_TO_SOURCESET_ID,
   NP_GRAPH_BUCKET,

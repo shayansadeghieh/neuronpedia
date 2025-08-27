@@ -1,4 +1,3 @@
-import { CLTGraph, CLTGraphNode } from '@/app/[modelId]/graph/utils';
 import { Button } from '@/components/shadcn/button';
 import { BOS_TOKENS } from '@/lib/utils/activations';
 import { SteerLogitFeature, SteeredPositionIdentifier } from '@/lib/utils/graph';
@@ -12,6 +11,7 @@ import {
 import * as Slider from '@radix-ui/react-slider';
 import { MousePointerClick, Trash2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { CLTGraph, CLTGraphNode } from '../../graph-types';
 import MiniDashboardHoverCard from './mini-dashboard-hover-card';
 
 // Each NodeToSteer is a single feature for a single active "original" token position.

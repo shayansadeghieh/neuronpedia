@@ -7,13 +7,13 @@ import { ASSET_BASE_URL } from '@/lib/env';
 import { Metadata } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { notFound } from 'next/navigation';
+import { ModelToGraphMetadatasMap } from './graph-types';
 import {
   ADDITIONAL_MODELS_TO_LOAD,
   ANT_BUCKET_URL,
   ANT_MODELS_TO_LOAD,
   getGraphMetadatasFromBucket,
   modelIdToModelDisplayName,
-  ModelToGraphMetadatasMap,
   parseGraphClerps,
   parseGraphSupernodes,
 } from './utils';

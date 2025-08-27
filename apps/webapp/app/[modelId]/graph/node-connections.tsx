@@ -4,11 +4,11 @@ import { useGraphStateContext } from '@/components/provider/graph-state-provider
 import { Circle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Virtuoso } from 'react-virtuoso';
+import { CLTGraphNode } from './graph-types';
 import GraphFeatureLink from './np-feature-link';
 import {
   clientCheckClaudeMode,
   clientCheckIsEmbed,
-  CLTGraphNode,
   featureTypeToText,
   graphModelHasNpDashboards,
   shouldShowNodeForDensityThreshold,
