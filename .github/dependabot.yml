@@ -1,15 +1,1 @@
-version: 2
-updates:
-  # autointerp is not accessed directly so we don't include it
-  - package-ecosystem: "pip"
-    directory: "/apps/graph"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "pip"
-    directory: "/apps/inference"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "npm"
-    directory: "/apps/webapp"
-    schedule:
-      interval: "daily"
+
