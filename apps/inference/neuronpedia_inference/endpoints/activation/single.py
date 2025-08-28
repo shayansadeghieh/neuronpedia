@@ -14,7 +14,7 @@ from neuronpedia_inference_client.models.activation_single_post200_response_acti
 from neuronpedia_inference_client.models.activation_single_post_request import (
     ActivationSinglePostRequest,
 )
-from transformer_lens import ActivationCache, HookedTransformer
+from transformer_lens import ActivationCache
 from transformer_lens.model_bridge.bridge import TransformerBridge
 
 from neuronpedia_inference.config import Config
@@ -250,7 +250,7 @@ def process_vector_activations(
 
 
 def calculate_dfa(
-    model: HookedTransformer,
+    model: TransformerBridge,
     sae: Any,
     layer_num: int,
     index: int,
