@@ -133,6 +133,7 @@ export const POST = withAuthedUser(async (request: RequestAuthedUser) => {
     dimension: null,
     defaultSourceId: null,
     defaultSourceSetName: null,
+    defaultGraphSourceSetName: null,
     thinking: false,
 
     neuronsPerLayer: 0,

@@ -76,7 +76,7 @@ export const ListsOnActivationsScalarFieldEnumSchema = z.enum(['activationId','l
 
 export const VerificationTokenScalarFieldEnumSchema = z.enum(['identifier','token','expires']);
 
-export const ModelScalarFieldEnumSchema = z.enum(['id','displayNameShort','displayName','creatorId','tlensId','dimension','thinking','visibility','defaultSourceSetName','defaultSourceId','inferenceEnabled','instruct','layers','neuronsPerLayer','createdAt','owner','updatedAt','website']);
+export const ModelScalarFieldEnumSchema = z.enum(['id','displayNameShort','displayName','creatorId','tlensId','dimension','thinking','visibility','defaultSourceSetName','defaultSourceId','defaultGraphSourceSetName','inferenceEnabled','instruct','layers','neuronsPerLayer','createdAt','owner','updatedAt','website']);
 
 export const GraphHostSourceScalarFieldEnumSchema = z.enum(['id','name','hostUrl','runpodServerlessUrl','modelId','createdAt','updatedAt']);
 
@@ -88,7 +88,7 @@ export const InferenceHostSourceOnSourceScalarFieldEnumSchema = z.enum(['sourceI
 
 export const SourceScalarFieldEnumSchema = z.enum(['id','modelId','hasDashboards','inferenceEnabled','saelensConfig','saelensRelease','saelensSaeId','hfRepoId','hfFolderId','visibility','defaultOfModelId','setName','creatorId','hasUmap','hasUmapLogSparsity','hasUmapClusters','num_prompts','num_tokens_in_prompt','dataset','notes','cosSimMatchModelId','cosSimMatchSourceId','createdAt']);
 
-export const SourceSetScalarFieldEnumSchema = z.enum(['modelId','name','hasDashboards','allowInferenceSearch','visibility','description','type','creatorName','urls','creatorEmail','creatorId','releaseName','graphEnabled','defaultOfModelId','defaultRange','defaultShowBreaks','showDfa','showCorrelated','showHeadAttribution','showUmap','createdAt']);
+export const SourceSetScalarFieldEnumSchema = z.enum(['modelId','name','hasDashboards','allowInferenceSearch','visibility','description','type','creatorName','urls','creatorEmail','creatorId','releaseName','graphEnabled','defaultOfModelId','defaultGraphModelId','defaultRange','defaultShowBreaks','showDfa','showCorrelated','showHeadAttribution','showUmap','createdAt']);
 
 export const SourceReleaseScalarFieldEnumSchema = z.enum(['name','visibility','isNewUi','featured','description','descriptionShort','urls','creatorEmail','creatorName','creatorNameShort','creatorId','defaultSourceSetName','defaultSourceId','defaultUmapSourceIds','createdAt']);
 
@@ -999,6 +999,7 @@ export const ModelSchema = z.object({
   thinking: z.boolean(),
   defaultSourceSetName: z.string().nullable(),
   defaultSourceId: z.string().nullable(),
+  defaultGraphSourceSetName: z.string().nullable(),
   inferenceEnabled: z.boolean(),
   instruct: z.boolean(),
   layers: z.number().int().min(0),
@@ -1025,6 +1026,7 @@ export type ModelPartial = z.infer<typeof ModelPartialSchema>
 export type ModelRelations = {
   defaultSourceSet?: SourceSetWithRelations | null;
   defaultSource?: SourceWithRelations | null;
+  defaultGraphSourceSet?: SourceSetWithRelations | null;
   explanations: ExplanationWithRelations[];
   creator: UserWithRelations;
   neurons: NeuronWithRelations[];
@@ -1042,6 +1044,7 @@ export type ModelWithRelations = z.infer<typeof ModelSchema> & ModelRelations
 export const ModelWithRelationsSchema: z.ZodType<ModelWithRelations> = ModelSchema.merge(z.object({
   defaultSourceSet: z.lazy(() => SourceSetWithRelationsSchema).nullable(),
   defaultSource: z.lazy(() => SourceWithRelationsSchema).nullable(),
+  defaultGraphSourceSet: z.lazy(() => SourceSetWithRelationsSchema).nullable(),
   explanations: z.lazy(() => ExplanationWithRelationsSchema).array(),
   creator: z.lazy(() => UserWithRelationsSchema),
   neurons: z.lazy(() => NeuronWithRelationsSchema).array(),
@@ -1060,6 +1063,7 @@ export const ModelWithRelationsSchema: z.ZodType<ModelWithRelations> = ModelSche
 export type ModelPartialRelations = {
   defaultSourceSet?: SourceSetPartialWithRelations | null;
   defaultSource?: SourcePartialWithRelations | null;
+  defaultGraphSourceSet?: SourceSetPartialWithRelations | null;
   explanations?: ExplanationPartialWithRelations[];
   creator?: UserPartialWithRelations;
   neurons?: NeuronPartialWithRelations[];
@@ -1077,6 +1081,7 @@ export type ModelPartialWithRelations = z.infer<typeof ModelPartialSchema> & Mod
 export const ModelPartialWithRelationsSchema: z.ZodType<ModelPartialWithRelations> = ModelPartialSchema.merge(z.object({
   defaultSourceSet: z.lazy(() => SourceSetPartialWithRelationsSchema).nullable(),
   defaultSource: z.lazy(() => SourcePartialWithRelationsSchema).nullable(),
+  defaultGraphSourceSet: z.lazy(() => SourceSetPartialWithRelationsSchema).nullable(),
   explanations: z.lazy(() => ExplanationPartialWithRelationsSchema).array(),
   creator: z.lazy(() => UserPartialWithRelationsSchema),
   neurons: z.lazy(() => NeuronPartialWithRelationsSchema).array(),
@@ -1094,6 +1099,7 @@ export type ModelWithPartialRelations = z.infer<typeof ModelSchema> & ModelParti
 export const ModelWithPartialRelationsSchema: z.ZodType<ModelWithPartialRelations> = ModelSchema.merge(z.object({
   defaultSourceSet: z.lazy(() => SourceSetPartialWithRelationsSchema).nullable(),
   defaultSource: z.lazy(() => SourcePartialWithRelationsSchema).nullable(),
+  defaultGraphSourceSet: z.lazy(() => SourceSetPartialWithRelationsSchema).nullable(),
   explanations: z.lazy(() => ExplanationPartialWithRelationsSchema).array(),
   creator: z.lazy(() => UserPartialWithRelationsSchema),
   neurons: z.lazy(() => NeuronPartialWithRelationsSchema).array(),
@@ -1473,6 +1479,7 @@ export const SourceSetSchema = z.object({
   releaseName: z.string().nullable(),
   graphEnabled: z.boolean(),
   defaultOfModelId: z.string().nullable(),
+  defaultGraphModelId: z.string().nullable(),
   defaultRange: z.number().int(),
   defaultShowBreaks: z.boolean(),
   showDfa: z.boolean(),
@@ -1504,6 +1511,7 @@ export type SourceSetRelations = {
   graphHostSources: GraphHostSourceOnSourceSetWithRelations[];
   graphMetadata: GraphMetadataWithRelations[];
   defaultOfModel?: ModelWithRelations | null;
+  defaultGraphModel?: ModelWithRelations | null;
 };
 
 export type SourceSetWithRelations = z.infer<typeof SourceSetSchema> & SourceSetRelations
@@ -1517,6 +1525,7 @@ export const SourceSetWithRelationsSchema: z.ZodType<SourceSetWithRelations> = S
   graphHostSources: z.lazy(() => GraphHostSourceOnSourceSetWithRelationsSchema).array(),
   graphMetadata: z.lazy(() => GraphMetadataWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelWithRelationsSchema).nullable(),
+  defaultGraphModel: z.lazy(() => ModelWithRelationsSchema).nullable(),
 }))
 
 // SOURCE SET PARTIAL RELATION SCHEMA
@@ -1531,6 +1540,7 @@ export type SourceSetPartialRelations = {
   graphHostSources?: GraphHostSourceOnSourceSetPartialWithRelations[];
   graphMetadata?: GraphMetadataPartialWithRelations[];
   defaultOfModel?: ModelPartialWithRelations | null;
+  defaultGraphModel?: ModelPartialWithRelations | null;
 };
 
 export type SourceSetPartialWithRelations = z.infer<typeof SourceSetPartialSchema> & SourceSetPartialRelations
@@ -1544,6 +1554,7 @@ export const SourceSetPartialWithRelationsSchema: z.ZodType<SourceSetPartialWith
   graphHostSources: z.lazy(() => GraphHostSourceOnSourceSetPartialWithRelationsSchema).array(),
   graphMetadata: z.lazy(() => GraphMetadataPartialWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelPartialWithRelationsSchema).nullable(),
+  defaultGraphModel: z.lazy(() => ModelPartialWithRelationsSchema).nullable(),
 })).partial()
 
 export type SourceSetWithPartialRelations = z.infer<typeof SourceSetSchema> & SourceSetPartialRelations
@@ -1557,6 +1568,7 @@ export const SourceSetWithPartialRelationsSchema: z.ZodType<SourceSetWithPartial
   graphHostSources: z.lazy(() => GraphHostSourceOnSourceSetPartialWithRelationsSchema).array(),
   graphMetadata: z.lazy(() => GraphMetadataPartialWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelPartialWithRelationsSchema).nullable(),
+  defaultGraphModel: z.lazy(() => ModelPartialWithRelationsSchema).nullable(),
 }).partial())
 
 /////////////////////////////////////////

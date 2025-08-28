@@ -68,6 +68,7 @@ export const POST = withAuthedUser(async (request: RequestAuthedUser) => {
     defaultRange: 1,
     createdAt: new Date(),
     graphEnabled: false,
+    defaultGraphModelId: null,
   };
 
   const set = await createSourceSetWithSources(sourceSetData, model.layers, request.user);
