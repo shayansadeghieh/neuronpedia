@@ -46,11 +46,14 @@ async def activation_topk_by_token(
 
     prepend_bos = sae.cfg.metadata.prepend_bos or model.cfg.tokenizer_prepends_bos
 
+    # Returns [batch, pos] dimensions. Keep the batch dimension as model.run_with_cache expects it.
     tokens = model.to_tokens(
         prompt,
         prepend_bos=prepend_bos,
         truncate=False,
     )
+    
+    # Check if the number of tokens without the batch dimension is greater than the token limit
     if len(tokens[0]) > config.token_limit:
         logger.error(
             "Text too long: %s tokens, max is %s",
