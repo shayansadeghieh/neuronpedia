@@ -4,7 +4,7 @@ import { useGraphContext } from '@/components/provider/graph-provider';
 import { Button } from '@/components/shadcn/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
 import { DownloadIcon, Info } from 'lucide-react';
-import { CLTGraph } from './graph-types';
+import { CLTGraph, CLTGraphQParams } from './graph-types';
 
 interface GraphInfoModalProps {
   cltGraph: CLTGraph | null;
@@ -12,7 +12,7 @@ interface GraphInfoModalProps {
 }
 
 export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: GraphInfoModalProps) {
-  const { getOverrideClerpForNode, selectedGraph } = useGraphContext();
+  const { getOverrideClerpForNode, selectedGraph, visState } = useGraphContext();
 
   const handleDownload = async () => {
     if (selectedMetadataGraph && selectedGraph) {
@@ -30,6 +30,16 @@ export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: Grap
             node.clerp = getOverrideClerpForNode(originalNode) || '';
           }
         });
+
+        // add subgraph state to it
+        const qParams: CLTGraphQParams = {
+          linkType: 'both',
+          pinnedIds: visState.pinnedIds,
+          clickedId: '',
+          supernodes: visState.supernodes,
+          sg_pos: '',
+        };
+        data.qParams = qParams;
 
         // download it
         const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
