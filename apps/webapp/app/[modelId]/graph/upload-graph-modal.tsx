@@ -210,7 +210,6 @@ export default function UploadGraphModal() {
         }}
       >
         <UploadCloud className="h-4 w-4" />
-        Upload
       </Button>
     );
   }
@@ -238,7 +237,7 @@ export default function UploadGraphModal() {
           size="sm"
           className="hidden h-12 items-center justify-center gap-x-2 whitespace-nowrap border-slate-300 text-xs text-slate-500 hover:bg-slate-50 sm:flex"
         >
-          <UploadCloud className="h-4 w-4" /> Upload
+          <UploadCloud className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="cursor-default select-none bg-white sm:max-w-md">

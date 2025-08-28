@@ -235,6 +235,7 @@ export async function getGraphMetadatasFromBucket(baseUrl: string): Promise<Mode
   // by default all anthropic graphs are featured
   const featuredGraphs: GraphMetadata[] = anthropicFeaturedGraphs.graphs.map((graph) => ({
     modelId: graph.scan,
+    sourceSetName: null,
     slug: graph.slug,
     promptTokens: graph.prompt_tokens,
     prompt: graph.prompt,

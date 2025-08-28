@@ -158,6 +158,8 @@ model GraphMetadata {
   // following are common with anthropic, but some renamed
   modelId      String // anthropic equivalent = "scan"
   model        Model    @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  sourceSetName String?
+  sourceSet    SourceSet?  @relation(fields: [modelId, sourceSetName], references: [modelId, name], onDelete: Cascade)
   slug         String // anthropic equivalent = "slug"
   promptTokens String[] // anthropic equivalent = "prompt_tokens"
   prompt       String // anthropic equivalent = "prompt"
@@ -176,6 +178,7 @@ model GraphMetadata {
   @@unique([modelId, slug])
   @@index([userId])
   @@index([modelId])
+  @@index([modelId, sourceSetName])
 }
 
 model GraphMetadataDataPutRequest {
@@ -441,6 +444,7 @@ model SourceSet {
 
   graphEnabled     Boolean                      @default(false)
   graphHostSources GraphHostSourceOnSourceSet[]
+  graphMetadata    GraphMetadata[]
 
   defaultOfModelId String?
   defaultOfModel   Model?  @relation(name: "defaultSourceSet")

@@ -566,7 +566,6 @@ export default function GraphToolbar() {
                 }}
               >
                 <UploadCloud className="h-4 w-4" />
-                Upload
               </Button>
             )}
             {!clientCheckIsEmbed() && (
@@ -582,7 +581,6 @@ export default function GraphToolbar() {
                 disabled={selectedMetadataGraph === null || !selectedGraph}
               >
                 <Share2 className="h-4 w-4" />
-                Share & Embed
               </Button>
             )}
           </div>

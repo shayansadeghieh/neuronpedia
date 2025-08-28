@@ -62,7 +62,7 @@ export const UserScalarFieldEnumSchema = z.enum(['id','name','bio','email','emai
 
 export const GraphMetadataSubgraphScalarFieldEnumSchema = z.enum(['id','displayName','graphMetadataId','pinnedIds','supernodes','clerps','pruningThreshold','densityThreshold','userId','isFeaturedSolution','createdAt','updatedAt']);
 
-export const GraphMetadataScalarFieldEnumSchema = z.enum(['id','modelId','slug','promptTokens','prompt','titlePrefix','isFeatured','url','userId','createdAt','updatedAt']);
+export const GraphMetadataScalarFieldEnumSchema = z.enum(['id','modelId','sourceSetName','slug','promptTokens','prompt','titlePrefix','isFeatured','url','userId','createdAt','updatedAt']);
 
 export const GraphMetadataDataPutRequestScalarFieldEnumSchema = z.enum(['id','ipAddress','filename','url','userId','createdAt']);
 
@@ -588,6 +588,7 @@ export const GraphMetadataSubgraphWithPartialRelationsSchema: z.ZodType<GraphMet
 export const GraphMetadataSchema = z.object({
   id: z.string().cuid(),
   modelId: z.string(),
+  sourceSetName: z.string().nullable(),
   slug: z.string(),
   promptTokens: z.string().array(),
   prompt: z.string(),
@@ -614,6 +615,7 @@ export type GraphMetadataPartial = z.infer<typeof GraphMetadataPartialSchema>
 
 export type GraphMetadataRelations = {
   model: ModelWithRelations;
+  sourceSet?: SourceSetWithRelations | null;
   subgraphs: GraphMetadataSubgraphWithRelations[];
   user?: UserWithRelations | null;
 };
@@ -622,6 +624,7 @@ export type GraphMetadataWithRelations = z.infer<typeof GraphMetadataSchema> & G
 
 export const GraphMetadataWithRelationsSchema: z.ZodType<GraphMetadataWithRelations> = GraphMetadataSchema.merge(z.object({
   model: z.lazy(() => ModelWithRelationsSchema),
+  sourceSet: z.lazy(() => SourceSetWithRelationsSchema).nullable(),
   subgraphs: z.lazy(() => GraphMetadataSubgraphWithRelationsSchema).array(),
   user: z.lazy(() => UserWithRelationsSchema).nullable(),
 }))
@@ -631,6 +634,7 @@ export const GraphMetadataWithRelationsSchema: z.ZodType<GraphMetadataWithRelati
 
 export type GraphMetadataPartialRelations = {
   model?: ModelPartialWithRelations;
+  sourceSet?: SourceSetPartialWithRelations | null;
   subgraphs?: GraphMetadataSubgraphPartialWithRelations[];
   user?: UserPartialWithRelations | null;
 };
@@ -639,6 +643,7 @@ export type GraphMetadataPartialWithRelations = z.infer<typeof GraphMetadataPart
 
 export const GraphMetadataPartialWithRelationsSchema: z.ZodType<GraphMetadataPartialWithRelations> = GraphMetadataPartialSchema.merge(z.object({
   model: z.lazy(() => ModelPartialWithRelationsSchema),
+  sourceSet: z.lazy(() => SourceSetPartialWithRelationsSchema).nullable(),
   subgraphs: z.lazy(() => GraphMetadataSubgraphPartialWithRelationsSchema).array(),
   user: z.lazy(() => UserPartialWithRelationsSchema).nullable(),
 })).partial()
@@ -647,6 +652,7 @@ export type GraphMetadataWithPartialRelations = z.infer<typeof GraphMetadataSche
 
 export const GraphMetadataWithPartialRelationsSchema: z.ZodType<GraphMetadataWithPartialRelations> = GraphMetadataSchema.merge(z.object({
   model: z.lazy(() => ModelPartialWithRelationsSchema),
+  sourceSet: z.lazy(() => SourceSetPartialWithRelationsSchema).nullable(),
   subgraphs: z.lazy(() => GraphMetadataSubgraphPartialWithRelationsSchema).array(),
   user: z.lazy(() => UserPartialWithRelationsSchema).nullable(),
 }).partial())
@@ -1496,6 +1502,7 @@ export type SourceSetRelations = {
   neurons: NeuronWithRelations[];
   releases?: SourceReleaseWithRelations | null;
   graphHostSources: GraphHostSourceOnSourceSetWithRelations[];
+  graphMetadata: GraphMetadataWithRelations[];
   defaultOfModel?: ModelWithRelations | null;
 };
 
@@ -1508,6 +1515,7 @@ export const SourceSetWithRelationsSchema: z.ZodType<SourceSetWithRelations> = S
   neurons: z.lazy(() => NeuronWithRelationsSchema).array(),
   releases: z.lazy(() => SourceReleaseWithRelationsSchema).nullable(),
   graphHostSources: z.lazy(() => GraphHostSourceOnSourceSetWithRelationsSchema).array(),
+  graphMetadata: z.lazy(() => GraphMetadataWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelWithRelationsSchema).nullable(),
 }))
 
@@ -1521,6 +1529,7 @@ export type SourceSetPartialRelations = {
   neurons?: NeuronPartialWithRelations[];
   releases?: SourceReleasePartialWithRelations | null;
   graphHostSources?: GraphHostSourceOnSourceSetPartialWithRelations[];
+  graphMetadata?: GraphMetadataPartialWithRelations[];
   defaultOfModel?: ModelPartialWithRelations | null;
 };
 
@@ -1533,6 +1542,7 @@ export const SourceSetPartialWithRelationsSchema: z.ZodType<SourceSetPartialWith
   neurons: z.lazy(() => NeuronPartialWithRelationsSchema).array(),
   releases: z.lazy(() => SourceReleasePartialWithRelationsSchema).nullable(),
   graphHostSources: z.lazy(() => GraphHostSourceOnSourceSetPartialWithRelationsSchema).array(),
+  graphMetadata: z.lazy(() => GraphMetadataPartialWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelPartialWithRelationsSchema).nullable(),
 })).partial()
 
@@ -1545,6 +1555,7 @@ export const SourceSetWithPartialRelationsSchema: z.ZodType<SourceSetWithPartial
   neurons: z.lazy(() => NeuronPartialWithRelationsSchema).array(),
   releases: z.lazy(() => SourceReleasePartialWithRelationsSchema).nullable(),
   graphHostSources: z.lazy(() => GraphHostSourceOnSourceSetPartialWithRelationsSchema).array(),
+  graphMetadata: z.lazy(() => GraphMetadataPartialWithRelationsSchema).array(),
   defaultOfModel: z.lazy(() => ModelPartialWithRelationsSchema).nullable(),
 }).partial())
 
