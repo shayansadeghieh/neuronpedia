@@ -302,7 +302,7 @@ async def run_batched_generate(
                 logprobs = []
 
                 for i, (result, logits) in enumerate(
-                    model.generate_stream_2(
+                    model.generate_stream(
                         stop_at_eos=(model.cfg.device != "mps"),
                         input=prompt,
                         do_sample=True,
