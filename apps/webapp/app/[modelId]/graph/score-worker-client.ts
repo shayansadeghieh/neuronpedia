@@ -6,6 +6,16 @@ export async function computeGraphScoresInWorker(
 ): Promise<{ replacementScore: number; completenessScore: number }> {
   const { nodes, links } = graph;
 
+  // Check if Worker is available
+  if (typeof Worker === 'undefined') {
+    throw new Error('Web Workers are not supported in this environment');
+  }
+
+  // ensure we have multiple cores
+  if (navigator.hardwareConcurrency <= 1) {
+    throw new Error('This browser does not support multiple cores');
+  }
+
   const worker = new Worker(new URL('./score.worker.ts', import.meta.url), { type: 'module' });
 
   return new Promise((resolve, reject) => {
