@@ -133,20 +133,6 @@ export default function Subgraph() {
   const [currentHoveredId, setCurrentHoveredId] = useState<string | null>(null);
   const [currentClickedId, setCurrentClickedId] = useState<string | null>(null);
 
-  // function togglePinNode(nodeId: string) {
-  //   // Toggle pinned state
-  //   const newPinnedIds = [...visState.pinnedIds];
-  //   const pinnedIndex = newPinnedIds.indexOf(nodeId || '');
-
-  //   if (pinnedIndex === -1 && nodeId) {
-  //     newPinnedIds.push(nodeId);
-  //   } else if (pinnedIndex !== -1) {
-  //     newPinnedIds.splice(pinnedIndex, 1);
-  //   }
-
-  //   updateVisStateField('pinnedIds', newPinnedIds);
-  // }
-
   // Register callbacks to be notified when hover/click state changes
   useEffect(() => {
     const unregisterHover = registerHoverCallback((hoveredId) => {

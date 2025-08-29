@@ -63,6 +63,7 @@ export const graphGenerateSchemaClient = yup.object({
     .min(1, 'Prompt is required.')
     .required(),
   modelId: yup.string().min(1, 'Model is required.').oneOf(GRAPH_GENERATION_ENABLED_MODELS).required(),
+  sourceSetName: yup.string().nullable(),
   maxNLogits: yup
     .number()
     .integer('Must be an integer.')
@@ -137,6 +138,7 @@ export const getGraphTokenize = async (
   maxNLogits: number,
   desiredLogitProb: number,
   modelId: string,
+  sourceSetName: string,
 ): Promise<GraphTokenizeResponse> => {
   const action = 'forward-pass';
   const body = {
@@ -145,8 +147,7 @@ export const getGraphTokenize = async (
     desired_logit_prob: desiredLogitProb,
     request_type: action,
   };
-  // TODO: should not hardcode this for each model
-  const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
+
   const response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
     method: 'POST',
     headers: {
@@ -188,6 +189,7 @@ export const getGraphTokenize = async (
 export const generateGraphAndUploadToS3 = async (
   prompt: string,
   modelId: string,
+  sourceSetName: string,
   maxNLogits: number,
   desiredLogitProb: number,
   nodeThreshold: number,
@@ -211,7 +213,6 @@ export const generateGraphAndUploadToS3 = async (
     signed_url: signedUrl,
     user_id: userId,
   };
-  const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
   const response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
     method: 'POST',
     headers: {

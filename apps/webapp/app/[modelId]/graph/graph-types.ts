@@ -77,6 +77,8 @@ export type CLTGraphInnerMetadata = {
       email?: string;
     };
     create_time_ms?: number;
+    neuronpedia_link?: string;
+    neuronpedia_source_set?: string;
   };
   generation_settings?: {
     max_n_logits?: number;

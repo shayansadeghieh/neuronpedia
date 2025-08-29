@@ -58,7 +58,8 @@ export const [GlobalContext, useGlobalContext] = createContextWrapper<{
     onlyInferenceEnabled?: boolean,
     includeNoDashboards?: boolean,
   ) => string[];
-  isGraphEnabledForSourceSet: (modelId: string, source: string) => boolean;
+  isGraphEnabledForSourceSet: (modelId: string, sourceSet: string) => boolean;
+  isGraphEnabledForSource: (modelId: string, source: string) => boolean;
   explanationTypes: ExplanationType[];
   explanationModels: ExplanationModelType[];
   explanationScoreTypes: ExplanationScoreType[];
@@ -352,7 +353,16 @@ export default function GlobalProvider({
     return toReturn;
   };
 
-  const isGraphEnabledForSourceSet = (modelId: string, source: string) => {
+  const isGraphEnabledForSourceSet = (modelId: string, sourceSet: string) => {
+    // for transcoders / graphs we have a different steering method/server, so we don't show it here
+    const sourceSetObj = getSourceSet(modelId, sourceSet);
+    if (!sourceSetObj) {
+      return false;
+    }
+    return sourceSetObj.graphEnabled;
+  };
+
+  const isGraphEnabledForSource = (modelId: string, source: string) => {
     // for transcoders / graphs we have a different steering method/server, so we don't show it here
     const sourceSet = getSourceSet(modelId, getSourceSetNameFromSource(source) || '');
     if (!sourceSet) {
@@ -412,6 +422,7 @@ export default function GlobalProvider({
           getSourceSetsForModelId,
           getInferenceEnabledSourcesForModel,
           isGraphEnabledForSourceSet,
+          isGraphEnabledForSource,
           explanationTypes,
           explanationModels,
           explanationScoreTypes,
@@ -454,6 +465,7 @@ export default function GlobalProvider({
           getSourceSetsForModelId,
           getSourcesForSourceSet,
           isGraphEnabledForSourceSet,
+          isGraphEnabledForSource,
           globalModels,
           featureModalFeature,
           featureModalOpen,

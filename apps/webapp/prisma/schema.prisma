@@ -447,6 +447,8 @@ model SourceSet {
   releaseName  String?
   releases     SourceRelease? @relation(fields: [releaseName], references: [name], onDelete: Cascade)
 
+  // we may have graphs even if we are not actively allowing generation of new graphs for this sourceSet
+  hasGraphs        Boolean @default(false)
   graphEnabled     Boolean                      @default(false)
   graphHostSources GraphHostSourceOnSourceSet[]
   graphMetadata    GraphMetadata[]
