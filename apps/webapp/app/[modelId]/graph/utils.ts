@@ -27,48 +27,25 @@ export const MAX_GRAPH_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 
 export const MODEL_TO_SOURCESET_ID = {
   'gemma-2-2b': 'gemmascope-transcoder-16k',
-  'llama-3-131k-relu': 'skip-transcoder-mntss',
   'qwen3-4b': 'transcoder-hp',
 };
 
-// TODO: make this a DB column
-// models not in this list can only get FeatureDetails from the bucket
-export const MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR = new Set(['gemma-2-2b']);
-// TODO: remove the MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR once fellows graph gets on cantor
-export const graphModelHasNpDashboards = (graph: CLTGraph) =>
-  MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR.has(graph.metadata.scan) ||
-  graph.metadata.feature_details?.neuronpedia_source_set !== undefined ||
-  MODEL_TO_SOURCESET_ID[graph.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID] !== undefined;
-
-// has dashboards in the bucket
-export const MODEL_HAS_S3_DASHBOARDS = new Set([
-  'llama-3.2-1b',
-  'llama-3-131k-relu',
-  'jackl-circuits-runs-1-4-sofa-v3_0',
-  'jackl-circuits-runs-1-1-druid-cp_0',
-  'jackl-circuits-runs-12-19-valet-m_0',
-  'jackl-circuits-runs-1-12-rune-cp3_0',
-]);
-
+export const DEFAULT_GRAPH_MODEL_ID = 'gemma-2-2b';
+export const MODELS_WITH_NP_DASHBOARDS = new Set(['gemma-2-2b', 'qwen3-4b']);
+export const MODELS_TO_CALCULATE_REPLACEMENT_SCORES = MODELS_WITH_NP_DASHBOARDS;
 export const ANT_MODELS_TO_LOAD = new Set(['jackl-circuits-runs-1-4-sofa-v3_0']);
+export const modelIdToModelDisplayName = new Map<string, string>([['jackl-circuits-runs-1-4-sofa-v3_0', 'Haiku']]);
 export const ADDITIONAL_MODELS_TO_LOAD = new Set(['qwen3-4b']);
-
-// if neither, then no dashboards yet for them
-
 export const MODEL_DO_NOT_FILTER_NODES = new Set(['gelu-4l-x128k64-v0']);
+
+export const graphModelHasNpDashboards = (graph: CLTGraph) =>
+  graph.metadata.feature_details?.neuronpedia_source_set !== undefined ||
+  MODELS_WITH_NP_DASHBOARDS.has(graph.metadata.scan);
 
 // TODO: this should be by model and source, not just model
 // we use this to figure out the scheme for the feature IDs - how many digits is the layer vs feature id
 export const MODEL_DIGITS_IN_FEATURE_ID = {
   'gemma-2-2b': Number(16384).toString().length,
-  'llama-3-131k-relu': Number(131072).toString().length,
-  //  'qwen3-4b': Number(131072).toString().length,
-};
-
-export const ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID = {
-  'gemma-2-2b': 'gemma-2-2b',
-  'llama-3-131k-relu': 'llama-3.2-1b',
-  'qwen3-4b': 'qwen3-4b',
 };
 
 export const isOldQwenGraph = (graph: CLTGraph) =>
@@ -81,28 +58,32 @@ export const ERROR_MODEL_DOES_NOT_EXIST = 'ERR_MODEL_DOES_NOT_EXIST';
 
 // ============ End of Neuronpedia Specific =============
 
-function getLayerFromAnthropicFeature(modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID, featureNode: CLTGraphNode) {
-  if (MODEL_FEATURE_ID_IS_ONLY_INDEX.has(modelId)) {
+export function getLayerFromOldSchema0Feature(modelId: string, featureNode: CLTGraphNode) {
+  if (modelId === 'qwen3-4b') {
     return parseInt(featureNode.layer, 10);
   }
+  // otherwise this is gemma-2-2b schema 0 which has 5 digits in the feature
+  const gemma2FeatureDigits = 5;
   // remove dash and everything after it
   const layer = featureNode.feature.toString().replace(/-.*$/, '');
   // the layer is the number before the last digitsInNumFeatures digits
-  const layerStr = layer.slice(0, -MODEL_DIGITS_IN_FEATURE_ID[modelId]);
+  const layerStr = layer.slice(0, -gemma2FeatureDigits);
   if (layerStr.length === 0) {
     return 0;
   }
   return parseInt(layerStr, 10);
 }
 
-function getIndexFromAnthropicFeature(modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID, featureNode: CLTGraphNode) {
-  if (MODEL_FEATURE_ID_IS_ONLY_INDEX.has(modelId)) {
+function getIndexFromOldSchema0Feature(modelId: string, featureNode: CLTGraphNode) {
+  if (modelId === 'qwen3-4b') {
     return featureNode.feature;
   }
+  // otherwise this is gemma-2-2b schema 0 which has 5 digits in the feature
+  const gemma2FeatureDigits = 5;
   // remove dash and everything before it
   const index = featureNode.feature.toString().replace(/-.*$/, '');
   // the index is the last digitsInNumFeatures digits
-  const indexStr = index.slice(-MODEL_DIGITS_IN_FEATURE_ID[modelId]);
+  const indexStr = index.slice(-gemma2FeatureDigits);
   if (indexStr.length === 0) {
     return 0;
   }
@@ -127,12 +108,16 @@ export function getLayerFromFeatureAndGraph(modelId: string, node: CLTGraphNode,
   if (selectedGraph?.metadata.schema_version === 1) {
     return getLayerFromCantorValue(node.feature);
   }
-  // if we have MODEL_DIGITS_IN_FEATURE_ID, then we can use the modelId to get the layer, else error
-  if (MODEL_DIGITS_IN_FEATURE_ID[modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID]) {
-    return getLayerFromAnthropicFeature(modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, node);
+  // cases
+  // - gemma-2-2b (new schema = handled above)
+  // - gemma-2-2b old schema = handled here
+  // - qwen3-4b = new schema = handled above
+  // - qwen3-4b old schema = we aren't steering those
+  if (modelId === 'gemma-2-2b') {
+    return getLayerFromOldSchema0Feature(modelId, node);
   }
   console.error(
-    `LayerFromFeature: ${modelId} does not have MODEL_DIGITS_IN_FEATURE_ID. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
+    `LayerFromFeature: ${modelId} - failed to get layer from feature. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
   );
   return 0;
 }
@@ -141,25 +126,23 @@ export function getIndexFromFeatureAndGraph(modelId: string, node: CLTGraphNode,
   if (selectedGraph?.metadata.schema_version === 1) {
     return getIndexFromCantorValue(node.feature);
   }
-  // if we have MODEL_DIGITS_IN_FEATURE_ID, then we can use the modelId to get the index, else error
-  if (MODEL_DIGITS_IN_FEATURE_ID[modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID]) {
-    return getIndexFromAnthropicFeature(modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, node);
+  // cases
+  // - gemma-2-2b (new schema = handled above)
+  // - gemma-2-2b old schema = handled here
+  // - qwen3-4b = new schema = handled above
+  // - qwen3-4b old schema = we aren't steering those
+  if (modelId === 'gemma-2-2b') {
+    return getIndexFromOldSchema0Feature(modelId, node);
   }
   console.error(
-    `IndexFromFeature: ${modelId} does not have MODEL_DIGITS_IN_FEATURE_ID. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
+    `IndexFromFeature: ${modelId} - failed to get index from feature. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
   );
   return 0;
 }
 
-export function getAnthropicFeatureIdFromLayerAndIndex(
-  modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-  layer: number,
-  index: number,
-) {
-  const digitsInNumFeatures = MODEL_DIGITS_IN_FEATURE_ID[modelId];
-
+export function getOldSchema0Gemma2FeatureIdFromLayerAndIndex(layer: number, index: number) {
+  const digitsInNumFeatures = 5;
   const paddedIndex = index.toString().padStart(digitsInNumFeatures, '0');
-
   return parseInt(`${layer}${paddedIndex}`, 10);
 }
 
@@ -178,20 +161,13 @@ export function getFeatureIdFromLayerAndIndex(
   if (selectedGraph?.metadata.schema_version === 1) {
     return getCantorValueFromLayerAndIndex(layer, index);
   }
-  if (MODEL_DIGITS_IN_FEATURE_ID[modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID]) {
-    return getAnthropicFeatureIdFromLayerAndIndex(modelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID, layer, index);
+  if (modelId === 'gemma-2-2b') {
+    return getOldSchema0Gemma2FeatureIdFromLayerAndIndex(layer, index);
   }
   console.error(
-    `FeatureIdFromLayerAndIndex: ${modelId} does not have MODEL_DIGITS_IN_FEATURE_ID. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
+    `FeatureIdFromLayerAndIndex: ${modelId} - failed to get feature id from layer and index. Returning 0. Graph: ${selectedGraph?.metadata.scan}`,
   );
   return 0;
-}
-
-export function convertAnthropicFeatureToNeuronpediaSourceSet(
-  modelId: keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-  featureNode: CLTGraphNode,
-) {
-  return `${getLayerFromAnthropicFeature(modelId, featureNode)}-${MODEL_TO_SOURCESET_ID[modelId]}`;
 }
 
 export const GRAPH_BASE_URL_TO_NAME = {
@@ -257,14 +233,6 @@ export async function getGraphMetadatasFromBucket(baseUrl: string): Promise<Mode
   return graphsByModelId;
 }
 
-export const modelIdToModelDisplayName = new Map<string, string>([
-  ['jackl-circuits-runs-1-4-sofa-v3_0', 'Haiku'],
-  ['jackl-circuits-runs-1-1-druid-cp_0', '18L'],
-  ['jackl-circuits-runs-12-19-valet-m_0', 'Model Organism'],
-  ['jackl-circuits-runs-1-12-rune-cp3_0', '18L PLTs'],
-  ['llama-3-131k-relu', 'Llama 3.2 1B - Relu'],
-]);
-
 export const modelIdAndSchemaToTranscoders = new Map<string, { name: string; hfUrl: string; npUrl: string | null }[]>([
   [
     'gemma-2-2b',
@@ -298,19 +266,10 @@ export const modelIdAndSchemaToTranscoders = new Map<string, { name: string; hfU
   ],
 ]);
 
-export const anthropicModels = [
-  'jackl-circuits-runs-1-4-sofa-v3_0',
-  'jackl-circuits-runs-1-1-druid-cp_0',
-  'jackl-circuits-runs-12-19-valet-m_0',
-  'jackl-circuits-runs-1-12-rune-cp3_0',
-];
+export const anthropicModels = ['jackl-circuits-runs-1-4-sofa-v3_0'];
 
 export const cltModelToNumLayers = {
   'jackl-circuits-runs-1-4-sofa-v3_0': 18,
-  'jackl-circuits-runs-1-1-druid-cp_0': 18,
-  'jackl-circuits-runs-12-19-valet-m_0': 16,
-  'jackl-circuits-runs-1-12-rune-cp3_0': 18,
-  'llama-3-131k-relu': 16,
 };
 
 export function isHideLayer(scan: string) {

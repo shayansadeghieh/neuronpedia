@@ -2,11 +2,9 @@
 
 import FeatureDashboard from '@/app/[modelId]/[layer]/[index]/feature-dashboard';
 import {
-  ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
   getFeatureIdFromLayerAndIndex,
   getIndexFromFeatureAndGraph,
   getLayerFromFeatureAndGraph,
-  MODEL_TO_SOURCESET_ID,
   nodeTypeHasFeatureDetail,
 } from '@/app/[modelId]/graph/utils';
 import CustomTooltip from '@/components/custom-tooltip';
@@ -70,11 +68,7 @@ export default function SteerModal() {
     new Map(),
   );
   const supernodeScrollIntoViewRefs = useRef<Map<number, (HTMLDivElement | null)[]>>(new Map());
-  const [modelId, setModelId] = useState<keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID>(
-    ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
-      selectedGraph?.metadata.scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
-    ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
-  );
+  const [modelId, setModelId] = useState<string>(selectedGraph?.metadata.scan || '');
   const [expandedSupernodeIndexes, setExpandedSupernodeIndexes] = useState<number[]>([]);
   const [addMode, setAddMode] = useState<'search' | 'manual'>('search');
   const [manualLayer, setManualLayer] = useState<string>('');
@@ -97,7 +91,7 @@ export default function SteerModal() {
   });
 
   const makeNodeSourceId = (node: CLTGraphNode): string =>
-    `${getLayerFromFeatureAndGraph(modelId, node, selectedGraph)}-${MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID]}`;
+    `${getLayerFromFeatureAndGraph(modelId, node, selectedGraph)}-${selectedMetadataGraph?.sourceSetName}`;
 
   // checks if a node (identified by layer, index, and token active position) is steered at all
   const isSteered = useCallback(
@@ -502,11 +496,7 @@ export default function SteerModal() {
     setTemperature(STEER_TEMPERATURE_GRAPH);
     setFreqPenalty(STEER_FREQUENCY_PENALTY_GRAPH);
     setSeed(STEER_SEED);
-    setModelId(
-      ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
-        selectedGraph?.metadata.scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
-      ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
-    );
+    setModelId(selectedGraph?.metadata.scan || '');
     setRandomSeed(true);
     setExpandedSupernodeIndexes([]);
     setFreezeAttention(STEER_FREEZE_ATTENTION);
@@ -789,15 +779,9 @@ export default function SteerModal() {
               ) : addMode === 'search' ? (
                 <div className="flex h-full max-h-full flex-1 flex-col">
                   <ExplanationsSearcher
-                    initialModelId={
-                      ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
-                        selectedGraph?.metadata.scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
-                      ] || ''
-                    }
+                    initialModelId={selectedGraph?.metadata.scan || ''}
                     defaultTab={SearchExplanationsType.BY_SOURCE}
-                    initialSourceSetName={
-                      MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID] || ''
-                    }
+                    initialSourceSetName={selectedMetadataGraph?.sourceSetName || ''}
                     showTabs={false}
                     showModelSelector={false}
                     allowSourceSetChange={false}
@@ -863,7 +847,7 @@ export default function SteerModal() {
                           alert('Please enter both layer and index.');
                           return;
                         }
-                        const sourceId = `${manualLayer}-${MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID]}`;
+                        const sourceId = `${manualLayer}-${selectedMetadataGraph?.sourceSetName}`;
                         await fetch(`/api/feature/${modelId}/${sourceId}/${manualIndex}`, {
                           method: 'GET',
                           headers: { 'Content-Type': 'application/json' },
@@ -995,7 +979,7 @@ export default function SteerModal() {
                                     tokenActivePosition: customNode.ctx_idx,
                                   }}
                                   isCustomSteerNode
-                                  sourceId={`${getLayerFromFeatureAndGraph(modelId, customNode, selectedGraph)}-${MODEL_TO_SOURCESET_ID[selectedGraph?.metadata.scan as keyof typeof MODEL_TO_SOURCESET_ID]}`}
+                                  sourceId={`${getLayerFromFeatureAndGraph(modelId, customNode, selectedGraph)}-${selectedMetadataGraph?.sourceSetName}`}
                                   node={customNode}
                                   label={getOverrideClerpForNode(customNode) || ''}
                                   selectedGraph={selectedGraph}
@@ -1031,19 +1015,13 @@ export default function SteerModal() {
                                       (f) =>
                                         f.layer ===
                                           getLayerFromFeatureAndGraph(
-                                            ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
-                                              selectedGraph?.metadata
-                                                .scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
-                                            ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
+                                            selectedGraph?.metadata.scan || '',
                                             customNode,
                                             selectedGraph,
                                           ) &&
                                         f.index ===
                                           getIndexFromFeatureAndGraph(
-                                            ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[
-                                              selectedGraph?.metadata
-                                                .scan as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID
-                                            ] as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
+                                            selectedGraph?.metadata.scan || '',
                                             customNode,
                                             selectedGraph,
                                           ) &&

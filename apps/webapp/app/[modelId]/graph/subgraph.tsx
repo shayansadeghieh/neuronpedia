@@ -13,7 +13,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import d3 from './d3-jetpack';
 import { CLTGraphLink, CLTGraphNode } from './graph-types';
 import { computeGraphScoresInWorker } from './score-worker-client';
-import { clientCheckIsEmbed, hideTooltip, isOldQwenGraph, MODEL_TO_SOURCESET_ID, showTooltip } from './utils';
+import {
+  clientCheckIsEmbed,
+  hideTooltip,
+  isOldQwenGraph,
+  MODELS_TO_CALCULATE_REPLACEMENT_SCORES,
+  showTooltip,
+} from './utils';
 
 const NODE_WIDTH = 75;
 const NODE_HEIGHT = 25;
@@ -1230,7 +1236,7 @@ export default function Subgraph() {
       }`}
     >
       <CardContent className="relative h-full px-0 py-0">
-        {selectedGraph && selectedModelId in MODEL_TO_SOURCESET_ID && (
+        {selectedGraph && MODELS_TO_CALCULATE_REPLACEMENT_SCORES.has(selectedModelId) && (
           <div className="absolute bottom-1 left-0 hidden w-full flex-row items-center justify-center gap-x-1.5 px-5 text-[9px] text-slate-500 sm:flex">
             <div className="flex flex-1 flex-row items-center justify-center gap-x-3">
               <div className="z-10 flex flex-row items-center justify-center gap-x-0.5">

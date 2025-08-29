@@ -253,7 +253,7 @@ export default async function Page({
       }
     }
   } else if (ANT_MODELS_TO_LOAD.has(modelId) || ADDITIONAL_MODELS_TO_LOAD.has(modelId)) {
-    // no default slug and it's a haiku model, just pick the first one
+    // no default slug and it's a haiku or qwen3-4b model, just pick the first one
     // pick the first graph in the map
     [metadataGraph] = modelIdToGraphMetadatasMap[modelId];
   } else if (modelIdToGraphMetadatasMap['gemma-2-2b']) {

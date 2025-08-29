@@ -9,17 +9,14 @@ import {
   ModelToGraphMetadatasMap,
 } from '@/app/[modelId]/graph/graph-types';
 import {
-  ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID,
-  MODEL_DIGITS_IN_FEATURE_ID,
-  MODEL_HAS_S3_DASHBOARDS,
+  ANT_MODELS_TO_LOAD,
   MODEL_TO_SOURCESET_ID,
-  MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR,
   cltModelToNumLayers,
-  convertAnthropicFeatureToNeuronpediaSourceSet,
   formatCLTGraphData,
   getIndexFromCantorValue,
   getIndexFromFeatureAndGraph,
   getLayerFromCantorValue,
+  getLayerFromOldSchema0Feature,
   isHideLayer,
   modelIdToModelDisplayName,
   nodeTypeHasFeatureDetail,
@@ -745,10 +742,11 @@ export function GraphProvider({
         });
       }
     }
-    // TODO: remove this exception once fellows graph gets on cantor
-    else if (MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR.has(selectedModelId)) {
-      const model =
-        ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID[selectedModelId as keyof typeof ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID];
+    // these are the OLD gemma-2-2b graphs that don't have schema version 1
+    // for these it's always transcoder-hp sourceset, using noncantor feature format
+    else if (selectedModelId === 'gemma-2-2b') {
+      const model = selectedModelId;
+      const sourceSet = `transcoder-hp`;
 
       // make an array of features to call /api/features
       // for neuronpedia fetches we only get the first 10 and then load more on demand
@@ -756,15 +754,10 @@ export function GraphProvider({
         .filter((d) => nodeTypeHasFeatureDetail(d))
         .map((d) => ({
           modelId: model,
-          layer: convertAnthropicFeatureToNeuronpediaSourceSet(
-            selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-            d,
-          ),
+          layer: `${getLayerFromOldSchema0Feature(selectedModelId, d)}-${sourceSet}`,
           index: getIndexFromFeatureAndGraph(selectedModelId, d, formattedData),
           maxActsToReturn: GRAPH_PREFETCH_ACTIVATIONS_COUNT,
         }));
-
-      console.log('number of features:', features.length);
       // split the features into batches of NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE
       const batches = [];
       for (let i = 0; i < features.length; i += NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE) {
@@ -804,41 +797,13 @@ export function GraphProvider({
               'index' in f &&
               f.index === getIndexFromFeatureAndGraph(selectedModelId, d, formattedData).toString() &&
               'layer' in f &&
-              f.layer ===
-                convertAnthropicFeatureToNeuronpediaSourceSet(
-                  selectedModelId as keyof typeof MODEL_DIGITS_IN_FEATURE_ID,
-                  d,
-                ),
+              f.layer === `${getLayerFromOldSchema0Feature(selectedModelId, d)}-${sourceSet}`,
           );
           if (feature) {
             // eslint-disable-next-line no-param-reassign
             d.featureDetailNP = feature as NeuronWithPartialRelations;
           }
         });
-    } else if (selectedModelId === 'llama-3.2-1b') {
-      // special case this
-      console.log('llama-3.2-1b, special case to get features');
-      const featureDetails = await fetchInBatches(
-        formattedData.nodes,
-        (d, signal?: AbortSignal) => {
-          if (nodeTypeHasFeatureDetail(d)) {
-            return fetchAnthropicFeatureDetail(
-              'llama-3-131k-relu',
-              d.feature,
-              'https://d1fk9w8oratjix.cloudfront.net',
-              signal,
-            );
-          }
-          return Promise.resolve(null);
-        },
-        ANTHROPIC_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE,
-        abortSignal,
-      );
-
-      formattedData.nodes.forEach((d, i) => {
-        // eslint-disable-next-line no-param-reassign
-        d.featureDetail = featureDetails[i] as AnthropicFeatureDetail;
-      });
     } else if (selectedModelId === 'qwen3-4b') {
       // these are the mntss skip transcoders
       const featureDetails = await fetchInBatches(
@@ -861,7 +826,7 @@ export function GraphProvider({
         // eslint-disable-next-line no-param-reassign
         d.featureDetail = featureDetails[i] as AnthropicFeatureDetail;
       });
-    } else if (MODEL_HAS_S3_DASHBOARDS.has(selectedModelId)) {
+    } else if (ANT_MODELS_TO_LOAD.has(selectedModelId)) {
       // otherwise get the feature from the bucket
       const featureDetails = await fetchInBatches(
         formattedData.nodes,

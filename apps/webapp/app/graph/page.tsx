@@ -1,9 +1,7 @@
 import { ASSET_BASE_URL } from '@/lib/env';
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { modelIdToModelDisplayName } from '../[modelId]/graph/utils';
-
-const DEFAULT_GRAPH_MODEL_ID = 'gemma-2-2b';
+import { DEFAULT_GRAPH_MODEL_ID, modelIdToModelDisplayName } from '../[modelId]/graph/utils';
 
 export async function generateMetadata({
   params,
