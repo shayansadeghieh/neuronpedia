@@ -3084,14 +3084,14 @@ files = [
 
 [[package]]
 name = "sae-lens"
-version = "6.6.4"
+version = "6.9.0"
 description = "Training and Analyzing Sparse Autoencoders (SAEs)"
 optional = false
 python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "sae_lens-6.6.4-py3-none-any.whl", hash = "sha256:a6c69c583bbaa6bc106ea88b01a9293b6ad7581b5511341b9bc1d21521941f12"},
-    {file = "sae_lens-6.6.4.tar.gz", hash = "sha256:fb026e92248deef08e4a34dfb353a80f2595f5e3471b57a5f4a15ae297e50e21"},
+    {file = "sae_lens-6.9.0-py3-none-any.whl", hash = "sha256:dbbf9cc0d0ccc149e542ba9e3d00c2b03a98f32a9487c777f0fd56b6a3efb4a1"},
+    {file = "sae_lens-6.9.0.tar.gz", hash = "sha256:d4fba5e090fcc6bcf09ce75fa76e52f9a097fd0a5e8052b589415e235906c2a3"},
 ]
 
 [package.dependencies]
@@ -3111,7 +3111,6 @@ typing-extensions = ">=4.10.0,<5.0.0"
 
 [package.extras]
 mamba = ["mamba-lens (>=0.0.4,<0.0.5)"]
-neuronpedia = ["automated-interpretability (>=0.0.5,<1.0.0)"]
 
 [[package]]
 name = "safetensors"
@@ -4582,4 +4581,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "82b96c0a425bf4ddee3647cab558ed4df89b8b533502f9a025296d2a07351ca2"
+content-hash = "567c3b3c58b1c1f53ae426a0fcf8c8761f8d9693d682aa6560fc594b08688eb4"
