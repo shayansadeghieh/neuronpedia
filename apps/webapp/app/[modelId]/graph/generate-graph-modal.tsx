@@ -334,7 +334,7 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
               href="https://github.com/safety-research/circuit-tracer"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sky-600 underline hover:text-sky-800"
+              className="text-sky-700 underline hover:text-sky-800"
             >
               https://github.com/safety-research/circuit-tracer
             </a>{' '}
@@ -409,11 +409,11 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
 
   return (
     <Dialog open={isGenerateGraphModalOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="z-[10001] cursor-default select-none gap-y-2 bg-white text-slate-700 sm:max-w-screen-lg">
-        <DialogHeader>
-          <DialogTitle>Generate New Graph</DialogTitle>
-          <DialogDescription className="text-xs text-slate-600">
-            Generate a new attribution graph for a custom prompt. Powered by{' '}
+      <DialogContent className="z-[10001] cursor-default gap-y-2 bg-white text-slate-700 sm:max-w-screen-lg">
+        <DialogHeader className="text-center">
+          <DialogTitle className="text-center">Generate New Graph</DialogTitle>
+          <DialogDescription className="text-center text-xs text-slate-600">
+            Generate a new attribution graph for a custom prompt using{' '}
             <a
               href="https://github.com/safety-research/circuit-tracer"
               target="_blank"
@@ -1225,16 +1225,13 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
             )}
           </Formik>
         ) : (
-          <div className="flex w-full flex-col space-y-1 pb-2">
-            <h3 className="text-lg font-medium text-sky-700">Graph Generated Successfully</h3>
-            <p>
-              <strong>Nodes:</strong> {generationResult.numNodes}
-            </p>
-            <p>
-              <strong>Links:</strong> {generationResult.numLinks}
-            </p>
-            <p className="pb-3 text-sm">
-              <strong>URL:</strong>{' '}
+          <div className="mt-2 flex w-full max-w-xl flex-col space-y-1.5 place-self-center self-center rounded-md bg-slate-50 p-3 pb-2">
+            <h3 className="text-center text-base font-medium text-slate-800">Graph Generated Successfully</h3>
+            <div className="flex w-full flex-row gap-x-2 gap-y-1">
+              <p className="flex-1 text-center text-sm text-slate-700">{generationResult.numNodes} Nodes</p>
+              <p className="flex-1 text-center text-sm text-slate-700">{generationResult.numLinks} Links</p>
+            </div>
+            <p className="pb-3 text-center text-xs">
               <a href={generationResult.url} rel="noopener noreferrer" className="break-all hover:underline">
                 {generationResult.url}
               </a>
@@ -1250,14 +1247,24 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
                 {generationResult.s3url}
               </a>
             </p> */}
-            <Button
-              onClick={() => {
-                window.location.href = generationResult.url;
-              }}
-              className="mt-2 w-full flex-1 bg-sky-600 hover:bg-sky-700 sm:w-auto"
-            >
-              Open Graph
-            </Button>
+            <div className="mt-2 flex w-full flex-col gap-y-2 sm:flex-row sm:gap-x-2">
+              <Button
+                onClick={() => {
+                  window.location.href = generationResult.url;
+                }}
+                className="flex-1 bg-sky-600 text-sm hover:bg-sky-700 sm:w-auto"
+              >
+                Open Graph
+              </Button>
+              <Button
+                onClick={() => {
+                  window.open(generationResult.url, '_blank');
+                }}
+                className="flex-1 bg-sky-600 hover:bg-sky-700 sm:w-auto"
+              >
+                Open Graph (New Tab)
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
