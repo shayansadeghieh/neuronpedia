@@ -58,6 +58,7 @@ export const [GlobalContext, useGlobalContext] = createContextWrapper<{
     onlyInferenceEnabled?: boolean,
     includeNoDashboards?: boolean,
   ) => string[];
+  getHasGraphsSourceSetsForModelId: (modelId: string) => SourceSetWithPartialRelations[];
   isGraphEnabledForSourceSet: (modelId: string, sourceSet: string) => boolean;
   isGraphEnabledForSource: (modelId: string, source: string) => boolean;
   explanationTypes: ExplanationType[];
@@ -353,6 +354,11 @@ export default function GlobalProvider({
     return toReturn;
   };
 
+  const getHasGraphsSourceSetsForModelId = (modelId: string) => {
+    const ss = getSourceSetsForModelId(modelId);
+    return ss.filter((s) => s.hasGraphs);
+  };
+
   const isGraphEnabledForSourceSet = (modelId: string, sourceSet: string) => {
     // for transcoders / graphs we have a different steering method/server, so we don't show it here
     const sourceSetObj = getSourceSet(modelId, sourceSet);
@@ -421,6 +427,7 @@ export default function GlobalProvider({
           getFirstSourceForSourceSet,
           getSourceSetsForModelId,
           getInferenceEnabledSourcesForModel,
+          getHasGraphsSourceSetsForModelId,
           isGraphEnabledForSourceSet,
           isGraphEnabledForSource,
           explanationTypes,
@@ -464,6 +471,7 @@ export default function GlobalProvider({
           getSourceSetForSource,
           getSourceSetsForModelId,
           getSourcesForSourceSet,
+          getHasGraphsSourceSetsForModelId,
           isGraphEnabledForSourceSet,
           isGraphEnabledForSource,
           globalModels,

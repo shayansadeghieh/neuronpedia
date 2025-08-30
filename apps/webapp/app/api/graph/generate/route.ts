@@ -1,10 +1,5 @@
 import { CLTGraph } from '@/app/[modelId]/graph/graph-types';
-import {
-  ATTRIBUTION_GRAPH_SCHEMA,
-  makeGraphPublicAccessGraphUrl,
-  MODEL_TO_SOURCESET_ID,
-  NP_GRAPH_BUCKET,
-} from '@/app/[modelId]/graph/utils';
+import { ATTRIBUTION_GRAPH_SCHEMA, makeGraphPublicAccessGraphUrl, NP_GRAPH_BUCKET } from '@/app/[modelId]/graph/utils';
 import { prisma } from '@/lib/db';
 import { getGraphServerRunpodHostForSourceSet } from '@/lib/db/graph-host-source';
 import { getModelById } from '@/lib/db/model';
@@ -282,10 +277,7 @@ export const POST = withOptionalUser(async (request: RequestOptionalUser) => {
 
     // check the queue
     if (USE_RUNPOD_GRAPH) {
-      const host = await getGraphServerRunpodHostForSourceSet(
-        validatedData.modelId,
-        MODEL_TO_SOURCESET_ID[validatedData.modelId as keyof typeof MODEL_TO_SOURCESET_ID],
-      );
+      const host = await getGraphServerRunpodHostForSourceSet(validatedData.modelId, validatedData.sourceSetName);
       if (!host) {
         throw new Error('No runpod serverless host found.');
       }

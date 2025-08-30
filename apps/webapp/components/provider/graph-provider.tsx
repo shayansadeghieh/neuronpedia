@@ -9,16 +9,15 @@ import {
   ModelToGraphMetadatasMap,
 } from '@/app/[modelId]/graph/graph-types';
 import {
-  ANT_MODELS_TO_LOAD,
-  MODEL_TO_SOURCESET_ID,
-  cltModelToNumLayers,
+  ANTHROPIC_MODEL_TO_DISPLAY_NAME,
+  ANTHROPIC_MODEL_TO_NUM_LAYERS,
+  ANTHROPIC_MODELS,
   formatCLTGraphData,
   getIndexFromCantorValue,
   getIndexFromFeatureAndGraph,
   getLayerFromCantorValue,
   getLayerFromOldSchema0Feature,
   isHideLayer,
-  modelIdToModelDisplayName,
   nodeTypeHasFeatureDetail,
   parseGraphClerps,
   parseGraphSupernodes,
@@ -34,10 +33,10 @@ import debounce from 'lodash/debounce';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
+  createContext,
   Dispatch,
   ReactNode,
   SetStateAction,
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -58,6 +57,8 @@ export const PREFERRED_EXPLANATION_TYPES_NAMES = ['np_max-act-logits', 'np_max-a
 type GraphContextType = {
   modelIdToMetadataMap: ModelToGraphMetadatasMap;
   selectedModelId: string;
+  selectedSourceSetName: string;
+  setSelectedSourceSetName: (sourceSetName: string) => void;
   selectedMetadataGraph: GraphMetadataWithPartialRelations | null;
   selectedGraph: CLTGraph | null;
   setSelectedModelId: (modelId: string) => void;
@@ -148,6 +149,7 @@ export function GraphProvider({
   children,
   initialModelIdToMetadataGraphsMap = {},
   initialModel,
+  initialSourceSetName,
   initialMetadataGraph,
   initialPinnedIds,
   initialSupernodes,
@@ -158,6 +160,7 @@ export function GraphProvider({
   children: ReactNode;
   initialModelIdToMetadataGraphsMap?: ModelToGraphMetadatasMap;
   initialModel?: string;
+  initialSourceSetName?: string;
   initialMetadataGraph?: GraphMetadata;
   initialPinnedIds?: string;
   initialSupernodes?: string[][];
@@ -187,6 +190,14 @@ export function GraphProvider({
       (selectedModelId && initialModelIdToMetadataGraphsMap[selectedModelId]?.length > 0
         ? initialModelIdToMetadataGraphsMap[selectedModelId][0]
         : null),
+  );
+  const [selectedSourceSetName, setSelectedSourceSetName] = useState<string>(
+    initialSourceSetName ||
+      (ANTHROPIC_MODELS.has(selectedModelId)
+        ? selectedModelId
+        : selectedMetadataGraph
+          ? selectedMetadataGraph.sourceSetName || ''
+          : ''),
   );
   const [selectedGraph, setSelectedGraph] = useState<CLTGraph | null>(null);
   const [isLoadingGraphData, setIsLoadingGraphData] = useState<boolean>(true);
@@ -387,8 +398,11 @@ export function GraphProvider({
         ...graph.qParams,
       };
     }
-    visStateToReturn.pruningThreshold = 0.6;
-
+    if (graph.metadata.node_threshold !== undefined) {
+      visStateToReturn.pruningThreshold = graph.metadata.node_threshold;
+    } else {
+      visStateToReturn.pruningThreshold = 0.6;
+    }
     visStateToReturn.densityThreshold = 1;
 
     return visStateToReturn;
@@ -614,8 +628,8 @@ export function GraphProvider({
     // check if we have this model in cltModelToNumLayers
     // if selectedModelId is not in cltModelToNumLayers, then we need to get the num_layers from the database
     let numLayers = 0;
-    if (selectedModelId in cltModelToNumLayers) {
-      numLayers = cltModelToNumLayers[selectedModelId as keyof typeof cltModelToNumLayers];
+    if (selectedModelId in ANTHROPIC_MODEL_TO_NUM_LAYERS) {
+      numLayers = ANTHROPIC_MODEL_TO_NUM_LAYERS[selectedModelId as keyof typeof ANTHROPIC_MODEL_TO_NUM_LAYERS];
     } else {
       const model = globalModels[selectedModelId];
       if (model) {
@@ -624,8 +638,8 @@ export function GraphProvider({
     }
 
     let displayName = '';
-    if (selectedModelId in modelIdToModelDisplayName) {
-      displayName = modelIdToModelDisplayName.get(selectedModelId) || '';
+    if (selectedModelId in ANTHROPIC_MODEL_TO_DISPLAY_NAME) {
+      displayName = ANTHROPIC_MODEL_TO_DISPLAY_NAME.get(selectedModelId) || '';
     } else {
       displayName = globalModels[selectedModelId]?.displayName || '';
     }
@@ -648,10 +662,9 @@ export function GraphProvider({
     if (isCantor) {
       const model = data.metadata.scan;
 
-      if (data.metadata.feature_details?.neuronpedia_source_set || model in MODEL_TO_SOURCESET_ID) {
-        const sourceSet =
-          data.metadata.feature_details?.neuronpedia_source_set ||
-          MODEL_TO_SOURCESET_ID[model as keyof typeof MODEL_TO_SOURCESET_ID];
+      // check if we have NP dashboards
+      if (data.metadata.feature_details?.neuronpedia_source_set || graph.sourceSetName) {
+        const sourceSet = data.metadata.feature_details?.neuronpedia_source_set || graph.sourceSetName;
 
         // make an array of features to call /api/features
         // for neuronpedia fetches we only get the first 10 and then load more on demand
@@ -718,7 +731,7 @@ export function GraphProvider({
       } else {
         // currently only qwen3-4b mwhanna noskip transcoder is at this condition because it's:
         // 1) schema version 1
-        // 2) is NOT in MODEL_TO_SOURCESET_ID (doesn't yet have neuronpedia dashboards)
+        // 2) is NOT in MODEL_TO_SOURCESET_ID (doesn't have neuronpedia dashboards)
         const mwhannaQwenNoSkipTranscoderFeaturePrefix = 'Qwen3-4b-relu-noskip-';
         const featureDetails = await fetchInBatches(
           formattedData.nodes,
@@ -746,8 +759,7 @@ export function GraphProvider({
     // for these it's always transcoder-hp sourceset, using noncantor feature format
     else if (selectedModelId === 'gemma-2-2b') {
       const model = selectedModelId;
-      const sourceSet = `transcoder-hp`;
-
+      const sourceSet = `gemmascope-transcoder-16k`;
       // make an array of features to call /api/features
       // for neuronpedia fetches we only get the first 10 and then load more on demand
       const features = formattedData.nodes
@@ -826,7 +838,7 @@ export function GraphProvider({
         // eslint-disable-next-line no-param-reassign
         d.featureDetail = featureDetails[i] as AnthropicFeatureDetail;
       });
-    } else if (ANT_MODELS_TO_LOAD.has(selectedModelId)) {
+    } else if (ANTHROPIC_MODELS.has(selectedModelId)) {
       // otherwise get the feature from the bucket
       const featureDetails = await fetchInBatches(
         formattedData.nodes,
@@ -1030,6 +1042,8 @@ export function GraphProvider({
       setDefaultMetadataGraph,
       selectedGraph,
       setSelectedModelId,
+      selectedSourceSetName,
+      setSelectedSourceSetName,
       setSelectedMetadataGraph,
       setModelIdToMetadataMap,
       getGraph,
@@ -1063,6 +1077,8 @@ export function GraphProvider({
       selectedMetadataGraph,
       setDefaultMetadataGraph,
       selectedGraph,
+      selectedSourceSetName,
+      setSelectedSourceSetName,
       visState,
       logitDiff,
       updateVisStateField,

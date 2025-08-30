@@ -1,4 +1,3 @@
-import { MODEL_TO_SOURCESET_ID } from '@/app/[modelId]/graph/utils';
 import { GRAPH_RUNPOD_SECRET, USE_RUNPOD_GRAPH } from '@/lib/env';
 import * as yup from 'yup';
 import {
@@ -248,6 +247,7 @@ export type SteerLogitFeature = yup.InferType<typeof SteerLogitFeatureSchema>;
 
 export const SteerLogitsRequestSchema = yup.object({
   modelId: yup.string().required('Model ID is required'),
+  sourceSetName: yup.string().nullable(),
   prompt: yup.string().required('Prompt is required'),
   features: yup.array().of(SteerLogitFeatureSchema).required('Features are required'),
   nTokens: yup.number().default(STEER_N_COMPLETION_TOKENS).min(1).max(STEER_N_COMPLETION_TOKENS_MAX),
@@ -305,6 +305,7 @@ export type SteeredPositionIdentifier = {
 
 export const steerLogits = async (
   modelId: string,
+  sourceSetName: string,
   prompt: string,
   features: SteerLogitFeature[],
   nTokens: number,
@@ -334,7 +335,6 @@ export const steerLogits = async (
     request_type: action,
   };
 
-  const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
   const response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
     method: 'POST',
     headers: {

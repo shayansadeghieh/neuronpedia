@@ -18,41 +18,39 @@ import {
 
 // TODO: make this an env variable
 export const NP_GRAPH_BUCKET = 'neuronpedia-attrib';
-
 export const ANT_BUCKET_URL = 'https://transformer-circuits.pub/2025/attribution-graphs';
-
 export const MAX_GRAPH_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 
 // ============ Neuronpedia Specific =============
 
-export const MODEL_TO_SOURCESET_ID = {
-  'gemma-2-2b': 'gemmascope-transcoder-16k',
-  'qwen3-4b': 'transcoder-hp',
-};
-
 export const DEFAULT_GRAPH_MODEL_ID = 'gemma-2-2b';
+export const ADDITIONAL_MODELS_TO_LOAD = new Set(['qwen3-4b']);
 export const MODELS_WITH_NP_DASHBOARDS = new Set(['gemma-2-2b', 'qwen3-4b']);
 export const MODELS_TO_CALCULATE_REPLACEMENT_SCORES = MODELS_WITH_NP_DASHBOARDS;
-export const ANT_MODELS_TO_LOAD = new Set(['jackl-circuits-runs-1-4-sofa-v3_0']);
-export const modelIdToModelDisplayName = new Map<string, string>([['jackl-circuits-runs-1-4-sofa-v3_0', 'Haiku']]);
-export const ADDITIONAL_MODELS_TO_LOAD = new Set(['qwen3-4b']);
-export const MODEL_DO_NOT_FILTER_NODES = new Set(['gelu-4l-x128k64-v0']);
+export const ANTHROPIC_MODELS = new Set(['jackl-circuits-runs-1-4-sofa-v3_0']);
+export const ANTHROPIC_MODEL_TO_NUM_LAYERS = {
+  'jackl-circuits-runs-1-4-sofa-v3_0': 18,
+};
+export const ANTHROPIC_MODEL_TO_DISPLAY_NAME = new Map<string, string>([
+  ['jackl-circuits-runs-1-4-sofa-v3_0', 'Haiku'],
+]);
+export const ANTHROPIC_DUMMY_SOURCESET = { name: 'jackl-circuits-runs-1-4-sofa-v3_0', creatorName: 'Anthropic' };
+export const GRAPH_BASE_URL_TO_NAME = {
+  'https://transformer-circuits.pub/2025/attribution-graphs': 'Ameisen et al.',
+  'https://d1fk9w8oratjix.cloudfront.net': 'Piotrowski & Hanna',
+};
 
 export const graphModelHasNpDashboards = (graph: CLTGraph) =>
   graph.metadata.feature_details?.neuronpedia_source_set !== undefined ||
   MODELS_WITH_NP_DASHBOARDS.has(graph.metadata.scan);
 
-// TODO: this should be by model and source, not just model
-// we use this to figure out the scheme for the feature IDs - how many digits is the layer vs feature id
-export const MODEL_DIGITS_IN_FEATURE_ID = {
-  'gemma-2-2b': Number(16384).toString().length,
-};
-
 export const isOldQwenGraph = (graph: CLTGraph) =>
   graph.metadata.scan === 'qwen3-4b' &&
   (graph.metadata.schema_version === undefined || graph.metadata.schema_version === null);
 
-export const MODEL_FEATURE_ID_IS_ONLY_INDEX = new Set(['qwen3-4b']);
+export function isHideLayer(scan: string) {
+  return scan === 'jackl-circuits-runs-1-4-sofa-v3_0';
+}
 
 export const ERROR_MODEL_DOES_NOT_EXIST = 'ERR_MODEL_DOES_NOT_EXIST';
 
@@ -170,11 +168,6 @@ export function getFeatureIdFromLayerAndIndex(
   return 0;
 }
 
-export const GRAPH_BASE_URL_TO_NAME = {
-  'https://transformer-circuits.pub/2025/attribution-graphs': 'Ameisen et al.',
-  'https://d1fk9w8oratjix.cloudfront.net': 'Piotrowski & Hanna',
-};
-
 export function getGraphBaseUrlToName(url: string) {
   // if url starts with one of the keys in GRAPH_BASE_URL_TO_NAME, return the value
   const key = Object.keys(GRAPH_BASE_URL_TO_NAME).find((k) => url.startsWith(k));
@@ -231,49 +224,6 @@ export async function getGraphMetadatasFromBucket(baseUrl: string): Promise<Mode
   }, {} as ModelToGraphMetadatasMap);
 
   return graphsByModelId;
-}
-
-export const modelIdAndSchemaToTranscoders = new Map<string, { name: string; hfUrl: string; npUrl: string | null }[]>([
-  [
-    'gemma-2-2b',
-    [
-      {
-        name: 'Gemmascope PLT',
-        hfUrl: 'https://huggingface.co/google/gemma-scope-2b-pt-transcoders',
-        npUrl: 'https://neuronpedia.org/gemma-2-2b/gemmascope-transcoder-16k',
-      },
-    ],
-  ],
-  // [
-  //   'qwen3-4b-skip',
-  //   [
-  //     {
-  //       name: 'Hanna/Piotrowski Skip Transcoders',
-  //       hfUrl: 'https://huggingface.co/mntss/skip-transcoders-qwen-3-4b',
-  //       npUrl: null,
-  //     },
-  //   ],
-  // ],
-  [
-    'qwen3-4b',
-    [
-      {
-        name: 'Hanna/Piotrowski PLT',
-        hfUrl: 'https://huggingface.co/mwhanna/qwen3-4b-transcoders',
-        npUrl: null,
-      },
-    ],
-  ],
-]);
-
-export const anthropicModels = ['jackl-circuits-runs-1-4-sofa-v3_0'];
-
-export const cltModelToNumLayers = {
-  'jackl-circuits-runs-1-4-sofa-v3_0': 18,
-};
-
-export function isHideLayer(scan: string) {
-  return scan === 'jackl-circuits-runs-1-4-sofa-v3_0';
 }
 
 // ========= util-cg.js formatData equivalent =========
@@ -388,7 +338,7 @@ export function formatCLTGraphData(data: CLTGraph, logitDiff: string | null): CL
     d.featureIndex = d.feature;
 
     // anthropic model subgraphs use jsNodeId as the nodeId
-    if (anthropicModels.includes(data.metadata.scan)) {
+    if (ANTHROPIC_MODELS.has(data.metadata.scan)) {
       d.nodeId = d.jsNodeId;
     } else {
       d.nodeId = d.node_id;
@@ -397,25 +347,6 @@ export function formatCLTGraphData(data: CLTGraph, logitDiff: string | null): CL
     idToNode[d.nodeId] = d;
     pyNodeIdToNode[d.node_id] = d;
   });
-
-  // // delete features that occur in than 2/3 of tokens
-  // // SPECIAL CASE: for eleuther graphs don't do the filtering out
-  // if (!MODEL_DO_NOT_FILTER_NODES.has(metadata.scan)) {
-  //   const deletedFeatures: CLTGraphNode[][] = [];
-  //   const byFeatureId = d3.nestBy(nodes, (d) => d.featureId || '');
-  //   byFeatureId.forEach((feature) => {
-  //     if (feature.length > (metadata.prompt_tokens.length * 2) / 3) {
-  //       deletedFeatures.push(feature);
-  //       feature.forEach((d) => {
-  //         if (d.nodeId) delete idToNode[d.nodeId];
-  //         if (d.node_id) delete pyNodeIdToNode[d.node_id];
-  //       });
-  //     }
-  //   });
-  //   //   if (deletedFeatures.length) console.log({ deletedFeatures });
-
-  //   nodes = nodes.filter((d) => (d.nodeId ? idToNode[d.nodeId] : false));
-  // }
 
   nodes = d3.sort(nodes, (d) => +d.layer);
 
@@ -884,14 +815,6 @@ export function computeGraphScoresFromGraphData(
   // Get the adjacency matrix
   const { matrix: adjacencyMatrix, sortedNodes } = reconstructAdjacencyMatrix(graphNodesToUse, graphData.links);
 
-  // // // print the sortednodes
-  // if (pinnedIds.length > 0) {
-  //   console.log('graphNodesToUse:');
-  //   sortedNodes.forEach((node) => {
-  //     console.log(`  nodeId: ${node.node_id}, feature_type: ${node.feature_type}`);
-  //   });
-  // }
-
   // Filter by feature_type "logit" in nodes and get its "token_prob" to make logit_probabilities
   const logitProbabilities = graphNodesToUse
     .filter((node) => node.feature_type === 'logit')
@@ -911,13 +834,6 @@ export function computeGraphScoresFromGraphData(
   const embeddingIndex = sortedNodes.findIndex((node) => node.feature_type === 'embedding');
   const errorEnd = embeddingIndex !== -1 ? embeddingIndex : errorStart;
   const tokenEnd = errorEnd + nTokens;
-
-  // console.log(`n_logits: ${nLogits}`);
-  // console.log(`n_tokens: ${nTokens}`);
-  // console.log(`n_features: ${nFeatures}`);
-  // console.log(`error_start: ${errorStart}`);
-  // console.log(`error_end: ${errorEnd}`);
-  // console.log(`token_end: ${tokenEnd}`);
 
   const logitWeights = new Array(adjacencyMatrix.length).fill(0);
   for (let i = 0; i < nLogits; i += 1) {
@@ -939,9 +855,6 @@ export function computeGraphScoresFromGraphData(
   const completenessScore =
     nonErrorFractions.map((fraction, i) => fraction * outputInfluence[i]).reduce((sum, val) => sum + val, 0) /
     outputInfluence.reduce((sum, val) => sum + val, 0);
-
-  // console.log(`replacement_score: ${replacementScore}`);
-  // console.log(`completeness_score: ${completenessScore}`);
 
   return {
     replacementScore: Number.isNaN(replacementScore) ? 0 : replacementScore,

@@ -50,7 +50,8 @@ const DELTA_COMPARISON_TOLERANCE = 0.1;
 
 export default function SteerModal() {
   const { isSteerModalOpen, setIsSteerModalOpen } = useGraphModalContext();
-  const { visState, selectedMetadataGraph, selectedGraph, getOverrideClerpForNode } = useGraphContext();
+  const { visState, selectedMetadataGraph, selectedGraph, getOverrideClerpForNode, selectedSourceSetName } =
+    useGraphContext();
   const [steerResult, setSteerResult] = useState<SteerResponse | undefined>();
   const [isSteering, setIsSteering] = useState(false);
   const [steeredPositions, setSteeredPositions] = useState<SteerLogitFeature[]>([]);
@@ -519,6 +520,7 @@ export default function SteerModal() {
     // TODO: remove <bos> hack
     const requestBody: SteerLogitsRequest = {
       modelId: selectedGraph?.metadata.scan || '',
+      sourceSetName: selectedSourceSetName || '',
       prompt: selectedGraph?.metadata.prompt.replaceAll('<bos>', '') || '',
       features: steeredPositions,
       nTokens: steerTokens,

@@ -87,80 +87,49 @@ transcoders: Any = None
 model: Any = None
 request_lock = threading.Lock()
 
-# scan is used to specify the model + transcoders
-TLENS_MODEL_ID_TO_SCAN = {
-    "google/gemma-2-2b": "gemma-2-2b",
-    "meta-llama/Llama-3.2-1B": "llama-3-131k-relu",
-    "Qwen/Qwen3-4B": "qwen3-4b",
-}
-
-TLENS_MODEL_TO_SOURCE_URL_ARRAYS = {
-    "google/gemma-2-2b": [
+TRANSCODER_SET_TO_SOURCE_URL_ARRAYS = {
+    "gemma": [
         "https://neuronpedia.org/gemma-2-2b/gemmascope-transcoder-16k",
         "https://huggingface.co/google/gemma-scope-2b-pt-transcoders",
     ],
-    "llama-3-131k-relu": [],
-    "Qwen/Qwen3-4B": [
-        "https://huggingface.co/mwhanna/qwen3-4b-transcoders"
-    ],  # ["https://huggingface.co/mntss/skip-transcoders-qwen-3-4b"],
+    "mwhanna/qwen3-4b-transcoders": [
+        "https://neuronpedia.org/qwen3-4b/transcoder-hp",
+        "https://huggingface.co/mwhanna/qwen3-4b-transcoders",
+    ],
+    "mntss/clt-gemma-2-2b-2.5M": [
+        "https://neuronpedia.org/gemma-2-2b/clt-hp",
+        "https://huggingface.co/mntss/clt-gemma-2-2b-2.5M",
+    ],
 }
 
-# this is what neuronpedia will send in the request
-NP_MODEL_ID_TO_TLENS_MODEL_ID = {
-    "gemma-2-2b": "google/gemma-2-2b",
-    "llama3.1-8b": "meta-llama/Llama-3.2-1B",
-}
-
-CUSTOM_TRANSCODER_HF_PATH = {
-    # "Qwen/Qwen3-4B": "neuronpedia/skip-transcoders-qwen-3-4b",
-    "Qwen/Qwen3-4B": "mwhanna/qwen3-4b-transcoders",
+TLENS_MODEL_ID_TO_NP_MODEL_ID = {
+    "google/gemma-2-2b": "gemma-2-2b",
+    "meta-llama/Llama-3.2-1B": "llama3.1-8b",
+    "Qwen/Qwen3-4B": "qwen3-4b",
 }
 
 loaded_model_arg = os.getenv("MODEL_ID")
-print(f"Loaded Model: {loaded_model_arg}")
+print(f"Model: {loaded_model_arg}")
 if not loaded_model_arg:
     raise ValueError(
         "TransformerLens model name is required. Please specify a model as a command line argument. Valid models: "
-        + ", ".join(TLENS_MODEL_ID_TO_SCAN.keys())
+        + ", ".join(TLENS_MODEL_ID_TO_NP_MODEL_ID.keys())
     )
 
-print(f"Loading transcoders and model: {loaded_model_arg}...")
-transcoder_name = ""
-if loaded_model_arg == "google/gemma-2-2b":
-    transcoder_name = "gemma"
-elif loaded_model_arg == "meta-llama/Llama-3.2-1B":
-    transcoder_name = "llama"
-elif loaded_model_arg == "Qwen/Qwen3-4B":
-    transcoder_name = "qwen3-4b"
-else:
-    raise ValueError(
-        f"Could not find transcoder name for transformerlens model: {loaded_model_arg}. Valid models: "
-        + ", ".join(TLENS_MODEL_ID_TO_SCAN.keys())
-    )
+transcoder_set = os.getenv("TRANSCODER_SET")
+print(f"Transcoder set: {transcoder_set}")
+if not transcoder_set:
+    raise ValueError("Transcoder set is required. Please specify a transcoders set.")
 
 device = get_device()
 model_dtype = get_model_dtype()
 
-if loaded_model_arg in CUSTOM_TRANSCODER_HF_PATH:
-    model = ReplacementModel.from_pretrained(
-        loaded_model_arg,
-        CUSTOM_TRANSCODER_HF_PATH[loaded_model_arg],
-        device=device,
-        dtype=model_dtype,
-    )
-else:
-    model = ReplacementModel.from_pretrained(
-        loaded_model_arg, transcoder_name, device=device, dtype=model_dtype
-    )
-
-loaded_scan = TLENS_MODEL_ID_TO_SCAN.get(loaded_model_arg)
-if loaded_scan is None:
-    raise ValueError(
-        f"Could not find scan for transformerlens model: {loaded_model_arg}. Valid models: "
-        + ", ".join(TLENS_MODEL_ID_TO_SCAN.keys())
-    )
-
-print(f"Matched model to scan: {loaded_scan}")
+model = ReplacementModel.from_pretrained(
+    loaded_model_arg,
+    transcoder_set,
+    device=device,
+    dtype=model_dtype,
+)
 
 
 def printMemory():
@@ -582,19 +551,7 @@ async def generate_graph(req: Request):
 
         prompt = req_data.prompt
         tlens_model_id = req_data.model_id
-        if tlens_model_id is None:
-            request_lock.release()
-            raise HTTPException(
-                status_code=400,
-                detail=f"Model '{tlens_model_id}' is not available. Only '{loaded_model_arg}' is currently loaded.",
-            )
-        current_scan = TLENS_MODEL_ID_TO_SCAN.get(tlens_model_id)
-
-        if current_scan != loaded_scan:
-            print(
-                f"Requested model '{tlens_model_id}' not available or default failed to load."
-            )
-            print(f"Thread {threading.get_ident()}: Model mismatch. Releasing lock.")
+        if tlens_model_id is None or tlens_model_id != loaded_model_arg:
             request_lock.release()
             raise HTTPException(
                 status_code=400,
@@ -611,12 +568,13 @@ async def generate_graph(req: Request):
         print(
             f"Thread {threading.get_ident()}: Processing request for prompt: '{prompt[:50]}...' with parameters:"
         )
+        print(f"  model_id: {tlens_model_id}")
         print(f"  batch_size: {batch_size}")
         print(f"  max_n_logits: {max_n_logits}")
         print(f"  desired_logit_prob: {desired_logit_prob}")
         print(f"  node_threshold: {node_threshold}")
         print(f"  edge_threshold: {edge_threshold}")
-        print(f"  scan: {loaded_scan}")
+        print(f"  transcoder_set: {transcoder_set}")
         print(f"  slug_identifier: {slug_identifier}")
         print(f"  max_feature_nodes: {max_feature_nodes}")
 
@@ -673,7 +631,7 @@ async def generate_graph(req: Request):
                 _graph,
                 _node_mask,
                 tokenizer,
-                _cumulative_scores,  # , current_scan if loaded_model_arg not in CUSTOM_TRANSCODER_HF_PATH else None
+                _cumulative_scores,
             )
             print("nodes created")
             _used_nodes, _used_edges = create_used_nodes_and_edges(
@@ -685,7 +643,7 @@ async def generate_graph(req: Request):
                 _used_nodes,
                 _used_edges,
                 slug_identifier,
-                loaded_scan,
+                TLENS_MODEL_ID_TO_NP_MODEL_ID[tlens_model_id],
                 node_threshold,
                 tokenizer,
             )
@@ -708,7 +666,8 @@ async def generate_graph(req: Request):
                 if req_data.user_id
                 else "Anonymous (CT)",
                 "creator_url": "https://neuronpedia.org",
-                "source_urls": TLENS_MODEL_TO_SOURCE_URL_ARRAYS[loaded_model_arg],
+                "source_urls": TRANSCODER_SET_TO_SOURCE_URL_ARRAYS[transcoder_set],
+                "transcoder_set": transcoder_set,
                 "generator": {
                     "name": "circuit-tracer by Hanna & Piotrowski",
                     "version": "0.2.0 | 3976e39",
