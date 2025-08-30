@@ -114,6 +114,7 @@ const formatCountdown = (totalSeconds: number): string => {
 export default function GenerateGraphModal({ showGenerateModal }: { showGenerateModal: boolean }) {
   const { isGenerateGraphModalOpen, setIsGenerateGraphModalOpen, generateGraphModalPrompt } = useGraphModalContext();
   const { selectedModelId, selectedSourceSetName } = useGraphContext();
+  const { globalModels } = useGlobalContext();
   const [generationResult, setGenerationResult] = useState<GenerateGraphResponse | null>(null);
   const [graphTokenizeResponse, setGraphTokenizeResponse] = useState<GraphTokenizeResponse | null>(null);
   const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
@@ -494,14 +495,18 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
                                   <RadixSelect.ScrollUpButton className="flex items-center justify-center py-1">
                                     <ChevronUpIcon className="h-4 w-4" />
                                   </RadixSelect.ScrollUpButton>
-                                  <RadixSelect.Viewport className="p-1">
+                                  <RadixSelect.Viewport className="divide-y divide-slate-200 p-1">
                                     {GRAPH_GENERATION_ENABLED_MODELS.map((model) => (
                                       <RadixSelect.Item
                                         key={model}
                                         value={model}
-                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-4 pr-2 text-xs text-slate-600 outline-none hover:bg-sky-100 focus:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm px-3 py-2 text-xs text-slate-600 outline-none hover:bg-sky-100 focus:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                                       >
-                                        <RadixSelect.ItemText>{model}</RadixSelect.ItemText>
+                                        <RadixSelect.ItemText>
+                                          <span className="font-mono font-medium text-sky-700">
+                                            {globalModels[model]?.displayName || model}
+                                          </span>
+                                        </RadixSelect.ItemText>
                                       </RadixSelect.Item>
                                     ))}
                                   </RadixSelect.Viewport>
@@ -542,14 +547,21 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
                                   <RadixSelect.ScrollUpButton className="flex items-center justify-center py-1">
                                     <ChevronUpIcon className="h-4 w-4" />
                                   </RadixSelect.ScrollUpButton>
-                                  <RadixSelect.Viewport className="p-1">
+                                  <RadixSelect.Viewport className="divide-y divide-slate-200 p-1">
                                     {getHasGraphsSourceSetsForModelId(values.modelId).map((sourceSet) => (
                                       <RadixSelect.Item
                                         key={sourceSet.name}
                                         value={sourceSet.name}
-                                        className="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 pl-4 pr-2 text-xs text-slate-600 outline-none hover:bg-sky-100 focus:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+                                        className="relative flex w-full cursor-pointer select-none flex-col items-start gap-y-1 rounded-sm px-3 py-2.5 text-xs text-slate-600 outline-none hover:bg-sky-100 focus:bg-slate-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
                                       >
-                                        <RadixSelect.ItemText>{sourceSet.name}</RadixSelect.ItemText>
+                                        <RadixSelect.ItemText className="w-full text-left font-mono font-medium uppercase text-sky-700">
+                                          <span className="font-mono font-medium text-sky-700">
+                                            {sourceSet.name.toUpperCase()}
+                                          </span>
+                                        </RadixSelect.ItemText>
+                                        <div className="w-full text-[10px] font-normal text-slate-500">
+                                          {sourceSet.description} · {sourceSet.creatorName}
+                                        </div>
                                       </RadixSelect.Item>
                                     ))}
                                   </RadixSelect.Viewport>
@@ -570,9 +582,9 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
                           size="sm"
                           onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
                           disabled={isGenerating}
-                          className="hidden h-9 px-3 text-[10px] leading-snug text-slate-500 hover:text-slate-700 sm:block"
+                          className="hidden h-9 px-3 text-[11px] leading-snug text-slate-600 hover:text-slate-700 sm:block"
                         >
-                          Advanced Settings
+                          Advanced
                         </Button>
                       </div>
 
