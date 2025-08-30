@@ -158,10 +158,15 @@ export const getNeurons = async (
   user: AuthenticatedUser | null = null,
   actsToReturn?: number,
 ) => {
-  const allowedNeurons = await filterToUserCanAccessNeurons(features, user);
+  // const startTime = Date.now();
+  // console.log('getting allowedneurons');
+  // const allowedNeurons = await filterToUserCanAccessNeurons(features, user);
+  // const endTime = Date.now();
+  // console.log(`Time elapsed: ${endTime - startTime}ms`);
+  // console.log('allowedNeurons', allowedNeurons);
   return prisma.neuron.findMany({
     where: {
-      OR: allowedNeurons,
+      OR: features, //allowedNeurons,
     },
     include: {
       explanations: {
