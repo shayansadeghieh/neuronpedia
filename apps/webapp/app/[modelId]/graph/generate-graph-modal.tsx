@@ -1261,6 +1261,30 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
             </p> */}
             <div className="mt-2 flex w-full flex-col gap-y-2 sm:flex-row sm:gap-x-2">
               <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (formikRef.current) {
+                    formikRef.current.resetForm({
+                      values: {
+                        ...initialValues,
+                        prompt: '',
+                        slug: '',
+                      },
+                    });
+                    setGraphTokenizeResponse(null);
+                    setEstimatedTime(null);
+                    setError(null);
+                    setChatPrompts([]);
+                  }
+                }}
+                disabled={isGenerating}
+                className="flex items-center justify-center gap-x-1.5 text-xs"
+                title="Reset to defaults"
+              >
+                Reset
+              </Button>
+              <Button
                 onClick={() => {
                   window.location.href = generationResult.url;
                 }}
@@ -1271,6 +1295,7 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
               <Button
                 onClick={() => {
                   window.open(generationResult.url, '_blank');
+                  setIsGenerateGraphModalOpen(false);
                 }}
                 className="flex-1 bg-sky-600 hover:bg-sky-700 sm:w-auto"
               >
