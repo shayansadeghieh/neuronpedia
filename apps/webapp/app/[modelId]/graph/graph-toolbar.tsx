@@ -241,7 +241,7 @@ export default function GraphToolbar() {
               Select Source Set
             </div>
             <Select.Root
-              value={selectedSourceSetName}
+              value={selectedSourceSetName === '' ? 'unknown' : selectedSourceSetName}
               onValueChange={(newVal) => {
                 window.location.href = `/${selectedModelId}/graph?sourceSet=${newVal}`;
               }}
@@ -258,18 +258,22 @@ export default function GraphToolbar() {
                 <Select.Value>
                   <div className="flex flex-col items-start justify-start gap-y-0.5 text-left">
                     <div className="font-mono text-[11px] font-medium leading-relaxed text-sky-700">
-                      {ANTHROPIC_MODEL_TO_DISPLAY_NAME.get(selectedModelId)
-                        ? 'Cross-Layer Transcoders'
-                        : (
-                            getSourceSet(selectedModelId, selectedSourceSetName)?.name || selectedSourceSetName
-                          ).toUpperCase()}
+                      {selectedSourceSetName === ''
+                        ? 'Unknown Source Set'
+                        : ANTHROPIC_MODEL_TO_DISPLAY_NAME.get(selectedModelId)
+                          ? 'Cross-Layer Transcoders'
+                          : (
+                              getSourceSet(selectedModelId, selectedSourceSetName)?.name || selectedSourceSetName
+                            ).toUpperCase()}
                     </div>
                     <div className="w-full text-[9px] font-normal text-slate-400">
-                      {ANTHROPIC_MODEL_TO_DISPLAY_NAME.get(selectedModelId)
-                        ? 'Anthropic'
-                        : `${getSourceSet(selectedModelId, selectedSourceSetName)?.description || ''} · ${
-                            getSourceSet(selectedModelId, selectedSourceSetName)?.creatorName || ''
-                          }`}
+                      {selectedSourceSetName === ''
+                        ? 'Custom Upload'
+                        : ANTHROPIC_MODEL_TO_DISPLAY_NAME.get(selectedModelId)
+                          ? 'Anthropic'
+                          : `${getSourceSet(selectedModelId, selectedSourceSetName)?.description || ''} · ${
+                              getSourceSet(selectedModelId, selectedSourceSetName)?.creatorName || ''
+                            }`}
                     </div>
                   </div>
                 </Select.Value>

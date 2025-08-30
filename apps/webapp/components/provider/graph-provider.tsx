@@ -15,7 +15,6 @@ import {
   formatCLTGraphData,
   getIndexFromCantorValue,
   getIndexFromFeatureAndGraph,
-  getLayerFromCantorValue,
   getLayerFromOldSchema0Feature,
   isHideLayer,
   nodeTypeHasFeatureDetail,
@@ -661,99 +660,69 @@ export function GraphProvider({
     // if it specifies source_set, then it's cantor
     if (isCantor) {
       const model = data.metadata.scan;
+      const sourceSet = data.metadata.feature_details?.neuronpedia_source_set || graph.sourceSetName;
 
-      // check if we have NP dashboards
-      if (data.metadata.feature_details?.neuronpedia_source_set || graph.sourceSetName) {
-        const sourceSet = data.metadata.feature_details?.neuronpedia_source_set || graph.sourceSetName;
+      // make an array of features to call /api/features
+      // for neuronpedia fetches we only get the first 10 and then load more on demand
+      const features = formattedData.nodes
+        .filter((d) => nodeTypeHasFeatureDetail(d))
+        .map((d) => {
+          let layerNum = -1;
+          let index = -1;
 
-        // make an array of features to call /api/features
-        // for neuronpedia fetches we only get the first 10 and then load more on demand
-        const features = formattedData.nodes
-          .filter((d) => nodeTypeHasFeatureDetail(d))
-          .map((d) => {
-            let layerNum = -1;
-            let index = -1;
-
-            // convert from feature id to layer and index using cantor pairing
-            layerNum = parseInt(d.layer, 10);
-            index = getIndexFromCantorValue(d.feature);
-            return {
-              modelId: model,
-              layer: `${layerNum}-${sourceSet}`,
-              index,
-              maxActsToReturn: GRAPH_PREFETCH_ACTIVATIONS_COUNT,
-            };
-          });
-
-        // split the features into batches of NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE
-        const batches = [];
-        for (let i = 0; i < features.length; i += NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE) {
-          batches.push(features.slice(i, i + NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE));
-        }
-
-        // call /api/features in batches, sequentially
-        const batchesOfDetails = [];
-        setLoadingGraphLabel(`Loading ${features.length} Nodes... `);
-        for (const batch of batches) {
-          const resp = await fetch('/api/features', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(batch),
-            signal: abortSignal,
-          });
-          if (abortSignal?.aborted) {
-            throw new Error('Request cancelled after /api/features batch fetch');
-          }
-          const da = (await resp.json()) as NeuronWithPartialRelations[];
-          batchesOfDetails.push(da);
-        }
-
-        // put the details in the nodes
-        const featureDetails = batchesOfDetails.flat(1);
-        formattedData.nodes.forEach((d) => {
-          // eslint-disable-next-line no-param-reassign
-          const feature = featureDetails.find(
-            (f) =>
-              f &&
-              'index' in f &&
-              f.index === getIndexFromCantorValue(d.feature).toString() &&
-              'layer' in f &&
-              f.layer === `${d.layer}-${sourceSet}`,
-          );
-          if (feature) {
-            // eslint-disable-next-line no-param-reassign
-            d.featureDetailNP = feature as NeuronWithPartialRelations;
-          }
+          // convert from feature id to layer and index using cantor pairing
+          layerNum = parseInt(d.layer, 10);
+          index = getIndexFromCantorValue(d.feature);
+          return {
+            modelId: model,
+            layer: `${layerNum}-${sourceSet}`,
+            index,
+            maxActsToReturn: GRAPH_PREFETCH_ACTIVATIONS_COUNT,
+          };
         });
-        // dont have sourceSet/NP yet, but is cantor
-      } else {
-        // currently only qwen3-4b mwhanna noskip transcoder is at this condition because it's:
-        // 1) schema version 1
-        // 2) is NOT in MODEL_TO_SOURCESET_ID (doesn't have neuronpedia dashboards)
-        const mwhannaQwenNoSkipTranscoderFeaturePrefix = 'Qwen3-4b-relu-noskip-';
-        const featureDetails = await fetchInBatches(
-          formattedData.nodes,
-          (d: CLTGraphNode, signal?: AbortSignal) => {
-            if (nodeTypeHasFeatureDetail(d)) {
-              return fetchFeatureDetailFromBaseURL(
-                `https://d1fk9w8oratjix.cloudfront.net/features/Qwen3-4B/${mwhannaQwenNoSkipTranscoderFeaturePrefix}${getLayerFromCantorValue(d.feature)}`,
-                getIndexFromCantorValue(d.feature).toString(),
-                signal,
-              );
-            }
-            return Promise.resolve(null);
-          },
-          ANTHROPIC_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE,
-          abortSignal,
-        );
 
-        formattedData.nodes.forEach((d, i) => {
-          // eslint-disable-next-line no-param-reassign
-          d.featureDetail = featureDetails[i] as AnthropicFeatureDetail;
-        });
+      // split the features into batches of NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE
+      const batches = [];
+      for (let i = 0; i < features.length; i += NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE) {
+        batches.push(features.slice(i, i + NEURONPEDIA_FEATURE_DETAIL_DOWNLOAD_BATCH_SIZE));
       }
+
+      // call /api/features in batches, sequentially
+      const batchesOfDetails = [];
+      setLoadingGraphLabel(`Loading ${features.length} Nodes... `);
+      for (const batch of batches) {
+        const resp = await fetch('/api/features', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(batch),
+          signal: abortSignal,
+        });
+        if (abortSignal?.aborted) {
+          throw new Error('Request cancelled after /api/features batch fetch');
+        }
+        const da = (await resp.json()) as NeuronWithPartialRelations[];
+        batchesOfDetails.push(da);
+      }
+
+      // put the details in the nodes
+      const featureDetails = batchesOfDetails.flat(1);
+      formattedData.nodes.forEach((d) => {
+        // eslint-disable-next-line no-param-reassign
+        const feature = featureDetails.find(
+          (f) =>
+            f &&
+            'index' in f &&
+            f.index === getIndexFromCantorValue(d.feature).toString() &&
+            'layer' in f &&
+            f.layer === `${d.layer}-${sourceSet}`,
+        );
+        if (feature) {
+          // eslint-disable-next-line no-param-reassign
+          d.featureDetailNP = feature as NeuronWithPartialRelations;
+        }
+      });
     }
     // these are the OLD gemma-2-2b graphs that don't have schema version 1
     // for these it's always transcoder-hp sourceset, using noncantor feature format
@@ -919,7 +888,6 @@ export function GraphProvider({
     // if the model is gelu-4l-x128k64-v0, then it's eleuther
     else if (data.metadata.scan === 'gelu-4l-x128k64-v0') {
       console.log('gelu-4l-x128k64-v0, using eleuther to get features');
-      //
     }
     // otherwise we dont fill it in bc we don't know how
 
