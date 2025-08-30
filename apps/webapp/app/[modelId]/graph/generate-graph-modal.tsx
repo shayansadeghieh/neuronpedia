@@ -89,7 +89,7 @@ const FormikValuesObserver: React.FC<{
 }> = ({ prompt, modelId, sourceSetName, maxNLogits, desiredLogitProb, debouncedTokenize }) => {
   useEffect(() => {
     debouncedTokenize(modelId, prompt, sourceSetName, maxNLogits, desiredLogitProb);
-  }, [prompt, modelId, sourceSetName, maxNLogits, desiredLogitProb, debouncedTokenize]);
+  }, [prompt, modelId, maxNLogits, desiredLogitProb, debouncedTokenize]);
 
   return null;
 };
@@ -112,7 +112,7 @@ const formatCountdown = (totalSeconds: number): string => {
 };
 
 export default function GenerateGraphModal({ showGenerateModal }: { showGenerateModal: boolean }) {
-  const { isGenerateGraphModalOpen, setIsGenerateGraphModalOpen } = useGraphModalContext();
+  const { isGenerateGraphModalOpen, setIsGenerateGraphModalOpen, generateGraphModalPrompt } = useGraphModalContext();
   const { selectedModelId, selectedSourceSetName } = useGraphContext();
   const [generationResult, setGenerationResult] = useState<GenerateGraphResponse | null>(null);
   const [graphTokenizeResponse, setGraphTokenizeResponse] = useState<GraphTokenizeResponse | null>(null);
@@ -136,7 +136,7 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
   }, [showGenerateModal, setIsGenerateGraphModalOpen]);
 
   const initialValues: FormValues = {
-    prompt: '',
+    prompt: generateGraphModalPrompt,
     modelId: selectedModelId || '',
     sourceSetName: selectedSourceSetName || '',
     maxNLogits: GRAPH_MAXNLOGITS_DEFAULT,
@@ -148,6 +148,53 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
   };
 
   const INSTRUCT_MODELS = ['qwen3-4b'];
+
+  const convertPromptToChatPrompts = (prompt: string): ChatMessage[] => {
+    const prompts: ChatMessage[] = [];
+
+    // Split by the start tokens to find each message
+    const parts = prompt.split(/<\|im_start\|>/);
+
+    for (let i = 1; i < parts.length; i += 1) {
+      // Skip first empty part
+      const part = parts[i];
+
+      // Find the role and content
+      const lines = part.split('\n');
+      if (lines.length < 2) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+
+      const role = lines[0].trim();
+      const contentLines = lines.slice(1);
+
+      // Remove <|im_end|> if present at the end
+      let content = contentLines.join('\n');
+      if (content.endsWith('<|im_end|>')) {
+        content = content.slice(0, -10); // Remove '<|im_end|>'
+      }
+
+      if (role === 'system' || role === 'user' || role === 'assistant') {
+        prompts.push({
+          role: role as ChatMessage['role'],
+          content: content.trim(),
+        });
+      }
+    }
+
+    return prompts;
+  };
+
+  useEffect(() => {
+    if (generateGraphModalPrompt && INSTRUCT_MODELS.includes(selectedModelId)) {
+      // convert the prompt into chat prompt
+      const prompts = convertPromptToChatPrompts(generateGraphModalPrompt);
+      setChatPrompts(prompts);
+    } else {
+      setChatPrompts([]);
+    }
+  }, [generateGraphModalPrompt]);
 
   const isInstructAndDoesntStartWithSpecialToken = (modelId: string, prompt: string) => {
     if (!INSTRUCT_MODELS.includes(modelId)) {
@@ -169,7 +216,6 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
         try {
           setIsTokenizing(true);
           console.log(`tokenizing: ${prompt}`);
-          console.log(`model: ${modelId}`);
           const response = await fetch('/api/graph/tokenize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -477,9 +523,6 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
                               value={values.sourceSetName}
                               onValueChange={(value: string) => {
                                 setFieldValue('sourceSetName', value);
-                                setGraphTokenizeResponse(null);
-                                setChatPrompts([]);
-                                setFieldValue('prompt', '');
                               }}
                               disabled={isGenerating}
                             >

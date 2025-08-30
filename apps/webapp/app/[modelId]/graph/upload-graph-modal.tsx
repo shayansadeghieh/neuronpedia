@@ -1,6 +1,7 @@
 'use client';
 
 import { useGlobalContext } from '@/components/provider/global-provider';
+import { useGraphContext } from '@/components/provider/graph-provider';
 import { Button } from '@/components/shadcn/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/shadcn/dialog';
 import { Progress } from '@/components/shadcn/progress';
@@ -21,6 +22,7 @@ export default function UploadGraphModal() {
   const [modelNotExistError, setModelNotExistError] = useState<string | null>(null);
   const session = useSession();
   const { setSignInModalOpen } = useGlobalContext();
+  const { selectedMetadataGraph, selectedGraph } = useGraphContext();
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileToUpload = e.target.files?.[0];
@@ -208,6 +210,7 @@ export default function UploadGraphModal() {
         onClick={() => {
           setSignInModalOpen(true);
         }}
+        disabled={selectedMetadataGraph === null || !selectedGraph}
       >
         <UploadCloud className="h-4 w-4" />
       </Button>
@@ -236,6 +239,7 @@ export default function UploadGraphModal() {
           aria-label="Upload Graph"
           size="sm"
           className="hidden h-12 items-center justify-center gap-x-2 whitespace-nowrap border-slate-300 text-xs text-slate-500 hover:bg-slate-50 sm:flex"
+          disabled={selectedMetadataGraph === null || !selectedGraph}
         >
           <UploadCloud className="h-4 w-4" />
         </Button>

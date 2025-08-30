@@ -18,6 +18,7 @@ import {
   ChevronUpIcon,
   ExternalLinkIcon,
   Plus,
+  Repeat2,
   Share2,
   Trash,
   UploadCloud,
@@ -236,7 +237,7 @@ export default function GraphToolbar() {
           </Select.Root>
         </div>
         {MODELS_WITH_NP_DASHBOARDS.has(selectedModelId) && (
-          <div className="flex flex-col">
+          <div className="hidden flex-col sm:flex">
             <div className="w-full pb-0.5 text-center text-[9px] font-medium uppercase text-slate-400">
               Select Source Set
             </div>
@@ -634,6 +635,18 @@ export default function GraphToolbar() {
               </div>
             </Button> */}
             <GraphInfoModal cltGraph={selectedGraph} selectedMetadataGraph={selectedMetadataGraph} />
+            <Button
+              variant="outline"
+              size="sm"
+              className="hidden h-12 items-center justify-center gap-x-2 border-slate-300 text-xs sm:flex"
+              onClick={() => {
+                setIsGenerateGraphModalOpen(true, selectedMetadataGraph?.prompt.replaceAll('<bos>', '') || '');
+              }}
+              title="Re-mix / Re-generate"
+              disabled={selectedMetadataGraph === null || !selectedGraph}
+            >
+              <Repeat2 className="h-4 w-4" />
+            </Button>
             {session.data?.user ? (
               <UploadGraphModal />
             ) : (
@@ -644,6 +657,8 @@ export default function GraphToolbar() {
                 onClick={() => {
                   setSignInModalOpen(true);
                 }}
+                disabled={selectedMetadataGraph === null || !selectedGraph}
+                title="Upload Graph"
               >
                 <UploadCloud className="h-4 w-4" />
               </Button>
@@ -652,7 +667,7 @@ export default function GraphToolbar() {
               <Button
                 variant="outline"
                 size="sm"
-                title="Share Graph, Subgraph, and Custom Labels"
+                title="Share or Embed Graph, Subgraph, and Custom Labels"
                 aria-label="Share Graph Subgraph, and Custom Labels"
                 className="hidden h-12 items-center justify-center gap-x-2 whitespace-nowrap border-slate-300 text-xs text-slate-500 hover:bg-slate-50 sm:flex"
                 onClick={() => {

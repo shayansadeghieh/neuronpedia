@@ -82,7 +82,7 @@ export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: Grap
         className="flex h-12 items-center justify-center gap-x-2 border-slate-300 text-xs text-slate-300"
       >
         <Info className="h-4 w-4" />
-        <span className="hidden sm:block">Graph Info</span>
+        <span className="hidden sm:block">Info</span>
       </Button>
     );
   }
@@ -100,7 +100,7 @@ export default function GraphInfoModal({ cltGraph, selectedMetadataGraph }: Grap
           className="flex h-12 items-center justify-center gap-x-2 border-slate-300 text-xs text-slate-500 hover:bg-slate-50"
         >
           <Info className="h-4 w-4" />
-          <span className="hidden sm:block">Graph Info</span>
+          <span className="hidden sm:block">Info</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto bg-white text-slate-700">
