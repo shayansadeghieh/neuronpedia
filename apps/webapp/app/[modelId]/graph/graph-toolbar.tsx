@@ -634,19 +634,21 @@ export default function GraphToolbar() {
                 {selectedGraph ? makeCreatorNameFromGraph(selectedGraph) : 'Loading...'}
               </div>
             </Button> */}
-            <GraphInfoModal cltGraph={selectedGraph} selectedMetadataGraph={selectedMetadataGraph} />
             <Button
               variant="outline"
               size="sm"
-              className="hidden h-12 items-center justify-center gap-x-2 border-slate-300 text-xs sm:flex"
+              className="flex h-12 items-center justify-center gap-x-1 whitespace-nowrap border-emerald-500 bg-emerald-50 text-xs font-medium leading-none text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
               onClick={() => {
                 setIsGenerateGraphModalOpen(true, selectedMetadataGraph?.prompt.replaceAll('<bos>', '') || '');
               }}
-              title="Re-mix / Re-generate"
+              title="Modify the prompt or use a different transcoder set."
               disabled={selectedMetadataGraph === null || !selectedGraph}
             >
               <Repeat2 className="h-4 w-4" />
+              <span className="hidden pl-[3px] sm:inline">Remix</span>
             </Button>
+            <GraphInfoModal cltGraph={selectedGraph} selectedMetadataGraph={selectedMetadataGraph} />
+
             {session.data?.user ? (
               <UploadGraphModal />
             ) : (
