@@ -1,6 +1,5 @@
 /* eslint-disable no-param-reassign */
 
-import CustomTooltip from '@/components/custom-tooltip';
 import { useGraphModalContext } from '@/components/provider/graph-modal-provider';
 import { useGraphContext } from '@/components/provider/graph-provider';
 import { useGraphStateContext } from '@/components/provider/graph-state-provider';
@@ -9,23 +8,16 @@ import { Card, CardContent } from '@/components/shadcn/card';
 import { useScreenSize } from '@/lib/hooks/use-screen-size';
 import { QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import { Circle, FolderOpen, Joystick, PinIcon, PinOffIcon, Save, Share2, TrashIcon } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import d3 from './d3-jetpack';
-import {
-  clientCheckIsEmbed,
-  CLTGraphLink,
-  CLTGraphNode,
-  computeGraphScoresFromGraphData,
-  hideTooltip,
-  showTooltip,
-} from './utils';
+import { clientCheckIsEmbed, CLTGraphLink, CLTGraphNode, hideTooltip, showTooltip } from './utils';
 
 const NODE_WIDTH = 75;
 const NODE_HEIGHT = 25;
 const MINIMUM_SUBGRAPH_LINK_STROKE_WIDTH = 1;
 const MAX_SUBGRAPH_LINK_LUMINANCE = 0.9;
 
-const STEER_MODEL_IDS = ['gemma-2-2b']; // , 'qwen3-4b']; // need to fix steering for this model
+const STEER_MODEL_IDS = ['gemma-2-2b']; // , 'qwen3-4b' need to fix steering for this model
 
 // Custom force container function to keep nodes within bounds
 function forceContainer(bbox: [[number, number], [number, number]]) {
@@ -1174,15 +1166,6 @@ export default function Subgraph() {
     return totalNodes;
   }
 
-  // Calculate replacement and completeness scores when pinned IDs change
-  const subgraphScores = useMemo(() => {
-    if (!selectedGraph) {
-      return { replacementScore: 0, completenessScore: 0 };
-    }
-
-    return computeGraphScoresFromGraphData(selectedGraph, visState.pinnedIds);
-  }, [selectedGraph, visState.pinnedIds]);
-
   return (
     <Card
       className={`h-full w-full flex-1 bg-white transition-all sm:block ${clickedIdRef.current ? 'hidden' : ''} ${
@@ -1190,65 +1173,6 @@ export default function Subgraph() {
       }`}
     >
       <CardContent className="relative h-full px-0 py-0">
-        {selectedGraph && selectedGraph.metadata.replacement_score !== undefined && (
-          <div className="absolute bottom-1 left-0 hidden w-full flex-row items-center justify-center gap-x-1.5 px-5 text-[9px] text-slate-500 sm:flex">
-            <div className="flex flex-1 flex-row items-center justify-center gap-x-3">
-              <div className="z-10 flex flex-row items-center justify-center gap-x-0.5">
-                <div className="text-center font-bold leading-tight">Replacement Score</div>
-                <CustomTooltip
-                  trigger={
-                    <div className="flex h-3 w-3 cursor-pointer items-center justify-center rounded-full bg-slate-200 font-bold leading-none">
-                      ?
-                    </div>
-                  }
-                  side="right"
-                >
-                  <div className="text-[11px] text-slate-700">
-                    Measures the fraction of end-to-end influence from input tokens to output logits that flows through
-                    feature nodes rather than error nodes. This is a strict metric that rewards complete explanations
-                    where tokens influence logits entirely through features.
-                  </div>
-                </CustomTooltip>
-              </div>
-              <div className="flex flex-row items-center justify-center gap-x-2">
-                <div className="font-medium text-slate-600">
-                  Graph: {selectedGraph.metadata.replacement_score?.toFixed(2) || 'N/A'}
-                </div>
-                <div className="font-medium text-slate-600">
-                  Subgraph*: {visState.pinnedIds.length > 0 ? subgraphScores.replacementScore?.toFixed(2) : 'N/A'}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-1 flex-row items-center justify-center gap-x-3">
-              <div className="z-10 flex flex-row items-center justify-center gap-x-0.5">
-                <div className="text-center font-bold leading-tight">Completeness Score</div>
-                <CustomTooltip
-                  trigger={
-                    <div className="flex h-3 w-3 cursor-pointer items-center justify-center rounded-full bg-slate-200 font-bold leading-none">
-                      ?
-                    </div>
-                  }
-                  side="right"
-                >
-                  <div className="text-[11px] text-slate-700">
-                    Measures the fraction of incoming edges to all nodes (weighted by each node{`'`}s influence on the
-                    output) that originate from feature or token nodes rather than error nodes. This metric gives
-                    partial credit for nodes that are mostly explained by features, even if some error influence
-                    remains.
-                  </div>
-                </CustomTooltip>
-              </div>
-              <div className="flex flex-row items-center justify-center gap-x-2">
-                <div className="font-medium text-slate-500">
-                  Graph: {selectedGraph.metadata.completeness_score?.toFixed(2) || 'N/A'}
-                </div>
-                <div className="font-medium text-slate-500">
-                  Subgraph*: {visState.pinnedIds.length > 0 ? subgraphScores.completenessScore?.toFixed(2) : 'N/A'}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
         {visState.subgraph?.activeGrouping.isActive && (
           <div className="absolute right-0 top-0 z-10 flex w-40 flex-col items-center justify-center gap-y-0 overflow-hidden rounded-bl-lg rounded-tr-lg bg-sky-600 text-[11px] font-bold text-white">
             <div className="pt-2.5 text-center text-[12px]">Grouping Mode</div>
@@ -1310,7 +1234,7 @@ export default function Subgraph() {
           <div className="absolute h-full w-full" ref={divRef} />
 
           {(visState.pinnedIds.length === 0 || showSubgraphHelp) && (
-            <div className="absolute hidden h-[calc(100%-20px)] min-h-[calc(100%-20px)] w-full flex-col items-start justify-center gap-y-3 rounded-xl bg-white/70 px-5 text-sm text-slate-700 backdrop-blur-sm sm:flex">
+            <div className="absolute hidden h-full min-h-full w-full flex-col items-start justify-center gap-y-3 rounded-xl bg-white/70 px-5 text-sm text-slate-700 backdrop-blur-sm sm:flex">
               <div className="flex w-full flex-col items-center justify-center gap-x-1.5 gap-y-0.5 text-center text-base font-medium">
                 Subgraph (Solution){' '}
                 <Button
@@ -1431,7 +1355,7 @@ export default function Subgraph() {
               aria-label="Steer"
             >
               <Joystick className="h-3.5 w-3.5" />
-              Steer
+              Steer (Beta)
             </Button>
           </div>
 

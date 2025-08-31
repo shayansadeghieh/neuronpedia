@@ -103,7 +103,7 @@ const formatCountdown = (totalSeconds: number): string => {
   return `~${s} sec`;
 };
 
-export default function GenerateGraphModal({ showGenerateModal }: { showGenerateModal: boolean }) {
+export default function GenerateGraphModal() {
   const { isGenerateGraphModalOpen, setIsGenerateGraphModalOpen } = useGraphModalContext();
   const { selectedModelId } = useGraphContext();
   const [generationResult, setGenerationResult] = useState<GenerateGraphResponse | null>(null);
@@ -120,12 +120,6 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
   const session = useSession();
   const { setSignInModalOpen, showToast } = useGlobalContext() as any;
   const formikRef = useRef<FormikProps<FormValues>>(null);
-
-  useEffect(() => {
-    if (showGenerateModal) {
-      setIsGenerateGraphModalOpen(true);
-    }
-  }, [showGenerateModal, setIsGenerateGraphModalOpen]);
 
   const initialValues: FormValues = {
     prompt: '',
@@ -237,11 +231,6 @@ export default function GenerateGraphModal({ showGenerateModal }: { showGenerate
     setIsGenerating(true);
     setError(null);
     setGenerationResult(null);
-
-    // remove generate param from url if it's there
-    const url = new URL(window.location.href);
-    url.searchParams.delete('generate');
-    window.history.replaceState({}, '', url.toString());
 
     try {
       const response = await fetch('/api/graph/generate', {

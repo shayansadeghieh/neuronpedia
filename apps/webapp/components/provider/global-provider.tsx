@@ -4,7 +4,7 @@
 
 import { STEER_FORCE_ALLOW_INSTRUCT_MODELS } from '@/lib/env';
 import { formatToGlobalModels } from '@/lib/utils/general';
-import { getSourceSetNameFromSource, NEURONS_SOURCESET } from '@/lib/utils/source';
+import { NEURONS_SOURCESET } from '@/lib/utils/source';
 import {
   Bookmark,
   ExplanationModelType,
@@ -58,7 +58,6 @@ export const [GlobalContext, useGlobalContext] = createContextWrapper<{
     onlyInferenceEnabled?: boolean,
     includeNoDashboards?: boolean,
   ) => string[];
-  isGraphEnabledForSourceSet: (modelId: string, source: string) => boolean;
   explanationTypes: ExplanationType[];
   explanationModels: ExplanationModelType[];
   explanationScoreTypes: ExplanationScoreType[];
@@ -352,15 +351,6 @@ export default function GlobalProvider({
     return toReturn;
   };
 
-  const isGraphEnabledForSourceSet = (modelId: string, source: string) => {
-    // for transcoders / graphs we have a different steering method/server, so we don't show it here
-    const sourceSet = getSourceSet(modelId, getSourceSetNameFromSource(source) || '');
-    if (!sourceSet) {
-      return false;
-    }
-    return sourceSet.graphEnabled;
-  };
-
   const refreshGlobal = () => {
     fetch('/api/global', {
       method: 'POST',
@@ -411,7 +401,6 @@ export default function GlobalProvider({
           getFirstSourceForSourceSet,
           getSourceSetsForModelId,
           getInferenceEnabledSourcesForModel,
-          isGraphEnabledForSourceSet,
           explanationTypes,
           explanationModels,
           explanationScoreTypes,
@@ -453,7 +442,6 @@ export default function GlobalProvider({
           getSourceSetForSource,
           getSourceSetsForModelId,
           getSourcesForSourceSet,
-          isGraphEnabledForSourceSet,
           globalModels,
           featureModalFeature,
           featureModalOpen,

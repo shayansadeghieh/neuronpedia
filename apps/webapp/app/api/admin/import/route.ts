@@ -25,7 +25,6 @@ export const GET = withOptionalUser(async (request: RequestOptionalUser) => {
   const { searchParams } = new URL(request.url);
   const modelId = searchParams.get('modelId');
   const sourceId = searchParams.get('sourceId');
-  const explanationsOnly = searchParams.get('explanationsOnly') === 'true';
   if (!modelId || !sourceId) {
     return NextResponse.json({ error: 'modelId and sourceId are required query parameters' }, { status: 400 });
   }
@@ -49,181 +48,151 @@ export const GET = withOptionalUser(async (request: RequestOptionalUser) => {
 
         await importConfigFromS3();
 
-        if (!explanationsOnly) {
-          enqueueProgress(controller, 0.25, '(1 of 4) Importing Metadata...');
-          /* RELEASE */
-          try {
-            const releaseLines = await downloadFileJsonlParsedLines(`${path}/release.jsonl`);
-            for (const line of releaseLines) {
-              const existingRelease = await prisma.sourceRelease.findUnique({
-                where: { name: line.name },
-              });
-              if (!existingRelease) {
-                await prisma.sourceRelease.create({
-                  data: line,
-                });
-              }
-            }
-          } catch (error) {
-            console.error('Error importing release:', error);
-          }
-
-          /* MODEL */
-          // don't overwrite existing
-          const modelLines = await downloadFileJsonlParsedLines(`${path}/model.jsonl`);
-          for (const line of modelLines) {
-            const existingModel = await prisma.model.findUnique({
-              where: { id: line.id },
+        enqueueProgress(controller, 0.25, '(1 of 4) Importing Metadata...');
+        /* RELEASE */
+        try {
+          const releaseLines = await downloadFileJsonlParsedLines(`${path}/release.jsonl`);
+          for (const line of releaseLines) {
+            const existingRelease = await prisma.sourceRelease.findUnique({
+              where: { name: line.name },
             });
-            if (!existingModel) {
-              await prisma.model.create({
+            if (!existingRelease) {
+              await prisma.sourceRelease.create({
                 data: line,
               });
             }
           }
+        } catch (error) {
+          console.error('Error importing release:', error);
+        }
 
-          /* SOURCESET */
-          const sourceSetLines = await downloadFileJsonlParsedLines(`${path}/sourceset.jsonl`);
-          for (const line of sourceSetLines) {
-            const existingSourceSet = await prisma.sourceSet.findUnique({
-              where: {
-                modelId_name: {
-                  modelId,
-                  name: line.name,
-                },
+        /* MODEL */
+        // don't overwrite existing
+        const modelLines = await downloadFileJsonlParsedLines(`${path}/model.jsonl`);
+        for (const line of modelLines) {
+          const existingModel = await prisma.model.findUnique({
+            where: { id: line.id },
+          });
+          if (!existingModel) {
+            await prisma.model.create({
+              data: line,
+            });
+          }
+        }
+
+        /* SOURCESET */
+        const sourceSetLines = await downloadFileJsonlParsedLines(`${path}/sourceset.jsonl`);
+        for (const line of sourceSetLines) {
+          const existingSourceSet = await prisma.sourceSet.findUnique({
+            where: {
+              modelId_name: {
+                modelId,
+                name: line.name,
+              },
+            },
+          });
+          if (!existingSourceSet) {
+            await prisma.sourceSet.create({
+              data: {
+                ...line,
+                urls: line.urls ?? [],
               },
             });
-            if (!existingSourceSet) {
-              await prisma.sourceSet.create({
-                data: {
-                  ...line,
-                  urls: line.urls ?? [],
-                },
-              });
-            }
           }
+        }
 
-          /* SOURCE */
-          const sourceLines = await downloadFileJsonlParsedLines(`${path}/source.jsonl`);
-          for (const line of sourceLines) {
-            const existingSource = await prisma.source.findUnique({
-              where: {
-                modelId_id: {
-                  modelId,
-                  id: line.id,
-                },
+        /* SOURCE */
+        const sourceLines = await downloadFileJsonlParsedLines(`${path}/source.jsonl`);
+        for (const line of sourceLines) {
+          const existingSource = await prisma.source.findUnique({
+            where: {
+              modelId_id: {
+                modelId,
+                id: line.id,
+              },
+            },
+          });
+          if (!existingSource) {
+            await prisma.source.create({
+              data: {
+                ...line,
+                inferenceHosts: line.inferenceHosts && line.inferenceHosts.length > 0 ? line.inferenceHosts : undefined,
               },
             });
-            if (!existingSource) {
-              await prisma.source.create({
-                data: {
-                  ...line,
-                  inferenceHosts:
-                    line.inferenceHosts && line.inferenceHosts.length > 0 ? line.inferenceHosts : undefined,
+          }
+        }
+
+        /* INFERENCE HOST SOURCES */
+        try {
+          const inferenceHostSourceLines = await downloadFileJsonlParsedLines(`${path}/inference_hosts.jsonl`);
+          for (const line of inferenceHostSourceLines) {
+            await prisma.inferenceHostSource.upsert({
+              where: { id: line.id },
+              update: line,
+              create: line,
+            });
+          }
+        } catch (error) {
+          console.error('Error importing inference host sources:', error);
+        }
+
+        /* INFERENCE HOST SOURCE CONNECTIONS */
+        try {
+          const inferenceHostOnSourceLines = await downloadFileJsonlParsedLines(
+            `${path}/inference_hosts_on_source.jsonl`,
+          );
+          for (const line of inferenceHostOnSourceLines) {
+            await prisma.inferenceHostSourceOnSource.upsert({
+              where: {
+                sourceId_sourceModelId_inferenceHostId: {
+                  inferenceHostId: line.inferenceHostId,
+                  sourceId: line.sourceId,
+                  sourceModelId: line.sourceModelId,
                 },
-              });
-            }
+              },
+              update: line,
+              create: line,
+            });
           }
+        } catch (error) {
+          console.error('Error importing inference host source connections:', error);
+        }
 
-          /* INFERENCE HOST SOURCES */
-          try {
-            const inferenceHostSourceLines = await downloadFileJsonlParsedLines(`${path}/inference_hosts.jsonl`);
-            for (const line of inferenceHostSourceLines) {
-              await prisma.inferenceHostSource.upsert({
-                where: { id: line.id },
-                update: line,
-                create: line,
-              });
-            }
-          } catch (error) {
-            console.error('Error importing inference host sources:', error);
-          }
-
-          /* INFERENCE HOST SOURCE CONNECTIONS */
-          try {
-            const inferenceHostOnSourceLines = await downloadFileJsonlParsedLines(
-              `${path}/inference_hosts_on_source.jsonl`,
-            );
-            for (const line of inferenceHostOnSourceLines) {
-              await prisma.inferenceHostSourceOnSource.upsert({
-                where: {
-                  sourceId_sourceModelId_inferenceHostId: {
-                    inferenceHostId: line.inferenceHostId,
-                    sourceId: line.sourceId,
-                    sourceModelId: line.sourceModelId,
-                  },
-                },
-                update: line,
-                create: line,
-              });
-            }
-          } catch (error) {
-            console.error('Error importing inference host source connections:', error);
-          }
-
-          /* FEATURES */
-          const featuresPaths = await getFilesInPath(`${path}/features`, '.jsonl.gz');
-          for (const [index, featuresPath] of featuresPaths.entries()) {
-            enqueueProgress(controller, index / featuresPaths.length, `(2 of 4) Importing Features...`);
-            console.log('Importing features from', featuresPath);
-            const featuresJsonlString = await downloadAndDecompressFile(featuresPath);
-            await importJsonlString('Neuron', featuresJsonlString);
-          }
-
-          /* ACTIVATIONS */
-          const activationsPaths = await getFilesInPath(`${path}/activations`, '.jsonl.gz');
-          for (const [index, activationsPath] of activationsPaths.entries()) {
-            enqueueProgress(controller, index / activationsPaths.length, `(3 of 4) Importing Activations...`);
-            console.log('Importing activations from', activationsPath);
-            const startTime = new Date();
-            const activationsJsonlString = await downloadAndDecompressFile(activationsPath);
-            await importJsonlString('Activation', activationsJsonlString);
-
-            const endTime = new Date();
-            const duration = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
-            console.log(`Duration: ${duration} seconds`);
-          }
+        /* FEATURES */
+        const featuresPaths = await getFilesInPath(`${path}/features`, '.jsonl.gz');
+        for (const [index, featuresPath] of featuresPaths.entries()) {
+          enqueueProgress(controller, index / featuresPaths.length, `(2 of 4) Importing Features...`);
+          console.log('Importing features from', featuresPath);
+          const featuresJsonlString = await downloadAndDecompressFile(featuresPath);
+          await importJsonlString('Neuron', featuresJsonlString);
         }
 
         /* EXPLANATIONS */
         const explanationsPaths = await getFilesInPath(`${path}/explanations/`, '.jsonl.gz');
-        let accumulatedLines: string[] = [];
-        // Since inserts are expensive, we batch them to avoid duplicated overhead (rebuilding the HNSW index each time)
-        // PROTIP: Run SELECT pg_prewarm('"Explanation_embedding_idx"'); before doing this for significant speedups!
-        // This assumes that you have a high shared_buffer (and that this index fits in it)
-        const batchSize = 10000;
-
         for (const [index, explanationsPath] of explanationsPaths.entries()) {
-          enqueueProgress(controller, index / explanationsPaths.length, `(4 of 4) Importing Explanations...`);
+          enqueueProgress(controller, index / explanationsPaths.length, `(3 of 4) Importing Explanations...`);
           console.log('Importing explanations from', explanationsPath);
-          const explanationsJsonlString = await downloadAndDecompressFile(explanationsPath);
-          const lines = explanationsJsonlString.trim().split('\n');
-
-          for (const line of lines) {
-            if (line.trim()) {
-              accumulatedLines.push(line);
-            }
-
-            if (accumulatedLines.length >= batchSize) {
-              const startTime = new Date();
-              const batchJsonlString = accumulatedLines.join('\n');
-              await importJsonlString('Explanation', batchJsonlString);
-              const endTime = new Date();
-              const duration = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
-              console.log(`Imported batch of ${accumulatedLines.length} lines. Duration: ${duration} seconds`);
-              accumulatedLines = [];
-            }
-          }
-        }
-
-        // Import any remaining lines
-        if (accumulatedLines.length > 0) {
           const startTime = new Date();
-          const remainingJsonlString = accumulatedLines.join('\n');
-          await importJsonlString('Explanation', remainingJsonlString);
+          const explanationsJsonlString = await downloadAndDecompressFile(explanationsPath);
+          await importJsonlString('Explanation', explanationsJsonlString);
+
           const endTime = new Date();
           const duration = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
-          console.log(`Imported final batch of ${accumulatedLines.length} lines. Duration: ${duration} seconds`);
+          console.log(`Duration: ${duration} seconds`);
+        }
+
+        /* ACTIVATIONS */
+        const activationsPaths = await getFilesInPath(`${path}/activations`, '.jsonl.gz');
+        for (const [index, activationsPath] of activationsPaths.entries()) {
+          enqueueProgress(controller, index / activationsPaths.length, `(4 of 4) Importing Activations...`);
+          console.log('Importing activations from', activationsPath);
+          const startTime = new Date();
+          const activationsJsonlString = await downloadAndDecompressFile(activationsPath);
+          await importJsonlString('Activation', activationsJsonlString);
+
+          const endTime = new Date();
+          const duration = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
+          console.log(`Duration: ${duration} seconds`);
         }
 
         controller.enqueue(encoder.encode('event: complete\ndata: {}\n\n'));

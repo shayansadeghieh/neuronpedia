@@ -1,5 +1,5 @@
 import { ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID, MODEL_TO_SOURCESET_ID } from '@/app/[modelId]/graph/utils';
-import { GRAPH_RUNPOD_SECRET, USE_RUNPOD_GRAPH } from '@/lib/env';
+import { GRAPH_RUNPOD_SECRET, GRAPH_RUNPOD_SERVER, USE_RUNPOD_GRAPH } from '@/lib/env';
 import * as yup from 'yup';
 import {
   getAuthHeaderForGraphServerRequest,
@@ -98,8 +98,8 @@ export const graphGenerateSchemaClient = yup.object({
   slug: yup.string(),
 });
 
-export const checkRunpodQueueJobs = async (host: string) => {
-  const response = await fetch(`${host}/health`, {
+export const checkRunpodQueueJobs = async () => {
+  const response = await fetch(`${GRAPH_RUNPOD_SERVER}/health`, {
     headers: {
       Authorization: `Bearer ${GRAPH_RUNPOD_SECRET}`,
     },
@@ -138,6 +138,7 @@ export const getGraphTokenize = async (
   desiredLogitProb: number,
   modelId: string,
 ): Promise<GraphTokenizeResponse> => {
+  let response;
   const action = 'forward-pass';
   const body = {
     prompt,
@@ -147,7 +148,7 @@ export const getGraphTokenize = async (
   };
   // TODO: should not hardcode this for each model
   const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
-  const response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
+  response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -197,6 +198,7 @@ export const generateGraphAndUploadToS3 = async (
   signedUrl: string,
   userId: string | undefined,
 ) => {
+  let response;
   const action = 'generate-graph';
   const body = {
     prompt,
@@ -212,7 +214,7 @@ export const generateGraphAndUploadToS3 = async (
     user_id: userId,
   };
   const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
-  const response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
+  response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -314,6 +316,7 @@ export const steerLogits = async (
   seed: number | null,
   steeredOutputOnly: boolean,
 ) => {
+  let response;
   const action = 'steer';
   // TODO: clean up model id usage
   const mappedModelId = GRAPH_GENERATION_ENABLED_MODELS.includes(modelId)
@@ -334,7 +337,7 @@ export const steerLogits = async (
   };
 
   const sourceSetName = MODEL_TO_SOURCESET_ID[modelId as keyof typeof MODEL_TO_SOURCESET_ID];
-  const response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
+  response = await fetch(`${await getGraphServerRequestUrlForSourceSet(modelId, sourceSetName, action)}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -16,7 +16,7 @@ export default function GraphFeatureLink({
   selectedGraph: CLTGraph | null;
   node: CLTGraphNode;
 }) {
-  const { setFeatureModalFeature, setFeatureModalOpen, getSource } = useGlobalContext();
+  const { setFeatureModalFeature, setFeatureModalOpen } = useGlobalContext();
 
   if (!selectedGraph) {
     return null;
@@ -26,10 +26,7 @@ export default function GraphFeatureLink({
       <Button
         onClick={() => {
           if (node.featureDetailNP) {
-            setFeatureModalFeature({
-              ...node.featureDetailNP,
-              source: getSource(node.featureDetailNP.modelId, node.featureDetailNP.layer),
-            });
+            setFeatureModalFeature(node.featureDetailNP);
             setFeatureModalOpen(true);
           }
         }}

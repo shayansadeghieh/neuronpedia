@@ -13,7 +13,6 @@ import {
   MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR,
   ModelToGraphMetadatasMap,
   cltModelToNumLayers,
-  computeGraphScoresFromGraphData,
   convertAnthropicFeatureToNeuronpediaSourceSet,
   formatCLTGraphData,
   getIndexFromCantorValue,
@@ -644,13 +643,6 @@ export function GraphProvider({
       displayName,
       layers: numLayers,
     };
-
-    if (selectedModelId in MODEL_TO_SOURCESET_ID) {
-      setLoadingGraphLabel(`Calculating Scores... `);
-      const { replacementScore, completenessScore } = computeGraphScoresFromGraphData(formattedData);
-      formattedData.metadata.replacement_score = replacementScore;
-      formattedData.metadata.completeness_score = completenessScore;
-    }
 
     const isCantor = data.metadata.schema_version === 1 || data.metadata.feature_details?.neuronpedia_source_set;
     // if it specifies source_set, then it's cantor

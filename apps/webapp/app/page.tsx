@@ -24,7 +24,6 @@ import {
   PictureInPicture,
   RocketIcon,
   School,
-  Scroll,
   Search,
   Slack,
   Speech,
@@ -456,61 +455,11 @@ export default function Page() {
         </div>
       </div>
 
-
       <div className="flex w-full flex-1 flex-col items-center justify-center gap-x-3 gap-y-12 bg-slate-50 px-2 py-12 sm:px-8 sm:py-16">
         <div className="flex max-w-screen-xl flex-1 flex-col items-center justify-center gap-x-8 gap-y-8 rounded-xl px-2 sm:flex-row sm:px-0 sm:pb-0">
           <div className="flex flex-col sm:basis-1/3">
-            <div className="text-3xl font-black text-slate-800">Graph</div>
+            <div className="text-3xl font-black text-slate-800">Steer</div>
             <div className="mt-3 text-[15px] font-medium text-slate-700">
-              Visualize and trace the internal reasoning steps of a model with custom prompts, pioneered by Anthropic{`'`}s{' '}
-              <a href="https://transformer-circuits.pub/2025/attribution-graphs/methods.html" target="_blank" rel="noreferrer" className="text-sky-600 underline">
-                circuit tracing
-              </a>{' '}
-              papers.
-            </div>
-            <div className="mt-3 flex flex-col justify-center gap-x-2 gap-y-1.5 sm:justify-start">
-              <Link href="https://www.neuronpedia.org/gemma-2-2b/graph" target="_blank" rel="noreferrer">
-                <Button variant="default" size="lg" className="gap-x-2">
-                  <RocketIcon className="h-5 w-5" />
-                  <span>Try It: Circuit Tracer</span>
-                </Button>
-              </Link>
-              <Link href="https://www.youtube.com/playlist?list=PL05yUGfKO5wP6S5_12z7LG30LZigRYx1e" target="_blank" rel="noreferrer">
-                <Button variant="default" size="lg" className="gap-x-2">
-                  <Youtube className="h-5 w-5" />
-                  <span>YouTube: Guided Demo</span>
-                </Button>
-              </Link>
-              <Link href="https://neuronpedia.org/graph/info" target="_blank" rel="noreferrer">
-                <Button variant="default" size="lg" className="gap-x-2">
-                  <Scroll className="h-5 w-5" />
-                  <span>Post: Research Landscape</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-          <a
-            href="https://www.neuronpedia.org/gemma-2-2b/graph"
-            target="_blank"
-            rel="noreferrer"
-            className="w-full flex-1 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 pt-2 shadow transition-all duration-300 hover:ring-4 hover:ring-blue-400 hover:ring-opacity-50 sm:flex-initial sm:basis-2/3"
-          >
-            <Image
-              src="https://neuronpedia.s3.us-east-1.amazonaws.com/site-assets/blog/tracer.png"
-              alt="Attribution graph example with Dallas gemma-2-2b"
-              className="rounded-md"
-              width={1736}
-              height={998}
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="flex w-full flex-1 flex-col items-center justify-center gap-x-3 gap-y-12 bg-sky-100 px-2 py-12 sm:px-8 sm:py-16">
-        <div className="flex max-w-screen-xl flex-1 flex-col items-center justify-center gap-x-8 gap-y-8 rounded-xl px-2 sm:flex-row sm:px-0 sm:pb-0">
-          <div className="flex flex-col sm:basis-1/3">
-            <div className="text-3xl font-black text-sky-800">Steer</div>
-            <div className="mt-3 text-[15px] font-medium text-sky-700">
               Modify model behavior by steering its activations using latents or custom vectors. Steering supports
               instruct (chat) and reasoning models, and has fully customizable temperature, strength, seed, etc.
             </div>
@@ -544,12 +493,11 @@ export default function Page() {
         </div>
       </div>
 
-
-      <div className="flex w-full flex-1 flex-col items-center justify-center gap-x-3 gap-y-12 bg-slate-50 px-2 py-12 sm:px-8 sm:py-16">
+      <div className="flex w-full flex-1 flex-col items-center justify-center gap-x-3 gap-y-12 bg-sky-100 px-2 py-12 sm:px-8 sm:py-16">
         <div className="flex max-w-screen-xl flex-1 flex-col items-center gap-x-8 gap-y-8 rounded-xl px-2 sm:flex-row sm:px-0 sm:pb-0">
           <div className="flex flex-col sm:basis-1/3">
-            <div className="text-3xl font-black text-slate-800">Search</div>
-            <div className="mt-3 text-[15px] font-medium text-slate-700">
+            <div className="text-3xl font-black text-sky-800">Search</div>
+            <div className="mt-3 text-[15px] font-medium text-sky-800">
               Search over 50,000,000 latents/vectors, either by semantic similarity to explanation text, or by running
               custom text via inference through a model to find top matches.{' '}
             </div>
@@ -585,11 +533,11 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="flex w-full flex-1 flex-col items-center justify-center gap-x-3 gap-y-12 bg-sky-100 px-2 py-12 sm:px-8 sm:py-16">
+      <div className="flex w-full flex-1 flex-col items-center justify-center gap-x-3 gap-y-12 bg-slate-50 px-2 py-12 sm:px-8 sm:py-16">
         <div className="flex max-w-screen-xl flex-1 flex-col items-center justify-center gap-x-8 gap-y-8 rounded-xl px-2 sm:flex-row sm:px-0 sm:pb-0">
           <div className="flex flex-col sm:basis-1/3">
-            <div className="text-3xl font-black text-sky-800">API + Libraries</div>
-            <div className="mt-3 text-[15px] font-medium text-sky-700">
+            <div className="text-3xl font-black text-slate-800">API + Libraries</div>
+            <div className="mt-3 text-[15px] font-medium text-slate-700">
               Neuronpedia hosts the {`world's first interpretability API (March 2024)`} - and all functionality is
               available by API or Python/TypeScript libraries. Most endpoints have an OpenAPI spec and interactive docs.
             </div>
@@ -619,11 +567,11 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="flex w-full flex-1 flex-col items-center justify-center gap-x-3 gap-y-12 bg-slate-50 px-2 py-12 sm:px-8 sm:py-16">
+      <div className="flex w-full flex-1 flex-col items-center justify-center gap-x-3 gap-y-12 bg-sky-100 px-2 py-12 sm:px-8 sm:py-16">
         <div className="flex w-full max-w-screen-xl flex-1 flex-col items-center gap-x-8 gap-y-8 rounded-xl px-2 sm:flex-row sm:px-0 sm:pb-0">
           <div className="flex flex-1 flex-col sm:basis-1/3">
-            <div className="text-3xl font-black text-slate-800">Inspect</div>
-            <div className="mt-3 text-[15px] font-medium text-slate-700">
+            <div className="text-3xl font-black text-sky-800">Inspect</div>
+            <div className="mt-3 text-[15px] font-medium text-sky-800">
               Go in depth on each probe/latent/feature with top activations, top logits, activation density, and live
               inference testing. All dashboards have unique links, can be compiled into sharable lists, and supports
               IFrame embedding, as demonstrated here.{' '}

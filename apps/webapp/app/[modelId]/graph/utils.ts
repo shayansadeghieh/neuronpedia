@@ -14,12 +14,6 @@ export const MAX_GRAPH_UPLOAD_SIZE_BYTES = 100 * 1024 * 1024;
 
 // ============ Neuronpedia Specific =============
 
-export const MODEL_TO_SOURCESET_ID = {
-  'gemma-2-2b': 'gemmascope-transcoder-16k',
-  'llama-3-131k-relu': 'skip-transcoder-mntss',
-  'qwen3-4b': 'transcoder-hp',
-};
-
 // TODO: make this a DB column
 // models not in this list can only get FeatureDetails from the bucket
 export const MODEL_WITH_NP_DASHBOARDS_NOT_YET_CANTOR = new Set(['gemma-2-2b']);
@@ -52,6 +46,12 @@ export const MODEL_DIGITS_IN_FEATURE_ID = {
   'gemma-2-2b': Number(16384).toString().length,
   'llama-3-131k-relu': Number(131072).toString().length,
   //  'qwen3-4b': Number(131072).toString().length,
+};
+
+export const MODEL_TO_SOURCESET_ID = {
+  'gemma-2-2b': 'gemmascope-transcoder-16k',
+  'llama-3-131k-relu': 'skip-transcoder-mntss',
+  'qwen3-4b': 'transcoder-hp',
 };
 
 export const ANT_MODEL_ID_TO_NEURONPEDIA_MODEL_ID = {
@@ -385,10 +385,6 @@ export type CLTGraphInnerMetadata = {
     node_threshold?: number;
     edge_threshold?: number;
   };
-
-  // we calculate this on the frontend
-  replacement_score?: number;
-  completeness_score?: number;
 
   // determines cantor or not for feature ID
   schema_version?: number;
@@ -932,7 +928,6 @@ export function filterNodes(
   selectedGraph: CLTGraph,
   visState: CltVisState,
   clickedId: string | null,
-  hideMlpErrors: boolean = false,
 ) {
   if (data.metadata.node_threshold !== undefined && data.metadata.node_threshold > 0) {
     nodes = nodes.filter((d) => shouldShowNodeForInfluenceThreshold(d, visState, clickedId));
@@ -941,9 +936,6 @@ export function filterNodes(
   nodes = nodes.filter((d) =>
     shouldShowNodeForDensityThreshold(graphModelHasNpDashboards(selectedGraph), d, visState, clickedId),
   );
-  if (hideMlpErrors) {
-    nodes = nodes.filter((d) => d.feature_type !== 'mlp reconstruction error');
-  }
   return nodes;
 }
 
@@ -989,260 +981,3 @@ export type SaveSubgraphRequest = z.infer<typeof SaveSubgraphRequestSchema>;
 export const DeleteSubgraphRequestSchema = z.object({
   subgraphId: z.string(),
 });
-
-// ********* Replacement & Completeness Scores *********
-
-function normalizeMatrix(matrix: number[][]): number[][] {
-  return matrix.map((row) => {
-    const absRow = row.map((val) => Math.abs(val));
-    const sum = absRow.reduce((acc, val) => acc + val, 0);
-    const clampedSum = Math.max(sum, 1e-10);
-    return absRow.map((val) => val / clampedSum);
-  });
-}
-
-function computeInfluence(A: number[][], logitWeights: number[], maxIter: number = 1000): number[] {
-  // Normally we calculate total influence B using A + A^2 + ... or (I - A)^-1 - I,
-  // and do logit_weights @ B
-  // But it's faster / more efficient to compute logit_weights @ A + logit_weights @ A^2
-  // as follows:
-
-  // Matrix-vector multiplication: logitWeights @ A
-  let currentInfluence = new Array(A[0].length).fill(0);
-  for (let j = 0; j < A[0].length; j += 1) {
-    for (let i = 0; i < logitWeights.length; i += 1) {
-      currentInfluence[j] += logitWeights[i] * A[i][j];
-    }
-  }
-
-  const influence = [...currentInfluence];
-  let iterations = 0;
-
-  while (currentInfluence.some((val) => Math.abs(val) > 1e-10)) {
-    if (iterations >= maxIter) {
-      throw new Error(`Influence computation failed to converge after ${iterations} iterations`);
-    }
-
-    // currentInfluence @ A
-    const newInfluence = new Array(A[0].length).fill(0);
-    for (let j = 0; j < A[0].length; j += 1) {
-      for (let i = 0; i < currentInfluence.length; i += 1) {
-        newInfluence[j] += currentInfluence[i] * A[i][j];
-      }
-    }
-
-    currentInfluence = newInfluence;
-    for (let i = 0; i < influence.length; i += 1) {
-      influence[i] += currentInfluence[i];
-    }
-    iterations += 1;
-  }
-
-  return influence;
-}
-
-function reconstructAdjacencyMatrix(
-  nodes: CLTGraphNode[],
-  edges: CLTGraphLink[],
-): {
-  matrix: number[][];
-  sortedNodes: CLTGraphNode[];
-} {
-  // Define the expected order of feature types
-  const featureTypeOrder = [
-    'cross layer transcoder', // Feature nodes (indices 0 to n_features-1)
-    'mlp reconstruction error', // Error nodes
-    'embedding', // Token/embedding nodes
-    'logit', // Logit nodes (last n_logits positions)
-  ];
-
-  // Sort nodes by feature_type order, then by any secondary criteria if needed
-  function getSortKey(node: CLTGraphNode) {
-    let typePriority;
-    try {
-      typePriority = featureTypeOrder.indexOf(node.feature_type);
-    } catch {
-      // Handle any unexpected feature types
-      typePriority = featureTypeOrder.length;
-    }
-    if (typePriority === -1) {
-      typePriority = featureTypeOrder.length;
-    }
-
-    // Secondary sort criteria
-    const layerNum = node.layer === 'E' ? 0 : Number.isNaN(parseInt(node.layer, 10)) ? 999 : parseInt(node.layer, 10);
-    const secondary = [layerNum, node.ctx_idx, node.feature || 0];
-
-    return [typePriority, ...secondary];
-  }
-
-  // Sort nodes to match the expected adjacency matrix ordering
-  const sortedNodes = [...nodes].sort((a, b) => {
-    const keyA = getSortKey(a);
-    const keyB = getSortKey(b);
-    for (let i = 0; i < Math.max(keyA.length, keyB.length); i += 1) {
-      const valA = keyA[i] || 0;
-      const valB = keyB[i] || 0;
-      if (valA !== valB) return valA - valB;
-    }
-    return 0;
-  });
-
-  // Create mapping from node_id to matrix index
-  const nodeIdToIdx: Record<string, number> = {};
-  sortedNodes.forEach((node, idx) => {
-    nodeIdToIdx[node.node_id] = idx;
-  });
-
-  const nNodes = sortedNodes.length;
-
-  // Verify the ordering matches expectations
-  const featureCounts: Record<string, number> = {};
-  featureTypeOrder.forEach((ft) => {
-    featureCounts[ft] = 0;
-  });
-  sortedNodes.forEach((node) => {
-    if (node.feature_type in featureCounts) {
-      featureCounts[node.feature_type] += 1;
-    }
-  });
-
-  // console.log(`Node counts by type: ${JSON.stringify(featureCounts)}`);
-
-  // Initialize adjacency matrix
-  const adjacencyMatrix: number[][] = Array(nNodes)
-    .fill(null)
-    .map(() => Array(nNodes).fill(0));
-
-  // Fill in the edges
-  edges.forEach((edge) => {
-    const srcIdx = nodeIdToIdx[edge.source];
-    const dstIdx = nodeIdToIdx[edge.target];
-    const { weight } = edge;
-
-    if (srcIdx !== undefined && dstIdx !== undefined) {
-      // Convention: adjacency_matrix[dst, src] = weight (edge from src to dst)
-      // Rows represent target nodes, columns represent source nodes
-      adjacencyMatrix[dstIdx][srcIdx] = weight;
-    }
-  });
-
-  return { matrix: adjacencyMatrix, sortedNodes };
-}
-
-export function computeGraphScoresFromGraphData(
-  graphData: CLTGraph,
-  pinnedIds: string[] = [],
-): {
-  replacementScore: number;
-  completenessScore: number;
-} {
-  let graphNodesToUse = graphData.nodes;
-  // if we have pinned IDs, then we need to filter the features to only include the pinned IDs, and the mlp errors to only include ones connected to pinned IDs
-  if (pinnedIds.length > 0) {
-    // get all the pinned nodes, we'll use this to find the mlp errors to keep
-    const pinnedNodes = graphData.nodes.filter((node) => pinnedIds.includes(node.node_id));
-    // make filteredGraphNodes
-    const filteredGraphNodes: CLTGraphNode[] = [];
-    // iterate through all nodes
-    for (const node of graphData.nodes) {
-      // if it's pinnedId and it's a cross layer transcoder, then add it to filteredGraphNodes
-      if (node.feature_type === 'cross layer transcoder') {
-        if (pinnedIds.includes(node.node_id)) {
-          filteredGraphNodes.push(node);
-        }
-      }
-      // if it's a mlp error and connected to a pinned ID, then add it to filteredGraphNodes
-      else if (node.feature_type === 'mlp reconstruction error') {
-        // check each pinned node
-        for (const pinnedNode of pinnedNodes) {
-          // check in the graphData.links if there's a link from the pinned node to the mlp error
-          const link = graphData.links.find(
-            (l) =>
-              (l.source === node.node_id && l.target === pinnedNode.node_id) ||
-              (l.source === pinnedNode.node_id && l.target === node.node_id),
-          );
-          if (link) {
-            filteredGraphNodes.push(node);
-            break;
-          }
-        }
-      } else {
-        // the remaining are embed and logits, add them
-        filteredGraphNodes.push(node);
-      }
-    }
-    graphNodesToUse = filteredGraphNodes;
-    // if the graphNodes don't have any cross layer transcoders, then return 0, 0
-    if (graphNodesToUse.filter((node) => node.feature_type === 'cross layer transcoder').length === 0) {
-      return { replacementScore: 0, completenessScore: 0 };
-    }
-  }
-
-  // Get the adjacency matrix
-  const { matrix: adjacencyMatrix, sortedNodes } = reconstructAdjacencyMatrix(graphNodesToUse, graphData.links);
-
-  // // // print the sortednodes
-  // if (pinnedIds.length > 0) {
-  //   console.log('graphNodesToUse:');
-  //   sortedNodes.forEach((node) => {
-  //     console.log(`  nodeId: ${node.node_id}, feature_type: ${node.feature_type}`);
-  //   });
-  // }
-
-  // Filter by feature_type "logit" in nodes and get its "token_prob" to make logit_probabilities
-  const logitProbabilities = graphNodesToUse
-    .filter((node) => node.feature_type === 'logit')
-    .map((node) => node.token_prob);
-  const nLogits = logitProbabilities.length;
-
-  // Filter by feature_type "embedding" in nodes to get n_tokens
-  const nTokens = graphNodesToUse.filter((node) => node.feature_type === 'embedding').length;
-
-  // Filter by feature_type "cross layer transcoder" in nodes to get n_features
-  const nFeatures = graphNodesToUse.filter((node) => node.feature_type === 'cross layer transcoder').length;
-
-  const errorStart = nFeatures;
-
-  // error_end is the end of the error nodes
-  // find the index where the feature_type is "embedding"
-  const embeddingIndex = sortedNodes.findIndex((node) => node.feature_type === 'embedding');
-  const errorEnd = embeddingIndex !== -1 ? embeddingIndex : errorStart;
-  const tokenEnd = errorEnd + nTokens;
-
-  // console.log(`n_logits: ${nLogits}`);
-  // console.log(`n_tokens: ${nTokens}`);
-  // console.log(`n_features: ${nFeatures}`);
-  // console.log(`error_start: ${errorStart}`);
-  // console.log(`error_end: ${errorEnd}`);
-  // console.log(`token_end: ${tokenEnd}`);
-
-  const logitWeights = new Array(adjacencyMatrix.length).fill(0);
-  for (let i = 0; i < nLogits; i += 1) {
-    logitWeights[adjacencyMatrix.length - nLogits + i] = logitProbabilities[i];
-  }
-
-  const normalizedMatrix = normalizeMatrix(adjacencyMatrix);
-  const nodeInfluence = computeInfluence(normalizedMatrix, logitWeights);
-
-  const tokenInfluence = nodeInfluence.slice(errorEnd, tokenEnd).reduce((sum, val) => sum + val, 0);
-  const errorInfluence = nodeInfluence.slice(errorStart, errorEnd).reduce((sum, val) => sum + val, 0);
-  const replacementScore = tokenInfluence / (tokenInfluence + errorInfluence);
-
-  const nonErrorFractions = normalizedMatrix.map(
-    (row) => 1 - row.slice(errorStart, errorEnd).reduce((sum, val) => sum + val, 0),
-  );
-
-  const outputInfluence = nodeInfluence.map((val, i) => val + logitWeights[i]);
-  const completenessScore =
-    nonErrorFractions.map((fraction, i) => fraction * outputInfluence[i]).reduce((sum, val) => sum + val, 0) /
-    outputInfluence.reduce((sum, val) => sum + val, 0);
-
-  // console.log(`replacement_score: ${replacementScore}`);
-  // console.log(`completeness_score: ${completenessScore}`);
-
-  return {
-    replacementScore: Number.isNaN(replacementScore) ? 0 : replacementScore,
-    completenessScore: Number.isNaN(completenessScore) ? 0 : completenessScore,
-  };
-}
