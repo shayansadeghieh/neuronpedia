@@ -318,6 +318,18 @@ export default function Page() {
           />
         </a>
         <a
+          href="https://venturebeat.com/ai/stop-guessing-why-your-llms-break-anthropics-new-tool-shows-you-exactly-what-goes-wrong?utm_source=chatgpt.com"
+          target="_blank"
+          className="flex flex-row items-center justify-center"
+          rel="noreferrer"
+        >
+          <img
+            src="/usedby/vb.png"
+            className="h-[50px] opacity-40 grayscale hover:opacity-100 hover:grayscale-0"
+            alt="VentureBeat"
+          />
+        </a>
+        <a
           href={`${NEXT_PUBLIC_URL}/llama-scope`}
           target="_blank"
           className="flex flex-row items-center justify-center"
@@ -330,25 +342,6 @@ export default function Page() {
           />
         </a>
         <a
-          href={`${NEXT_PUBLIC_URL}/gpt2sm-apollojt`}
-          target="_blank"
-          className="flex flex-row items-center justify-center"
-          rel="noreferrer"
-        >
-          <img
-            src="/usedby/apolloresearch.png"
-            className="h-[35px] opacity-70 grayscale hover:opacity-100 hover:grayscale-0"
-            alt="Apollo Research"
-          />
-        </a>
-        {/* <a href="#mats" className="flex flex-row items-center justify-center" rel="noreferrer" aria-label="MATS">
-          <img
-            src="/usedby/mats.png"
-            className="h-[35px] opacity-60 grayscale hover:opacity-100 hover:grayscale-0"
-            alt="MATS"
-          />
-        </a> */}
-        <a
           href={`${NEXT_PUBLIC_URL}/llama3.1-8b-eleuther_gp`}
           target="_blank"
           className="flex flex-row items-center justify-center"
@@ -360,6 +353,28 @@ export default function Page() {
             alt="EleutherAI"
           />
         </a>
+        <a
+          href={`${NEXT_PUBLIC_URL}/gpt2sm-apollojt`}
+          target="_blank"
+          className="flex flex-row items-center justify-center"
+          rel="noreferrer"
+        >
+          <img
+            src="/usedby/apolloresearch.png"
+            className="h-[35px] opacity-70 grayscale hover:opacity-100 hover:grayscale-0 hidden sm:block"
+            alt="Apollo Research"
+          />
+        </a>
+        {/* <a href="#mats" className="flex flex-row items-center justify-center" rel="noreferrer" aria-label="MATS">
+          <img
+            src="/usedby/mats.png"
+            className="h-[35px] opacity-60 grayscale hover:opacity-100 hover:grayscale-0"
+            alt="MATS"
+          />
+        </a> */}
+       
+
+        
       </div>
 
       <div className="flex w-full flex-1 flex-col items-center justify-center bg-sky-100 py-12 sm:py-16 sm:pt-14">
