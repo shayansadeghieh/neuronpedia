@@ -64,7 +64,7 @@ export default function PageSource({ source }: { source: SourceWithRelations }) 
               {source.modelId} · {source.id}
             </div>
             <div className="mt-2 text-sm font-normal text-slate-500">
-              SAE from{' '}
+              Source from{' '}
               <Link
                 prefetch={false}
                 href={`/${source.set?.releases?.name}`}

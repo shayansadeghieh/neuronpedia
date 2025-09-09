@@ -73,7 +73,7 @@ const DEFAULT_DENSITY_THRESHOLD = -1;
  *               ignoreBos:
  *                 description: Don't return results where the top token activation is the BOS token.
  *                 type: boolean
- *                 default: false
+ *                 default: true
  *               densityThreshold:
  *                 description: Don't return features with a density greater than this threshold. Should be between 0 and 1. -1 means no threshold (default).
  *                 type: number
