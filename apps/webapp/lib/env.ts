@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+import { z } from 'zod';
 
 // If it's not undefined, then it's a one click deploy. It doesn't matter what the value itself is.
 // Also, if it's one-click-deploy on Vercel, we always use the demo environment variables.
@@ -71,6 +72,13 @@ export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 export const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+export const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || '';
+
+export const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || '';
+
+// Embedding Provider Configuration
+const EmbeddingProviderSchema = z.enum(['openai', 'azure', 'openrouter']);
+export const EMBEDDING_PROVIDER = EmbeddingProviderSchema.parse(process.env.EMBEDDING_PROVIDER || 'openai');
 
 // Sentry (Crash Reporting - Used by Sentry, not by us directly)
 // export const SENTRY_DSN = process.env.SENTRY_DSN || '';
