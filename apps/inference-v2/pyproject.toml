@@ -1,0 +1,32 @@
+[project]
+name = "neuronpedia-inference"
+version = "2.0.0"
+description = "Inference server for Neuronpedia. Compatible with OpenAI API (mostly)."
+authors = ["johnny@neuronpedia.org>"]
+requires-python = ">=3.10,<4.0"
+readme = "README.md"
+license = "MIT"
+dependencies = [
+  "fastapi>=0.116.2",
+  "python-dotenv>=1.1.1",
+  "torch>=1.10; sys_platform == 'linux'",
+  "torch>=1.10,!=2.0,!=2.1.0,<2.8.0; sys_platform != 'linux'", # we get really strange outputs with 2.8.0 on mps
+  "transformer-lens",
+  "uvicorn>=0.35.0",
+  "pip>=25.2",
+]
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.405",
+    "ruff>=0.13.0",
+]
+test = [
+    "pytest>=8.0.0",
+    "httpx>=0.24.0",
+    "pytest-asyncio>=0.21.0",
+    "requests>=2.31.0",
+]
+
+[tool.uv.sources]
+transformer-lens = { git = "https://github.com/hijohnnylin/TransformerLens.git", rev = "temp_branch_version" }
